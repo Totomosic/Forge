@@ -1,0 +1,12 @@
+[submodule "Forge/vendor/glm"]
+	path = Forge/vendor/glm
+	url = https://github.com/Totomosic/glm.git
+[submodule "Forge/vendor/imgui"]
+	path = Forge/vendor/imgui
+	url = https://github.com/Totomosic/imgui.git
+[submodule "Forge/vendor/glfw"]
+	path = Forge/vendor/glfw
+	url = https://github.com/Totomosic/glfw.git
+[submodule "Forge/vendor/spdlog"]
+	path = Forge/vendor/spdlog
+	url = https://github.com/Totomosic/spdlog.git
