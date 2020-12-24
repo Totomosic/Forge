@@ -1,6 +1,9 @@
 #pragma once
 #include "ForgePch.h"
 
+#include "Renderer/VertexArray.h"
+#include "Renderer/Shader.h"
+
 #include "Core/EventEmitter.h"
 #include "Core/Window.h"
 

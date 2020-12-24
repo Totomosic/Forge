@@ -1,8 +1,17 @@
-#include "ForgePch.h"
+﻿#include "ForgePch.h"
 #include "Window.h"
 
 namespace Forge
 {
+
+	namespace Detail
+	{
+		void OnGlError(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+		{
+			if (type == GL_DEBUG_TYPE_ERROR)
+				FORGE_FATAL(message);
+		}
+	}
 
 	static bool s_GlfwInitialized = false;
 
@@ -46,6 +55,8 @@ namespace Forge
 
 		glfwSetWindowUserPointer(m_Handle.get(), &m_Data);
 		glfwSwapInterval(1);
+
+		glDebugMessageCallback(Detail::OnGlError, nullptr);
 	}
 
 }

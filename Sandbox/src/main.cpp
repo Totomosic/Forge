@@ -11,7 +11,8 @@ int main()
 
 	bool running = true;
 
-	Window window({});
+	WindowProps props;
+	Window window(props);
 
 	window.Events.Close.AddEventListener([&](const WindowClose& evt)
 	{
@@ -25,24 +26,20 @@ int main()
 		0.5f, -0.5f, 0.0f,
 	};
 	
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
+	
+	Ref<VertexArray> vao = VertexArray::Create();
+	Ref<VertexBuffer> vbo = VertexBuffer::Create(vertices, sizeof(vertices), BufferLayout::Default());
+	vao->AddVertexBuffer(vbo);
 
-	GLuint vbo;
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-	glEnableVertexAttribArray(0);
+	Ref<Shader> shader = Shader::CreateFromFile("Default.shader");
+	shader->Bind();
 
 	while (running)
 	{
-		glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glBindVertexArray(vao);
+		vao->Bind();
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		window.Update();

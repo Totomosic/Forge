@@ -1,9 +1,11 @@
-#pragma once
+﻿#pragma once
 #include "ForgePch.h"
 #include "EventEmitter.h"
 #include "GraphicsContext.h"
 #include "WindowEvents.h"
 
+#include <iostream>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 namespace Forge
@@ -11,6 +13,8 @@ namespace Forge
 
 	namespace Detail
 	{
+
+		void OnGlError(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
 	
 		struct FORGE_API WindowDestructor
 		{
