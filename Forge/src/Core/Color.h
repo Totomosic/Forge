@@ -13,4 +13,10 @@ namespace Forge
 		uint8_t a = 255;
 	};
 
+	constexpr Color COLOR_RED = { 255, 0, 0, 255 };
+	constexpr Color COLOR_GREEN = { 0, 255, 0, 255 };
+	constexpr Color COLOR_BLUE = { 0, 0, 255, 255 };
+	constexpr Color COLOR_BLACK = { 0, 0, 0, 255 };
+	constexpr Color COLOR_WHITE = { 255, 255, 255, 255 };
+
 }

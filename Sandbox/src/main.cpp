@@ -1,5 +1,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/ext.hpp>
 
 #include "Forge.h"
 
@@ -14,33 +16,46 @@ int main()
 	WindowProps props;
 	Window window(props);
 
+	Input::SetWindow(&window);
+
+	Input::OnMouseMoved.AddEventListener([&](const MouseMove& evt)
+	{
+		std::cout << Input::GetMouseX() << ", " << Input::GetMouseY() << std::endl;
+		return false;
+	});
+
 	window.Events.Close.AddEventListener([&](const WindowClose& evt)
 	{
 		running = false;
 		return true;
 	});
 
-	float vertices[3 * 3] = {
-		-0.5f, -0.5f, 0.0f,
-		0.0f, 0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-	};
+	window.Events.Resize.AddEventListener([](const WindowResize& evt)
+	{
+		RenderCommand::SetViewport(0, 0, evt.NewWidth, evt.NewHeight);
+		return false;
+	});
 	
-	
-	Ref<VertexArray> vao = VertexArray::Create();
-	Ref<VertexBuffer> vbo = VertexBuffer::Create(vertices, sizeof(vertices), BufferLayout::Default());
-	vao->AddVertexBuffer(vbo);
+	RenderCommand::Init();
+	Renderer3D renderer;
 
-	Ref<Shader> shader = Shader::CreateFromFile("Default.shader");
-	shader->Bind();
+	Ref<Model> model = Model::Create(GraphicsCache::SquareMesh(), GraphicsCache::DefaultColorMaterial(COLOR_BLACK));
+
+	RenderCommand::SetClearColor(COLOR_RED);
+
+	CameraData camera;
+	camera.ViewMatrix = glm::mat4(1.0f);
+	camera.ProjectionMatrix = glm::ortho(0.0f, float(window.GetWidth()), 0.0f, float(window.GetHeight()));
 
 	while (running)
 	{
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		vao->Bind();
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		RenderCommand::Clear();
+		
+		renderer.BeginScene(camera);
+		renderer.RenderModel(model, glm::translate(glm::mat4(1.0f), glm::vec3{ Input::GetMousePosition(), 0.0f }) * glm::scale(glm::mat4(1.0f), glm::vec3{ 100, 100, 1 }));
+		renderer.RenderModel(model, glm::translate(glm::mat4(1.0f), glm::vec3{ Input::GetMousePosition() + glm::vec2{ 150, 75 }, 0.0f }) * glm::scale(glm::mat4(1.0f), glm::vec3{ 200, 100, 1 }));
+		renderer.EndScene();
+		renderer.Flush();
 
 		window.Update();
 	}

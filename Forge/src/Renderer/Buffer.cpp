@@ -58,7 +58,7 @@ namespace Forge
     }
 
     IndexBuffer::IndexBuffer(const Type* data, size_t sizeBytes)
-        : m_Handle()
+        : m_Handle(), m_IndexCount(sizeBytes / sizeof(Type))
     {
         Init(data, sizeBytes);
     }

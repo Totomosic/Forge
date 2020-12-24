@@ -3,9 +3,14 @@
 
 #include "Renderer/VertexArray.h"
 #include "Renderer/Shader.h"
+#include "Renderer/RenderCommand.h"
+#include "Renderer/Renderer3D.h"
+#include "Renderer/GraphicsCache.h"
 
+#include "Core/Color.h"
 #include "Core/EventEmitter.h"
 #include "Core/Window.h"
+#include "Core/Input.h"
 
 namespace Forge
 {

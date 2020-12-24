@@ -4,6 +4,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "Renderer/GraphicsCache.h"
+
 namespace Forge
 {
 
@@ -24,6 +26,8 @@ namespace Forge
 		FORGE_INFO("  Version: {0}", glGetString(GL_VERSION));
 
 		FORGE_ASSERT(GLVersion.major > 4 || (GLVersion.major == 4 && GLVersion.minor >= 5), "Forge requires at least OpenGL version 4.5!");
+
+		GraphicsCache::Init();
 	}
 
 	void GraphicsContext::SwapBuffers()

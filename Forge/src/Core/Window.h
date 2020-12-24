@@ -13,8 +13,6 @@ namespace Forge
 
 	namespace Detail
 	{
-
-		void OnGlError(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
 	
 		struct FORGE_API WindowDestructor
 		{
@@ -38,12 +36,20 @@ namespace Forge
 	class FORGE_API Window
 	{
 	private:
+		struct FORGE_API WindowEvents
+		{
+		public:
+			EventEmitter<WindowResize> Resize;
+			EventEmitter<WindowClose> Close;
+		};
+
 		struct FORGE_API WindowData
 		{
 		public:
 			std::string Title;
 			uint32_t Width;
 			uint32_t Height;
+			WindowEvents Events;
 		};
 
 		using Handle = std::unique_ptr<GLFWwindow, Detail::WindowDestructor>;
@@ -54,14 +60,7 @@ namespace Forge
 		bool m_ShouldClose;
 
 	public:
-		struct FORGE_API WindowEvents
-		{
-		public:
-			EventEmitter<WindowResize> Resize;
-			EventEmitter<WindowClose> Close;
-		};
-
-		WindowEvents Events;
+		WindowEvents& Events;
 
 	public:
 		Window(const WindowProps& props);

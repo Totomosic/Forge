@@ -1,6 +1,7 @@
 #include "ForgePch.h"
 #include "Shader.h"
 
+#include <glm/gtc/type_ptr.hpp>
 #include <sstream>
 
 #include "Utils/FileUtils.h"
@@ -23,6 +24,61 @@ namespace Forge
     void Shader::Unbind() const
     {
         glUseProgram(0);
+    }
+
+    void Shader::SetUniform(const std::string& name, bool value)
+    {
+        glUniform1i(GetUniformLocation(name), value);
+    }
+
+    void Shader::SetUniform(const std::string& name, int value)
+    {
+        glUniform1i(GetUniformLocation(name), value);
+    }
+
+    void Shader::SetUniform(const std::string& name, float value)
+    {
+        glUniform1f(GetUniformLocation(name), value);
+    }
+
+    void Shader::SetUniform(const std::string& name, const glm::vec2& value)
+    {
+        glUniform2f(GetUniformLocation(name), value.x, value.y);
+    }
+
+    void Shader::SetUniform(const std::string& name, const glm::vec3& value)
+    {
+        glUniform3f(GetUniformLocation(name), value.x, value.y, value.z);
+    }
+
+    void Shader::SetUniform(const std::string& name, const glm::vec4& value)
+    {
+        glUniform4f(GetUniformLocation(name), value.x, value.y, value.z, value.w);
+    }
+
+    void Shader::SetUniform(const std::string& name, const Color& value)
+    {
+        glUniform4f(GetUniformLocation(name), float(value.r) / 255.0f, float(value.g) / 255.0f, float(value.b) / 255.0f, float(value.a) / 255.0f);
+    }
+
+    void Shader::SetUniform(const std::string& name, const glm::mat2& value)
+    {
+        glUniformMatrix2fv(GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+    }
+
+    void Shader::SetUniform(const std::string& name, const glm::mat3& value)
+    {
+        glUniformMatrix3fv(GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+    }
+
+    void Shader::SetUniform(const std::string& name, const glm::mat4& value)
+    {
+        glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+    }
+
+    bool Shader::UniformExists(const std::string& name) const
+    {
+        return glGetUniformLocation(m_Handle.Id, name.c_str()) >= 0;
     }
 
     Ref<Shader> Shader::CreateFromSource(const std::string& vertexSource, const std::string& fragmentSource)
@@ -122,6 +178,17 @@ namespace Forge
 
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
+    }
+
+    int Shader::GetUniformLocation(const std::string& name)
+    {
+        auto it = m_UniformLocations.find(name);
+        if (it != m_UniformLocations.end())
+            return it->second;
+        int location = glGetUniformLocation(m_Handle.Id, name.c_str());
+        FORGE_ASSERT(location >= 0, "Unable to find uniform: {}", name);
+        m_UniformLocations[name] = location;
+        return location;
     }
 
 }

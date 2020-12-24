@@ -31,6 +31,8 @@ namespace Forge
 	public:
 		VertexArray();
 
+		inline const Ref<IndexBuffer>& GetIndexBuffer() const { return m_IndexBuffer; }
+
 		void Bind() const;
 		void Unbind() const;
 
