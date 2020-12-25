@@ -98,6 +98,7 @@ namespace Forge
 		default:
 			break;
 		}
+		return GL_FLOAT;
 	}
 
 	struct FORGE_API VertexAttribute

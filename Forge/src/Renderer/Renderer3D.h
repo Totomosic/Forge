@@ -11,7 +11,7 @@ namespace Forge
 		RendererContext m_Context;
 
 	public:
-		void BeginScene(const CameraData& camera);
+		void BeginScene(const CameraData& camera, const std::vector<LightSource>& lightSources = {});
 		void EndScene();
 		void Flush();
 

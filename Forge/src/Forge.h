@@ -12,6 +12,12 @@
 #include "Core/Window.h"
 #include "Core/Input.h"
 
+#include "Scene/Scene.h"
+#include "Scene/Entity.h"
+#include "Scene/Transform.h"
+#include "Scene/CameraComponent.h"
+#include "Scene/ModelRenderer.h"
+
 namespace Forge
 {
 

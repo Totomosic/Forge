@@ -5,10 +5,11 @@
 namespace Forge
 {
 
-	void Renderer3D::BeginScene(const CameraData& camera)
+	void Renderer3D::BeginScene(const CameraData& camera, const std::vector<LightSource>& lightSources)
 	{
 		m_Context.Reset();
 		m_Context.SetCamera(camera);
+		m_Context.SetLightSources(lightSources);
 	}
 
 	void Renderer3D::EndScene()

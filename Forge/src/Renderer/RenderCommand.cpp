@@ -49,7 +49,7 @@ namespace Forge
 
 	void RenderCommand::DrawIndexed(const Ref<VertexArray>& vertexArray)
 	{
-		size_t count = vertexArray->GetIndexBuffer()->GetCount();
+		uint32_t count = vertexArray->GetIndexBuffer()->GetCount();
 		vertexArray->Bind();
 		glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
 	}

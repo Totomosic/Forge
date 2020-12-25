@@ -24,7 +24,8 @@ project "Forge"
 		"../%{IncludeDirs.ImGui}",
         "../%{IncludeDirs.spdlog}",
         "../%{IncludeDirs.glm}",
-        "src"
+        "../%{IncludeDirs.entt}",
+        "src",
     }
 
     links

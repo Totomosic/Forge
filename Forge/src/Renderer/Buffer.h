@@ -88,13 +88,13 @@ namespace Forge
 		using Handle = Detail::ScopedId<Detail::BufferDestructor>;
 
 		Handle m_Handle;
-		size_t m_IndexCount;
+		uint32_t m_IndexCount;
 
 	public:
 		IndexBuffer();
 		IndexBuffer(const Type* data, size_t sizeBytes);
 
-		inline size_t GetCount() const { return m_IndexCount; }
+		inline uint32_t GetCount() const { return m_IndexCount; }
 
 		void Bind() const;
 		void Unbind() const;

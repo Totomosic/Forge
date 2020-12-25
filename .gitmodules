@@ -10,3 +10,6 @@
 [submodule "Forge/vendor/spdlog"]
 	path = Forge/vendor/spdlog
 	url = https://github.com/Totomosic/spdlog.git
+[submodule "Forge/vendor/entt"]
+	path = Forge/vendor/entt
+	url = https://github.com/Totomosic/entt.git

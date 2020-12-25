@@ -21,6 +21,7 @@ project "Sandbox"
 		"../%{IncludeDirs.ImGui}",
         "../%{IncludeDirs.spdlog}",
         "../%{IncludeDirs.glm}",
+        "../%{IncludeDirs.entt}",
         "../%{IncludeDirs.Forge}",
     }
 

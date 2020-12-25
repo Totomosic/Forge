@@ -1,6 +1,5 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/ext.hpp>
 
 #include "Forge.h"
@@ -39,22 +38,25 @@ int main()
 	RenderCommand::Init();
 	Renderer3D renderer;
 
+	Scene scene;
+	Entity camera = scene.CreateEntity();
+	camera.AddComponent<CameraComponent>(glm::ortho(0.0f, float(window.GetWidth()), 0.0f, float(window.GetHeight())));
+	// camera.GetComponent<TransformComponent>().SetPosition({ 0, 0, 10 });
+
 	Ref<Model> model = Model::Create(GraphicsCache::SquareMesh(), GraphicsCache::DefaultColorMaterial(COLOR_BLACK));
+	Entity square = scene.CreateEntity();
+	square.AddComponent<ModelRendererComponent>(model);
+	square.GetComponent<TransformComponent>().SetScale({ 100, 100, 1 });
 
 	RenderCommand::SetClearColor(COLOR_RED);
-
-	CameraData camera;
-	camera.ViewMatrix = glm::mat4(1.0f);
-	camera.ProjectionMatrix = glm::ortho(0.0f, float(window.GetWidth()), 0.0f, float(window.GetHeight()));
 
 	while (running)
 	{
 		RenderCommand::Clear();
-		
-		renderer.BeginScene(camera);
-		renderer.RenderModel(model, glm::translate(glm::mat4(1.0f), glm::vec3{ Input::GetMousePosition(), 0.0f }) * glm::scale(glm::mat4(1.0f), glm::vec3{ 100, 100, 1 }));
-		renderer.RenderModel(model, glm::translate(glm::mat4(1.0f), glm::vec3{ Input::GetMousePosition() + glm::vec2{ 150, 75 }, 0.0f }) * glm::scale(glm::mat4(1.0f), glm::vec3{ 200, 100, 1 }));
-		renderer.EndScene();
+	
+		square.GetComponent<TransformComponent>().SetPosition({ Input::GetMousePosition(), 0 });
+
+		scene.OnUpdate({}, renderer);
 		renderer.Flush();
 
 		window.Update();
