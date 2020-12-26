@@ -9,6 +9,12 @@
 namespace Forge
 {
 
+	FORGE_API enum class Space
+	{
+		World,
+		Local,
+	};
+
 	class FORGE_API TransformComponent
 	{
 	private:
@@ -52,7 +58,7 @@ namespace Forge
 
 		inline glm::vec3 GetForward() const
 		{
-			return GetRotation() * glm::vec3{ 0, 0, 1.0f };
+			return GetRotation() * glm::vec3{ 0, 0, -1.0f };
 		}
 
 		inline glm::vec3 GetRight() const
@@ -75,8 +81,10 @@ namespace Forge
 			SetRotation(GetRotation() * rotation);
 		}
 
-		inline void Rotate(float angle, const glm::vec3& axis)
+		inline void Rotate(float angle, glm::vec3 axis, Space space = Space::Local)
 		{
+			if (space == Space::World)
+				axis = glm::inverse(GetRotation()) * axis;
 			Rotate(glm::angleAxis(angle, axis));
 		}
 

@@ -71,6 +71,7 @@ namespace Forge
 		inline uint32_t GetWidth() const { return m_Data.Width; }
 		inline uint32_t GetHeight() const { return m_Data.Height; }
 		inline void* GetNativeHandle() const { return (void*)m_Handle.get(); }
+		inline float GetAspectRatio() const { return float(GetWidth()) / float(GetHeight()); }
 
 		void Update();
 

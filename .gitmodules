@@ -13,3 +13,6 @@
 [submodule "Forge/vendor/entt"]
 	path = Forge/vendor/entt
 	url = https://github.com/Totomosic/entt.git
+[submodule "Forge/vendor/tinygltf"]
+	path = Forge/vendor/tinygltf
+	url = https://github.com/syoyo/tinygltf.git

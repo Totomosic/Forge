@@ -1,6 +1,7 @@
 #pragma once
 #include "ForgePch.h"
 #include "Scene.h"
+#include "Transform.h"
 
 #include <glm/glm.hpp>
 #include <entt/entt.hpp>
@@ -50,6 +51,8 @@ namespace Forge
 			FORGE_ASSERT(HasComponent<T>(), "Component does not exist");
 			m_Scene->m_Registry.remove<T>(m_Handle);
 		}
+
+		inline TransformComponent& GetTransform() { return GetComponent<TransformComponent>(); }
 
 		inline bool operator==(const Entity& other) const { return m_Handle == other.m_Handle && m_Scene == other.m_Scene; }
 		inline bool operator!=(const Entity& other) const { return !(*this == other); }

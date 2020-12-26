@@ -80,6 +80,12 @@ namespace Forge
         return glm::vec2{ float(x), s_Window->GetHeight() - float(y) };
     }
 
+    glm::vec2 Input::GetRelMousePosition()
+    {
+        glm::vec2 mousePos = GetMousePosition();
+        return { mousePos.x - s_LastMousePos.x, s_LastMousePos.y - (s_Window->GetHeight() - mousePos.y) };
+    }
+
     float Input::GetMouseX()
     {
         return GetMousePosition().x;

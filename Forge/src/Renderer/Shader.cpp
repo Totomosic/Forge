@@ -6,6 +6,7 @@
 
 #include "Utils/FileUtils.h"
 #include "Utils/StringUtils.h"
+#include "ShaderLibrary.h"
 
 namespace Forge
 {
@@ -13,7 +14,7 @@ namespace Forge
     Shader::Shader(const std::string& vertexSource, const std::string& fragmentSource)
         : m_Handle()
     {
-        Init(vertexSource, fragmentSource);
+        Init(PreprocessShaderSource(vertexSource), PreprocessShaderSource(fragmentSource));
     }
 
     void Shader::Bind() const
@@ -138,6 +139,9 @@ namespace Forge
 
     void Shader::Init(const std::string& vertexSource, const std::string& fragmentSource)
     {
+        FORGE_INFO("VERTEX SHADER SOURCE\n{}", vertexSource);
+        FORGE_INFO("FRAGMENT SHADER SOURCE\n{}", fragmentSource);
+
         uint32_t vertexShader = glCreateShader(GL_VERTEX_SHADER);
         uint32_t fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
@@ -186,9 +190,33 @@ namespace Forge
         if (it != m_UniformLocations.end())
             return it->second;
         int location = glGetUniformLocation(m_Handle.Id, name.c_str());
-        FORGE_ASSERT(location >= 0, "Unable to find uniform: {}", name);
+        FORGE_WARN("Unable to find uniform: {}", name);
         m_UniformLocations[name] = location;
         return location;
+    }
+
+    std::string Shader::PreprocessShaderSource(const std::string& source)
+    {
+        std::string result = source;
+        size_t directiveStart = result.find("#include ");
+        while (directiveStart != std::string::npos)
+        {
+            size_t quotePosition = directiveStart + strlen("#include ");
+            char quoteCharacter = result[quotePosition];
+            char endQuoteCharacter = quoteCharacter;
+            if (endQuoteCharacter == '<')
+                endQuoteCharacter = '>';
+            size_t end = result.find_first_of(endQuoteCharacter, quotePosition + 1);
+            FORGE_ASSERT(end != std::string::npos, "Invalid #include directive");
+
+            std::string filename = result.substr(quotePosition + 1, end - quotePosition - 1);
+            FORGE_ASSERT(ShaderLibrary::HasShaderSource(filename), "Invalid include file {}", filename);
+            result.erase(directiveStart, end - directiveStart + 1);
+            result.insert(directiveStart, ShaderLibrary::GetShaderSource(filename));
+
+            directiveStart = result.find("#include ");
+        }
+        return result;
     }
 
 }

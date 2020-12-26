@@ -1,0 +1,27 @@
+#include <Lighting.h>
+
+layout (location = 0) out vec4 f_FinalColor;
+
+uniform sampler2D u_Texture;
+uniform LightSource u_LightSources[MAX_LIGHT_COUNT];
+uniform int u_UsedLightSources;
+
+in vec3 f_Position;
+in vec3 f_Normal;
+in vec2 f_TexCoord;
+
+void main()
+{
+    vec3 color = vec3(0.0);
+
+    for (int i = 0; i < u_UsedLightSources; i++)
+    {
+        vec3 lightDirection = normalize(u_LightSources[i].Position - f_Position);
+        vec3 normal = normalize(f_Normal);
+        float diffusePower = max(dot(normal, lightDirection), 0.0);
+        vec4 diffuseColor = diffusePower * u_LightSources[i].Color;
+        color += diffuseColor.xyz + u_LightSources[i].Ambient * u_LightSources[i].Color.xyz;
+    }
+
+    f_FinalColor = vec4(color, 1.0) * texture(u_Texture, f_TexCoord);
+}

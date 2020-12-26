@@ -22,6 +22,7 @@ namespace Forge
 
 	void VertexArray::AddVertexBuffer(const Ref<VertexBuffer>& buffer)
 	{
+		FORGE_ASSERT(m_CurrentAttributeIndex >= 0, "Cannot mix calls to different overloads of AddVertexBuffer");
 		Bind();
 		buffer->Bind();
 
@@ -32,6 +33,23 @@ namespace Forge
 			glEnableVertexAttribArray(m_CurrentAttributeIndex);
 			glVertexAttribPointer(m_CurrentAttributeIndex, GetComponentCount(attribute.Type), attribute.GlType, attribute.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)attribute.Offset);
 			m_CurrentAttributeIndex++;
+		}
+
+		m_VertexBuffers.push_back(buffer);
+	}
+
+	void VertexArray::AddVertexBuffer(int index, const Ref<VertexBuffer>& buffer)
+	{
+		m_CurrentAttributeIndex = -1;
+		Bind();
+		buffer->Bind();
+
+		const BufferLayout& layout = buffer->GetLayout();
+
+		for (const VertexAttribute& attribute : layout)
+		{
+			glEnableVertexAttribArray(index);
+			glVertexAttribPointer(index, GetComponentCount(attribute.Type), attribute.GlType, attribute.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)attribute.Offset);
 		}
 
 		m_VertexBuffers.push_back(buffer);

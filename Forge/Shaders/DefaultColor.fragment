@@ -1,0 +1,8 @@
+layout (location = 0) out vec4 f_FinalColor;
+
+uniform vec4 u_Color;
+
+void main()
+{
+    f_FinalColor = u_Color;
+}

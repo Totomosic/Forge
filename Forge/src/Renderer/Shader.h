@@ -56,6 +56,8 @@ namespace Forge
 	private:
 		void Init(const std::string& vertexSource, const std::string& fragmentSource);
 		int GetUniformLocation(const std::string& name);
+		
+		static std::string PreprocessShaderSource(const std::string& source);
 
 	};
 

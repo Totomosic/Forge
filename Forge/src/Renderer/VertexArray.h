@@ -37,6 +37,7 @@ namespace Forge
 		void Unbind() const;
 
 		void AddVertexBuffer(const Ref<VertexBuffer>& buffer);
+		void AddVertexBuffer(int index, const Ref<VertexBuffer>& buffer);
 		void SetIndexBuffer(const Ref<IndexBuffer>& buffer);
 
 	public:

@@ -24,6 +24,7 @@ namespace Forge
 	void RendererContext::Reset()
 	{
 		m_LightSources.clear();
+		m_NextTextureSlot = 0;
 	}
 
 	ShaderRequirements RendererContext::GetShaderRequirements(const Ref<Shader>& shader)
@@ -61,8 +62,16 @@ namespace Forge
 				shader->SetUniform(uniformBase + ".Direction", m_LightSources[i].Direction);
 				shader->SetUniform(uniformBase + ".Attenuation", m_LightSources[i].Attenuation);
 				shader->SetUniform(uniformBase + ".Color", m_LightSources[i].Color);
+				shader->SetUniform(uniformBase + ".Ambient", m_LightSources[i].Ambient);
 			}
 		}
+	}
+
+	int RendererContext::BindTexture(const Ref<Texture>& texture)
+	{
+		FORGE_ASSERT(m_NextTextureSlot < 32, "Too many textures bound");
+		texture->Bind(m_NextTextureSlot);
+		return m_NextTextureSlot++;
 	}
 
 }

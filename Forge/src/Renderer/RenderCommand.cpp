@@ -10,7 +10,7 @@ namespace Forge
 		{
 			switch (severity)
 			{
-			case GL_DEBUG_SEVERITY_HIGH: FORGE_FATAL(message); return;
+			case GL_DEBUG_SEVERITY_HIGH: FORGE_ASSERT(false, message); return;
 			case GL_DEBUG_SEVERITY_MEDIUM: FORGE_ERROR(message); return;
 			case GL_DEBUG_SEVERITY_LOW: FORGE_WARN(message); return;
 			case GL_DEBUG_SEVERITY_NOTIFICATION: FORGE_INFO(message); return;

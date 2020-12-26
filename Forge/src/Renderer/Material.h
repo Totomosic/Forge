@@ -1,5 +1,6 @@
 #pragma once
 #include "Shader.h"
+#include "Texture.h"
 #include "RendererContext.h"
 
 namespace Forge
@@ -25,7 +26,13 @@ namespace Forge
 
 		virtual void Apply(const std::string& name, const Ref<Shader>& shader, RendererContext& context) const override
 		{
-			shader->SetUniform(name, Value);
+			if constexpr (std::is_same_v<T, Ref<Texture2D>> || std::is_same_v<T, Ref<Texture>>)
+			{
+				int slot = context.BindTexture(Value);
+				shader->SetUniform(name, slot);
+			}
+			else
+				shader->SetUniform(name, Value);
 		}
 	};
 

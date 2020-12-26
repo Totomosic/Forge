@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <functional>
+#include <type_traits>
 
 #include "Logging.h"
 

@@ -25,6 +25,7 @@ project "Forge"
         "../%{IncludeDirs.spdlog}",
         "../%{IncludeDirs.glm}",
         "../%{IncludeDirs.entt}",
+        "../%{IncludeDirs.tinygltf}",
         "src",
     }
 

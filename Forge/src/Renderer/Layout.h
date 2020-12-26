@@ -118,7 +118,10 @@ namespace Forge
 		uint32_t m_Stride = 0;
 
 	public:
+		BufferLayout() = default;
 		BufferLayout(std::initializer_list<VertexAttribute> attributes);
+
+		void AddAttribute(const VertexAttribute& attribute);
 
 		inline uint32_t GetStride() const { return m_Stride; }
 

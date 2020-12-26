@@ -17,12 +17,6 @@ int main()
 
 	Input::SetWindow(&window);
 
-	Input::OnMouseMoved.AddEventListener([&](const MouseMove& evt)
-	{
-		std::cout << Input::GetMouseX() << ", " << Input::GetMouseY() << std::endl;
-		return false;
-	});
-
 	window.Events.Close.AddEventListener([&](const WindowClose& evt)
 	{
 		running = false;
@@ -38,23 +32,50 @@ int main()
 	RenderCommand::Init();
 	Renderer3D renderer;
 
+	GltfReader reader("scene.gltf");
+
 	Scene scene;
 	Entity camera = scene.CreateEntity();
-	camera.AddComponent<CameraComponent>(glm::ortho(0.0f, float(window.GetWidth()), 0.0f, float(window.GetHeight())));
-	// camera.GetComponent<TransformComponent>().SetPosition({ 0, 0, 10 });
+	camera.AddComponent<CameraComponent>(glm::perspective(PI / 3.0f, window.GetAspectRatio(), 0.1f, 1000.0f));
+	camera.GetComponent<TransformComponent>().SetPosition({ 0, 0, 10 });
 
-	Ref<Model> model = Model::Create(GraphicsCache::SquareMesh(), GraphicsCache::DefaultColorMaterial(COLOR_BLACK));
-	Entity square = scene.CreateEntity();
-	square.AddComponent<ModelRendererComponent>(model);
-	square.GetComponent<TransformComponent>().SetScale({ 100, 100, 1 });
+	Ref<Texture2D> texture = Texture2D::Create("textures/material_0_diffuse.png");
 
-	RenderCommand::SetClearColor(COLOR_RED);
+	for (const Ref<Mesh>& mesh : reader.GetMeshes())
+	{
+		Ref<Model> model = Model::Create(mesh, GraphicsCache::LitTextureMaterial(texture));
+		Entity entity = scene.CreateEntity();
+		entity.AddComponent<ModelRendererComponent>(model);
+	}
+
+	Entity sun = scene.CreateEntity();
+	sun.GetTransform().SetPosition({ 0, 100, 0 });
+	sun.AddComponent<LightSourceComponent>();
+
+	RenderCommand::SetClearColor(COLOR_BLACK);
 
 	while (running)
 	{
+		TransformComponent& transform = camera.GetTransform();
+		float speed = 0.1f;
+		if (Input::IsKeyDown(KeyCode::W))
+			transform.Translate(transform.GetForward() * speed);
+		if (Input::IsKeyDown(KeyCode::S))
+			transform.Translate(transform.GetForward() * -speed);
+		if (Input::IsKeyDown(KeyCode::D))
+			transform.Translate(transform.GetRight() * speed);
+		if (Input::IsKeyDown(KeyCode::A))
+			transform.Translate(transform.GetRight() * -speed);
+
+		if (Input::IsMouseButtonDown(MouseButton::Left))
+		{
+			float sensitivity = 0.003f;
+			glm::vec2 delta = Input::GetRelMousePosition();
+			transform.Rotate(-delta.x * sensitivity, glm::vec3{ 0, 1, 0 }, Space::World);
+			transform.Rotate(delta.y * sensitivity, glm::vec3{ 1, 0, 0 }, Space::Local);
+		}
+
 		RenderCommand::Clear();
-	
-		square.GetComponent<TransformComponent>().SetPosition({ Input::GetMousePosition(), 0 });
 
 		scene.OnUpdate({}, renderer);
 		renderer.Flush();

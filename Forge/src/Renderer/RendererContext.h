@@ -2,6 +2,7 @@
 #include "CameraData.h"
 #include "Shader.h"
 #include "Lighting.h"
+#include "Texture.h"
 
 namespace Forge
 {
@@ -12,7 +13,7 @@ namespace Forge
 	constexpr const char ModelMatrixUniformName[] = "u_ModelMatrix";
 
 	constexpr const char LightSourceArrayBase[] = "u_LightSources";
-	constexpr const char LightSourceArrayUniformName[] = "u_LightSources[0]";
+	constexpr const char LightSourceArrayUniformName[] = "u_LightSources[0].Position";
 	constexpr const char UsedLightSourcesUniformName[] = "u_UsedLightSources";
 
 	struct FORGE_API ShaderRequirements
@@ -34,6 +35,7 @@ namespace Forge
 		glm::mat4 m_ProjViewMatrix;
 		
 		std::vector<LightSource> m_LightSources;
+		int m_NextTextureSlot;
 
 		std::unordered_map<const Shader*, ShaderRequirements> m_RequirementsMap;
 
@@ -45,6 +47,7 @@ namespace Forge
 
 		ShaderRequirements GetShaderRequirements(const Ref<Shader>& shader);
 		void BindShader(const Ref<Shader>& shader, const ShaderRequirements& requirements);
+		int BindTexture(const Ref<Texture>& texture);
 	};
 
 }

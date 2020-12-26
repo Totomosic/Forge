@@ -10,6 +10,12 @@ namespace Forge
 		Init();
 	}
 
+	void BufferLayout::AddAttribute(const VertexAttribute& attribute)
+	{
+		m_Attributes.push_back(attribute);
+		Init();
+	}
+
 	BufferLayout BufferLayout::Default()
 	{
 		return BufferLayout({

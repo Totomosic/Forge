@@ -34,6 +34,7 @@ namespace Forge
 
 		static bool IsMouseButtonDown(MouseButton button);
 		static glm::vec2 GetMousePosition();
+		static glm::vec2 GetRelMousePosition();
 		static float GetMouseX();
 		static float GetMouseY();
 	};

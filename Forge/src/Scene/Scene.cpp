@@ -5,6 +5,7 @@
 #include "Transform.h"
 #include "CameraComponent.h"
 #include "ModelRenderer.h"
+#include "Components.h"
 
 namespace Forge
 {
@@ -48,7 +49,21 @@ namespace Forge
             data.ProjectionMatrix = cameraComponent.ProjectionMatrix;
             data.ViewMatrix = transform.GetInverseMatrix();
 
-            renderer.BeginScene(data);
+            std::vector<LightSource> lightSources;
+            for (auto entity : m_Registry.view<TransformComponent, LightSourceComponent>())
+            {
+                auto [transform, light] = m_Registry.get<TransformComponent, LightSourceComponent>(entity);
+                LightSource source;
+                source.Position = transform.GetPosition();
+                source.Direction = transform.GetForward();
+                source.Ambient = light.Ambient;
+                source.Color = light.Color;
+                source.Attenuation = light.Attenuation;
+                source.Type = light.Type;
+                lightSources.push_back(source);
+            }
+
+            renderer.BeginScene(data, lightSources);
             for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent>())
             {
                 auto [transform, model] = m_Registry.get<TransformComponent, ModelRendererComponent>(entity);
