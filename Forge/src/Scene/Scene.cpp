@@ -5,13 +5,14 @@
 #include "Transform.h"
 #include "CameraComponent.h"
 #include "ModelRenderer.h"
+#include "AnimatorComponent.h"
 #include "Components.h"
 
 namespace Forge
 {
 
-    Scene::Scene()
-        : m_Registry(), m_PrimaryCamera(entt::null)
+    Scene::Scene(const Ref<Framebuffer>& defaultFramebuffer)
+        : m_Registry(), m_PrimaryCamera(entt::null), m_DefaultFramebuffer(defaultFramebuffer)
     {
     }
 
@@ -48,6 +49,28 @@ namespace Forge
             auto [transform, cameraComponent] = m_Registry.get<TransformComponent, CameraComponent>(camera);
             data.ProjectionMatrix = cameraComponent.ProjectionMatrix;
             data.ViewMatrix = transform.GetInverseMatrix();
+            data.ClippingPlanes = cameraComponent.ClippingPlanes;
+
+            for (auto entity : m_Registry.view<AnimatorComponent>())
+            {
+                auto& animation = m_Registry.get<AnimatorComponent>(entity);
+                animation.OnUpdate(ts);
+                if (m_Registry.has<ModelRendererComponent>(entity))
+                {
+                    auto& model = m_Registry.get<ModelRendererComponent>(entity);
+                    for (auto& model : model.Model->GetSubModels())
+                    {
+                        if (model.Mesh->IsAnimated())
+                        {
+                            const Ref<AnimatedMesh>& animatedMesh = (const Ref<AnimatedMesh>&)model.Mesh;
+                            if (animatedMesh->IsCompatible(animation.GetCurrentAnimation()))
+                            {
+                                animation.Apply(animatedMesh);
+                            }
+                        }
+                    }
+                }
+            }
 
             std::vector<LightSource> lightSources;
             for (auto entity : m_Registry.view<TransformComponent, LightSourceComponent>())
@@ -63,7 +86,9 @@ namespace Forge
                 lightSources.push_back(source);
             }
 
-            renderer.BeginScene(data, lightSources);
+            Ref<Framebuffer> framebuffer = cameraComponent.RenderTarget ? cameraComponent.RenderTarget : m_DefaultFramebuffer;
+
+            renderer.BeginScene(framebuffer, data, lightSources);
             for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent>())
             {
                 auto [transform, model] = m_Registry.get<TransformComponent, ModelRendererComponent>(entity);

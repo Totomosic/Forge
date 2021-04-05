@@ -3,6 +3,8 @@
 #include "EventEmitter.h"
 #include "GraphicsContext.h"
 #include "WindowEvents.h"
+#include "Viewport.h"
+#include "Renderer/Framebuffer.h"
 
 #include <iostream>
 #include <glad/glad.h>
@@ -47,9 +49,8 @@ namespace Forge
 		{
 		public:
 			std::string Title;
-			uint32_t Width;
-			uint32_t Height;
 			WindowEvents Events;
+			Ref<Forge::Framebuffer> Framebuffer;
 		};
 
 		using Handle = std::unique_ptr<GLFWwindow, Detail::WindowDestructor>;
@@ -67,11 +68,14 @@ namespace Forge
 
 		inline const GraphicsContext& GetContext() const { return *m_Context; }
 		inline GraphicsContext& GetContext() { return *m_Context; }
+		inline const Ref<Framebuffer>& GetFramebuffer() const { return m_Data.Framebuffer; }
 
-		inline uint32_t GetWidth() const { return m_Data.Width; }
-		inline uint32_t GetHeight() const { return m_Data.Height; }
+		inline bool ShouldClose() const { return m_ShouldClose; }
+		inline uint32_t GetWidth() const { return GetFramebuffer()->GetWidth(); }
+		inline uint32_t GetHeight() const { return GetFramebuffer()->GetHeight(); }
 		inline void* GetNativeHandle() const { return (void*)m_Handle.get(); }
-		inline float GetAspectRatio() const { return float(GetWidth()) / float(GetHeight()); }
+		inline float GetAspectRatio() const { return GetFramebuffer()->GetAspect(); }
+		inline const Viewport& GetViewport() const { return GetFramebuffer()->GetViewport(); }
 
 		void Update();
 

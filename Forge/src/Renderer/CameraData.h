@@ -11,6 +11,7 @@ namespace Forge
 	public:
 		glm::mat4 ProjectionMatrix;
 		glm::mat4 ViewMatrix;
+		std::vector<glm::vec4> ClippingPlanes;
 	};
 
 }

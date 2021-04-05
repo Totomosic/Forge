@@ -7,13 +7,15 @@
 namespace Forge
 {
 
+	class Framebuffer;
+
 	namespace Detail
 	{
 
 		struct FORGE_API TextureDestructor
 		{
 		public:
-			void operator()(uint32_t id) const
+			inline void operator()(uint32_t id) const
 			{
 				glDeleteTextures(1, &id);
 			}
@@ -74,6 +76,27 @@ namespace Forge
 
 	private:
 		void Init(const void* data, uint32_t width, uint32_t height, uint32_t format);
+
+	};
+
+	enum class TextureComponent
+	{
+		Color,
+		Depth,
+	};
+
+	class FORGE_API RenderTexture : public Texture2D
+	{
+	private:
+		Ref<Framebuffer> m_Framebuffer;
+
+	public:
+		RenderTexture(uint32_t width, uint32_t height, TextureComponent component = TextureComponent::Color);
+
+		inline const Ref<Framebuffer>& GetFramebuffer() const { return m_Framebuffer; }
+
+	public:
+		static Ref<RenderTexture> Create(uint32_t width, uint32_t height, TextureComponent component = TextureComponent::Color);
 
 	};
 

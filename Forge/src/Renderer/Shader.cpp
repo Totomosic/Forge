@@ -11,10 +11,10 @@
 namespace Forge
 {
 
-    Shader::Shader(const std::string& vertexSource, const std::string& fragmentSource)
+    Shader::Shader(const std::string& vertexSource, const std::string& fragmentSource, const ShaderDefines& defines)
         : m_Handle()
     {
-        Init(PreprocessShaderSource(vertexSource), PreprocessShaderSource(fragmentSource));
+        Init(PreprocessShaderSource(vertexSource, defines), PreprocessShaderSource(fragmentSource, defines));
     }
 
     void Shader::Bind() const
@@ -82,17 +82,17 @@ namespace Forge
         return glGetUniformLocation(m_Handle.Id, name.c_str()) >= 0;
     }
 
-    Ref<Shader> Shader::CreateFromSource(const std::string& vertexSource, const std::string& fragmentSource)
+    Ref<Shader> Shader::CreateFromSource(const std::string& vertexSource, const std::string& fragmentSource, const ShaderDefines& defines)
     {
-        return CreateRef<Shader>(vertexSource, fragmentSource);
+        return CreateRef<Shader>(vertexSource, fragmentSource, defines);
     }
 
-    Ref<Shader> Shader::CreateFromFile(const std::string& vertexFilePath, const std::string& fragmentFilePath)
+    Ref<Shader> Shader::CreateFromFile(const std::string& vertexFilePath, const std::string& fragmentFilePath, const ShaderDefines& defines)
     {
-        return CreateFromSource(FileUtils::ReadTextFile(vertexFilePath), FileUtils::ReadTextFile(fragmentFilePath));
+        return CreateFromSource(FileUtils::ReadTextFile(vertexFilePath), FileUtils::ReadTextFile(fragmentFilePath), defines);
     }
 
-    Ref<Shader> Shader::CreateFromFile(const std::string& shaderFilePath)
+    Ref<Shader> Shader::CreateFromFile(const std::string& shaderFilePath, const ShaderDefines& defines)
     {
         enum class ShaderType
         {
@@ -129,12 +129,7 @@ namespace Forge
                 fragmentSource << part.substr(start);
         }
 
-        FORGE_INFO("VERTEX SOURCE");
-        FORGE_INFO(vertexSource.str());
-        FORGE_INFO("FRAGMENT SOURCE");
-        FORGE_INFO(fragmentSource.str());
-
-        return CreateFromSource(vertexSource.str(), fragmentSource.str());
+        return CreateFromSource(vertexSource.str(), fragmentSource.str(), defines);
     }
 
     void Shader::Init(const std::string& vertexSource, const std::string& fragmentSource)
@@ -190,12 +185,15 @@ namespace Forge
         if (it != m_UniformLocations.end())
             return it->second;
         int location = glGetUniformLocation(m_Handle.Id, name.c_str());
-        FORGE_WARN("Unable to find uniform: {}", name);
+        if (location < 0)
+        {
+            FORGE_WARN("Unable to find uniform: {}", name);
+        }
         m_UniformLocations[name] = location;
         return location;
     }
 
-    std::string Shader::PreprocessShaderSource(const std::string& source)
+    std::string Shader::PreprocessShaderSource(const std::string& source, const ShaderDefines& defines)
     {
         std::string result = source;
         size_t directiveStart = result.find("#include ");
@@ -216,6 +214,19 @@ namespace Forge
 
             directiveStart = result.find("#include ");
         }
+
+        for (const auto& pair : defines)
+        {
+            size_t start = result.find(pair.first);
+            while (start != std::string::npos)
+            {
+                size_t end = start + pair.first.size();
+                result.erase(start, pair.first.size());
+                result.insert(start, pair.second);
+                start = result.find(pair.first);
+            }
+        }
+
         return result;
     }
 

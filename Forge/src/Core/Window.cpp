@@ -25,9 +25,8 @@ namespace Forge
 
 	void Window::InitFromProps(const WindowProps& props)
 	{
-		m_Data.Width = props.Width;
-		m_Data.Height = props.Height;
 		m_Data.Title = props.Title;
+		m_Data.Framebuffer = Framebuffer::CreateWindowFramebuffer(props.Width, props.Height);
 
 		if (!s_GlfwInitialized)
 		{
@@ -39,7 +38,7 @@ namespace Forge
 #ifdef FORGE_DEBUG
 		glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 #endif
-		m_Handle = Handle(glfwCreateWindow(int(m_Data.Width), int(m_Data.Height), m_Data.Title.c_str(), nullptr, nullptr));
+		m_Handle = Handle(glfwCreateWindow(int(props.Width), int(props.Height), m_Data.Title.c_str(), nullptr, nullptr));
 
 		m_Context = std::make_unique<GraphicsContext>(m_Handle.get());
 		m_Context->Init();
@@ -51,13 +50,12 @@ namespace Forge
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 			WindowResize evt;
-			evt.OldWidth = data.Width;
-			evt.OldHeight = data.Height;
+			evt.OldWidth = data.Framebuffer->GetWidth();
+			evt.OldHeight = data.Framebuffer->GetHeight();
 			evt.NewWidth = width;
 			evt.NewHeight = height;
 
-			data.Width = width;
-			data.Height = height;
+			data.Framebuffer->SetSize(uint32_t(width), uint32_t(height));
 
 			data.Events.Resize.Trigger(evt);
 		});

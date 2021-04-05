@@ -16,6 +16,13 @@ namespace Forge
 	constexpr const char LightSourceArrayUniformName[] = "u_LightSources[0].Position";
 	constexpr const char UsedLightSourcesUniformName[] = "u_UsedLightSources";
 
+	constexpr const char JointTransformsBase[] = "u_JointTransforms";
+	constexpr const char JointTransformsUniformName[] = "u_JointTransforms[0]";
+
+	constexpr const char ClippingPlanesArrayBase[] = "u_ClippingPlanes";
+	constexpr const char ClippingPlanesArrayUniformName[] = "u_ClippingPlanes[0]";
+	constexpr const char UsedClippingPlanesUniformName[] = "u_UsedClippingPlanes";
+
 	struct FORGE_API ShaderRequirements
 	{
 	public:
@@ -25,6 +32,8 @@ namespace Forge
 		bool ModelMatrix;
 
 		bool LightSources;
+		bool Animation;
+		bool ClippingPlanes;
 	};
 
 	class FORGE_API RendererContext
@@ -35,6 +44,7 @@ namespace Forge
 		glm::mat4 m_ProjViewMatrix;
 		
 		std::vector<LightSource> m_LightSources;
+		std::vector<glm::vec4> m_ClippingPlanes;
 		int m_NextTextureSlot;
 
 		std::unordered_map<const Shader*, ShaderRequirements> m_RequirementsMap;
@@ -43,6 +53,7 @@ namespace Forge
 		void SetCamera(const CameraData& camera);
 		void SetLightSources(const std::vector<LightSource>& lights);
 		void AddLightSource(const LightSource& light);
+		void SetClippingPlanes(const std::vector<glm::vec4>& planes);
 		void Reset();
 
 		ShaderRequirements GetShaderRequirements(const Ref<Shader>& shader);

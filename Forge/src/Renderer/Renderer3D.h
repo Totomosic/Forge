@@ -1,5 +1,6 @@
 #pragma once
 #include "RendererContext.h"
+#include "Framebuffer.h"
 #include "Model.h"
 
 namespace Forge
@@ -9,9 +10,10 @@ namespace Forge
 	{
 	private:
 		RendererContext m_Context;
+		Ref<Framebuffer> m_CurrentFramebuffer = nullptr;
 
 	public:
-		void BeginScene(const CameraData& camera, const std::vector<LightSource>& lightSources = {});
+		void BeginScene(const Ref<Framebuffer>& framebuffer, const CameraData& camera, const std::vector<LightSource>& lightSources = {});
 		void EndScene();
 		void Flush();
 

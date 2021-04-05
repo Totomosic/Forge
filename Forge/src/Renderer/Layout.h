@@ -12,6 +12,14 @@ namespace Forge
 		Int2,
 		Int3,
 		Int4,
+		Uint,
+		Uint2,
+		Uint3,
+		Uint4,
+		Ushort,
+		Ushort2,
+		Ushort3,
+		Ushort4,
 		Float,
 		Float2,
 		Float3,
@@ -27,17 +35,25 @@ namespace Forge
 		{
 		case ShaderDataType::Bool:
 		case ShaderDataType::Int:
+		case ShaderDataType::Uint:
+		case ShaderDataType::Ushort:
 		case ShaderDataType::Float:
 			return 1;
 		case ShaderDataType::Int2:
+		case ShaderDataType::Uint2:
+		case ShaderDataType::Ushort2:
 		case ShaderDataType::Float2:
 		case ShaderDataType::Mat2:
 			return 2;
 		case ShaderDataType::Int3:
+		case ShaderDataType::Uint3:
+		case ShaderDataType::Ushort3:
 		case ShaderDataType::Float3:
 		case ShaderDataType::Mat3:
 			return 3;
 		case ShaderDataType::Int4:
+		case ShaderDataType::Uint4:
+		case ShaderDataType::Ushort4:
 		case ShaderDataType::Float4:
 		case ShaderDataType::Mat4:
 			return 4;
@@ -55,20 +71,29 @@ namespace Forge
 		case ShaderDataType::Bool:
 			return 1 * sizeof(GLboolean);
 		case ShaderDataType::Int:
+		case ShaderDataType::Uint:
 		case ShaderDataType::Float:
 			return 1 * sizeof(GLfloat);
 		case ShaderDataType::Int2:
+		case ShaderDataType::Uint2:
 		case ShaderDataType::Float2:
 		case ShaderDataType::Mat2:
 			return 2 * sizeof(GLfloat);
 		case ShaderDataType::Int3:
+		case ShaderDataType::Uint3:
 		case ShaderDataType::Float3:
 		case ShaderDataType::Mat3:
 			return 3 * sizeof(GLfloat);
 		case ShaderDataType::Int4:
+		case ShaderDataType::Uint4:
 		case ShaderDataType::Float4:
 		case ShaderDataType::Mat4:
 			return 4 * sizeof(GLfloat);
+		case ShaderDataType::Ushort:
+		case ShaderDataType::Ushort2:
+		case ShaderDataType::Ushort3:
+		case ShaderDataType::Ushort4:
+			return GetComponentCount(type) * sizeof(GLushort);
 		default:
 			break;
 		}
@@ -87,6 +112,16 @@ namespace Forge
 		case ShaderDataType::Int3:
 		case ShaderDataType::Int4:
 			return GL_INT;
+		case ShaderDataType::Uint:
+		case ShaderDataType::Uint2:
+		case ShaderDataType::Uint3:
+		case ShaderDataType::Uint4:
+			return GL_UNSIGNED_INT;
+		case ShaderDataType::Ushort:
+		case ShaderDataType::Ushort2:
+		case ShaderDataType::Ushort3:
+		case ShaderDataType::Ushort4:
+			return GL_UNSIGNED_SHORT;
 		case ShaderDataType::Float:		
 		case ShaderDataType::Float2:
 		case ShaderDataType::Mat2:		

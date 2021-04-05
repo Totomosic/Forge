@@ -1,5 +1,6 @@
 #pragma once
 #include "ForgePch.h"
+#include "Renderer/Framebuffer.h"
 
 #include <glm/glm.hpp>
 
@@ -10,6 +11,8 @@ namespace Forge
 	{
 	public:
 		glm::mat4 ProjectionMatrix;
+		Ref<Framebuffer> RenderTarget = nullptr;
+		std::vector<glm::vec4> ClippingPlanes = {};
 
 	public:
 		CameraComponent() = default;

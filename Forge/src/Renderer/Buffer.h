@@ -10,7 +10,7 @@ namespace Forge
 		struct FORGE_API BufferDestructor
 		{
 		public:
-			void operator()(uint32_t id) const
+			inline void operator()(uint32_t id) const
 			{
 				glDeleteBuffers(1, &id);
 			}
@@ -89,22 +89,24 @@ namespace Forge
 
 		Handle m_Handle;
 		uint32_t m_IndexCount;
+		uint32_t m_GlDataType;
 
 	public:
 		IndexBuffer();
-		IndexBuffer(const Type* data, size_t sizeBytes);
+		IndexBuffer(const Type* data, size_t sizeBytes, ShaderDataType type = ShaderDataType::Uint);
 
 		inline uint32_t GetCount() const { return m_IndexCount; }
+		inline uint32_t GetGlDataType() const { return m_GlDataType; }
 
 		void Bind() const;
 		void Unbind() const;
 
 	public:
-		static Ref<IndexBuffer> Create(size_t sizeBytes);
-		static Ref<IndexBuffer> Create(const Type* data, size_t sizeBytes);
+		static Ref<IndexBuffer> Create(size_t sizeBytes, ShaderDataType type = ShaderDataType::Uint);
+		static Ref<IndexBuffer> Create(const Type* data, size_t sizeBytes, ShaderDataType type = ShaderDataType::Uint);
 
 	private:
-		void Init(const Type* data, size_t sizeBytes);
+		void Init(const Type* data, size_t sizeBytes, ShaderDataType type);
 	};
 
 }

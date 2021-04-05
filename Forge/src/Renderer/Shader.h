@@ -13,13 +13,15 @@ namespace Forge
 		struct FORGE_API ShaderDestructor
 		{
 		public:
-			void operator()(uint32_t id)
+			inline void operator()(uint32_t id)
 			{
 				glDeleteProgram(id);
 			}
 		};
 
 	}
+
+	using ShaderDefines = std::unordered_map<std::string, std::string>;
 
 	class FORGE_API Shader
 	{
@@ -30,7 +32,7 @@ namespace Forge
 		std::unordered_map<std::string, int> m_UniformLocations;
 
 	public:
-		Shader(const std::string& vertexSource, const std::string& fragmentSource);
+		Shader(const std::string& vertexSource, const std::string& fragmentSource, const ShaderDefines& defines = {});
 
 		void Bind() const;
 		void Unbind() const;
@@ -49,15 +51,15 @@ namespace Forge
 		bool UniformExists(const std::string& name) const;
 
 	public:
-		static Ref<Shader> CreateFromSource(const std::string& vertexSource, const std::string& fragmentSource);
-		static Ref<Shader> CreateFromFile(const std::string& vertexFilePath, const std::string& fragmentFilePath);
-		static Ref<Shader> CreateFromFile(const std::string& shaderFilePath);
+		static Ref<Shader> CreateFromSource(const std::string& vertexSource, const std::string& fragmentSource, const ShaderDefines& defines = {});
+		static Ref<Shader> CreateFromFile(const std::string& vertexFilePath, const std::string& fragmentFilePath, const ShaderDefines& defines = {});
+		static Ref<Shader> CreateFromFile(const std::string& shaderFilePath, const ShaderDefines& defines = {});
 
 	private:
 		void Init(const std::string& vertexSource, const std::string& fragmentSource);
 		int GetUniformLocation(const std::string& name);
 		
-		static std::string PreprocessShaderSource(const std::string& source);
+		static std::string PreprocessShaderSource(const std::string& source, const ShaderDefines& defines);
 
 	};
 

@@ -6,58 +6,87 @@
 
 using namespace Forge;
 
+void AddJointEntity(Scene& scene, std::vector<Entity>& jointEntities, const Joint* joint, const glm::mat4& parentTransform, const std::vector<glm::mat4>& jointTransforms)
+{
+	glm::mat4 transform = parentTransform * jointTransforms[joint->Id];
+	glm::vec4 position = (transform)[3];
+	Entity entity = scene.CreateEntity();
+	entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::CubeMesh(), GraphicsCache::DefaultColorMaterial(COLOR_WHITE)));
+	entity.GetTransform().SetPosition(glm::vec3(position));
+
+	jointEntities[joint->Id] = entity;
+
+	for (const auto& child : joint->Children)
+		AddJointEntity(scene, jointEntities, child.get(), transform, jointTransforms);
+}
+
+void UpdateJointEntities(std::vector<Entity>& jointEntities, const Joint* joint, const glm::mat4& parentTransform, const std::vector<glm::mat4>& jointTransforms)
+{
+	glm::mat4 transform = parentTransform * jointTransforms[joint->Id];
+	glm::vec4 position = (transform)[3];
+	jointEntities[joint->Id].GetTransform().SetPosition(glm::vec3(position));
+
+	for (const auto& child : joint->Children)
+		UpdateJointEntities(jointEntities, child.get(), transform, jointTransforms);
+}
+
 int main()
 {
 	ForgeInstance::Init();
 
-	bool running = true;
-
 	WindowProps props;
-	Window window(props);
+	Application app(props);
 
-	Input::SetWindow(&window);
-
-	window.Events.Close.AddEventListener([&](const WindowClose& evt)
-	{
-		running = false;
-		return true;
-	});
-
-	window.Events.Resize.AddEventListener([](const WindowResize& evt)
-	{
-		RenderCommand::SetViewport(0, 0, evt.NewWidth, evt.NewHeight);
-		return false;
-	});
-	
-	RenderCommand::Init();
-	Renderer3D renderer;
-
-	GltfReader reader("scene.gltf");
-
-	Scene scene;
+	Scene& scene = app.CreateScene();
 	Entity camera = scene.CreateEntity();
-	camera.AddComponent<CameraComponent>(glm::perspective(PI / 3.0f, window.GetAspectRatio(), 0.1f, 1000.0f));
+	camera.AddComponent<CameraComponent>(glm::perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 1000.0f));
 	camera.GetComponent<TransformComponent>().SetPosition({ 0, 0, 10 });
 
-	Ref<Texture2D> texture = Texture2D::Create("textures/material_0_diffuse.png");
+	GltfReader reader("res/Dragon/scene.gltf");
+	Ref<Texture2D> texture = Texture2D::Create("res/Dragon/textures/material_0_diffuse.png");
+
+	std::vector<Entity> jointEntities;
+	Ref<AnimatedMesh> animatedMesh;
+	Entity animatedEntity;
 
 	for (const Ref<Mesh>& mesh : reader.GetMeshes())
 	{
-		Ref<Model> model = Model::Create(mesh, GraphicsCache::LitTextureMaterial(texture));
+		Ref<Material> material;
+		if (mesh->IsAnimated())
+			material = GraphicsCache::AnimatedLitTextureMaterial(((const Ref<AnimatedMesh>&)mesh)->GetJointCount(), texture);
+		else
+			material = GraphicsCache::LitTextureMaterial(texture);
+		Ref<Model> model = Model::Create(mesh, material);
 		Entity entity = scene.CreateEntity();
 		entity.AddComponent<ModelRendererComponent>(model);
+		// entity.AddComponent<ModelRendererComponent>(Model::Create(mesh, GraphicsCache::LitTextureMaterial(texture)));
+
+		//Entity stat = scene.CreateEntity();
+		//stat.AddComponent<ModelRendererComponent>(model);
+
+		if (mesh->IsAnimated())
+		{
+			animatedMesh = (const Ref<AnimatedMesh>&)mesh;
+			// entity.AddComponent<AnimatorComponent>().SetCurrentAnimation(reader.GetAnimation("idle"));
+
+			auto jointTransforms = entity.GetComponent<AnimatorComponent>().CalculateCurrentPose();
+			animatedEntity = entity;
+
+			jointEntities.resize(animatedMesh->GetJointCount());
+			AddJointEntity(scene, jointEntities, &animatedMesh->GetRootJoint(), glm::mat4(1.0f), jointTransforms);
+		}
 	}
 
 	Entity sun = scene.CreateEntity();
 	sun.GetTransform().SetPosition({ 0, 100, 0 });
 	sun.AddComponent<LightSourceComponent>();
 
-	RenderCommand::SetClearColor(COLOR_BLACK);
-
-	while (running)
+	while (!app.ShouldExit())
 	{
+		Timestep ts = app.GetTimestep();
+
 		TransformComponent& transform = camera.GetTransform();
-		float speed = 0.1f;
+		float speed = 10 * ts.Seconds();
 		if (Input::IsKeyDown(KeyCode::W))
 			transform.Translate(transform.GetForward() * speed);
 		if (Input::IsKeyDown(KeyCode::S))
@@ -75,12 +104,9 @@ int main()
 			transform.Rotate(delta.y * sensitivity, glm::vec3{ 1, 0, 0 }, Space::Local);
 		}
 
-		RenderCommand::Clear();
+		// UpdateJointEntities(jointEntities, &animatedMesh->GetRootJoint(), glm::mat4(1.0f), animatedEntity.GetComponent<AnimatorComponent>().CalculateCurrentPose());
 
-		scene.OnUpdate({}, renderer);
-		renderer.Flush();
-
-		window.Update();
+		app.OnUpdate();
 	}
 
 	return 0;

@@ -1,5 +1,6 @@
 #include "ForgePch.h"
 #include "RenderCommand.h"
+#include "ShaderLibrary.h"
 
 namespace Forge
 {
@@ -20,7 +21,7 @@ namespace Forge
 
 	void RenderCommand::Init()
 	{
-#ifdef FORGE_DEBUG
+#ifndef FORGE_DIST
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(Detail::OnGlError, nullptr);
@@ -30,6 +31,11 @@ namespace Forge
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+
+	void RenderCommand::BindDefaultFramebuffer()
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
 	void RenderCommand::SetClearColor(const Color& color)
@@ -47,11 +53,31 @@ namespace Forge
 		glViewport(x, y, width, height);
 	}
 
-	void RenderCommand::DrawIndexed(const Ref<VertexArray>& vertexArray)
+	void RenderCommand::EnableWireframe(bool enable)
+	{
+		if (enable)
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		else
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+
+	void RenderCommand::DrawIndexed(GLuint drawMode, const Ref<VertexArray>& vertexArray)
 	{
 		uint32_t count = vertexArray->GetIndexBuffer()->GetCount();
 		vertexArray->Bind();
-		glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
+		glDrawElements(drawMode, count, vertexArray->GetIndexBuffer()->GetGlDataType(), nullptr);
+	}
+
+	void RenderCommand::EnableClippingPlanes(int count)
+	{
+		for (int i = 0; i < count; i++)
+		{
+			glEnable(GL_CLIP_DISTANCE0 + i);
+		}
+		for (int i = count; i < MAX_CLIPPING_PLANES; i++)
+		{
+			glDisable(GL_CLIP_DISTANCE0 + i);
+		}
 	}
 
 }

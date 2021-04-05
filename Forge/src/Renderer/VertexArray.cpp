@@ -4,6 +4,11 @@
 namespace Forge
 {
 
+	constexpr bool IsIntegral(uint32_t glType)
+	{
+		return glType == GL_INT || glType == GL_UNSIGNED_INT || glType == GL_UNSIGNED_SHORT;
+	}
+
 	VertexArray::VertexArray()
 		: m_Handle(), m_CurrentAttributeIndex(0), m_VertexBuffers(), m_IndexBuffer(nullptr)
 	{
@@ -31,7 +36,10 @@ namespace Forge
 		for (const VertexAttribute& attribute : layout)
 		{
 			glEnableVertexAttribArray(m_CurrentAttributeIndex);
-			glVertexAttribPointer(m_CurrentAttributeIndex, GetComponentCount(attribute.Type), attribute.GlType, attribute.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)attribute.Offset);
+			if (IsIntegral(attribute.GlType))
+				glVertexAttribIPointer(m_CurrentAttributeIndex, GetComponentCount(attribute.Type), attribute.GlType, layout.GetStride(), (const void*)attribute.Offset);
+			else
+				glVertexAttribPointer(m_CurrentAttributeIndex, GetComponentCount(attribute.Type), attribute.GlType, attribute.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)attribute.Offset);
 			m_CurrentAttributeIndex++;
 		}
 
@@ -49,7 +57,10 @@ namespace Forge
 		for (const VertexAttribute& attribute : layout)
 		{
 			glEnableVertexAttribArray(index);
-			glVertexAttribPointer(index, GetComponentCount(attribute.Type), attribute.GlType, attribute.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)attribute.Offset);
+			if (IsIntegral(attribute.GlType))
+				glVertexAttribIPointer(index, GetComponentCount(attribute.Type), attribute.GlType, layout.GetStride(), (const void*)attribute.Offset);
+			else
+				glVertexAttribPointer(index, GetComponentCount(attribute.Type), attribute.GlType, attribute.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)attribute.Offset);
 		}
 
 		m_VertexBuffers.push_back(buffer);

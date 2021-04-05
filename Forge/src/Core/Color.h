@@ -11,6 +11,9 @@ namespace Forge
 		uint8_t g = 0;
 		uint8_t b = 0;
 		uint8_t a = 255;
+
+	public:
+		inline Color WithAlpha(uint8_t alpha) const { return Color{ r, g, b, alpha }; }
 	};
 
 	constexpr Color COLOR_RED = { 255, 0, 0, 255 };

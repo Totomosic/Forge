@@ -16,8 +16,10 @@ namespace Forge
 		entt::registry m_Registry;
 		entt::entity m_PrimaryCamera;
 
+		Ref<Framebuffer> m_DefaultFramebuffer;
+
 	public:
-		Scene();
+		Scene(const Ref<Framebuffer>& defaultFramebuffer);
 
 		inline bool HasPrimaryCamera() { FindPrimaryCamera(); return m_PrimaryCamera != entt::null; }
 		Entity GetPrimaryCamera();

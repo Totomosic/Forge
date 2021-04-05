@@ -1,5 +1,6 @@
 #include "ForgePch.h"
 #include "Texture.h"
+#include "Framebuffer.h"
 
 #include <stb_image.h>
 
@@ -56,6 +57,26 @@ namespace Forge
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+
+	RenderTexture::RenderTexture(uint32_t width, uint32_t height, TextureComponent component) : Texture2D(width, height),
+		m_Framebuffer(Framebuffer::Create(width, height))
+	{
+		if (component == TextureComponent::Color)
+		{
+			m_Framebuffer->CreateColorTextureBuffer(ColorBuffer::Color0, this);
+			m_Framebuffer->CreateTextureBuffer(ColorBuffer::Depth);
+		}
+		else
+		{
+			m_Framebuffer->CreateTextureBuffer(ColorBuffer::Color0);
+			m_Framebuffer->CreateDepthTextureBuffer(this);
+		}
+	}
+
+	Ref<RenderTexture> RenderTexture::Create(uint32_t width, uint32_t height, TextureComponent component)
+	{
+		return CreateRef<RenderTexture>(width, height, component);
 	}
 
 }

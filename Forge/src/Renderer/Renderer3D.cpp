@@ -5,11 +5,22 @@
 namespace Forge
 {
 
-	void Renderer3D::BeginScene(const CameraData& camera, const std::vector<LightSource>& lightSources)
+	void Renderer3D::BeginScene(const Ref<Framebuffer>& framebuffer, const CameraData& camera, const std::vector<LightSource>& lightSources)
 	{
+		FORGE_ASSERT(framebuffer != nullptr, "Invalid framebuffer");
+		if (framebuffer != m_CurrentFramebuffer || framebuffer->RequiresRebind())
+		{
+			framebuffer->Bind();
+			RenderCommand::SetViewport(framebuffer->GetViewport());
+			m_CurrentFramebuffer = framebuffer;
+		}
+		RenderCommand::Clear();
 		m_Context.Reset();
 		m_Context.SetCamera(camera);
 		m_Context.SetLightSources(lightSources);
+		m_Context.SetClippingPlanes(camera.ClippingPlanes);
+
+		RenderCommand::EnableClippingPlanes(camera.ClippingPlanes.size());
 	}
 
 	void Renderer3D::EndScene()
@@ -33,8 +44,9 @@ namespace Forge
 			if (requirements.ModelMatrix)
 				material->GetShader()->SetUniform(ModelMatrixUniformName, overallTransform);
 			material->Apply(m_Context);
+			mesh->Apply(material->GetShader(), requirements);
 
-			RenderCommand::DrawIndexed(mesh->GetVertices());
+			RenderCommand::DrawIndexed(mesh->GetDrawMode(), mesh->GetVertices());
 		}
 	}
 

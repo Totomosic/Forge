@@ -57,10 +57,11 @@ namespace Forge
     {
     }
 
-    IndexBuffer::IndexBuffer(const Type* data, size_t sizeBytes)
-        : m_Handle(), m_IndexCount(sizeBytes / sizeof(Type))
+    IndexBuffer::IndexBuffer(const Type* data, size_t sizeBytes, ShaderDataType type)
+        : m_Handle(), m_IndexCount(sizeBytes / GetTypeSize(type)), m_GlDataType(GetGlType(type))
     {
-        Init(data, sizeBytes);
+        FORGE_ASSERT(type == ShaderDataType::Uint || type == ShaderDataType::Ushort, "Invalid index type");
+        Init(data, sizeBytes, type);
     }
 
     void IndexBuffer::Bind() const
@@ -73,17 +74,17 @@ namespace Forge
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
-    Ref<IndexBuffer> IndexBuffer::Create(size_t sizeBytes)
+    Ref<IndexBuffer> IndexBuffer::Create(size_t sizeBytes, ShaderDataType type)
     {
-        return CreateRef<IndexBuffer>(nullptr, sizeBytes);
+        return CreateRef<IndexBuffer>(nullptr, sizeBytes, type);
     }
 
-    Ref<IndexBuffer> IndexBuffer::Create(const Type* data, size_t sizeBytes)
+    Ref<IndexBuffer> IndexBuffer::Create(const Type* data, size_t sizeBytes, ShaderDataType type)
     {
-        return CreateRef<IndexBuffer>(data, sizeBytes);
+        return CreateRef<IndexBuffer>(data, sizeBytes, type);
     }
 
-    void IndexBuffer::Init(const Type* data, size_t sizeBytes)
+    void IndexBuffer::Init(const Type* data, size_t sizeBytes, ShaderDataType type)
     {
         if (sizeBytes > 0)
         {

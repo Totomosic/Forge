@@ -11,6 +11,7 @@
 #include "Core/EventEmitter.h"
 #include "Core/Window.h"
 #include "Core/Input.h"
+#include "Core/Application.h"
 
 #include "Math/Constants.h"
 
@@ -20,6 +21,7 @@
 #include "Scene/CameraComponent.h"
 #include "Scene/ModelRenderer.h"
 #include "Scene/Components.h"
+#include "Scene/AnimatorComponent.h"
 
 #include "Utils/Readers/GltfReader.h"
 

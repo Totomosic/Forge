@@ -21,6 +21,11 @@ namespace Forge
 		m_LightSources.push_back(light);
 	}
 
+	void RendererContext::SetClippingPlanes(const std::vector<glm::vec4>& planes)
+	{
+		m_ClippingPlanes = planes;
+	}
+
 	void RendererContext::Reset()
 	{
 		m_LightSources.clear();
@@ -38,6 +43,8 @@ namespace Forge
 		requirements.ProjViewMatrix = shader->UniformExists(ProjViewMatrixUniformName);
 		requirements.ModelMatrix = shader->UniformExists(ModelMatrixUniformName);
 		requirements.LightSources = shader->UniformExists(LightSourceArrayUniformName) && shader->UniformExists(UsedLightSourcesUniformName);
+		requirements.Animation = shader->UniformExists(JointTransformsUniformName);
+		requirements.ClippingPlanes = shader->UniformExists(ClippingPlanesArrayUniformName) && shader->UniformExists(UsedClippingPlanesUniformName);
 		m_RequirementsMap[shader.get()] = requirements;
 		return requirements;
 	}
@@ -63,6 +70,15 @@ namespace Forge
 				shader->SetUniform(uniformBase + ".Attenuation", m_LightSources[i].Attenuation);
 				shader->SetUniform(uniformBase + ".Color", m_LightSources[i].Color);
 				shader->SetUniform(uniformBase + ".Ambient", m_LightSources[i].Ambient);
+			}
+		}
+		if (requirements.ClippingPlanes)
+		{
+			shader->SetUniform(UsedClippingPlanesUniformName, int(m_ClippingPlanes.size()));
+			for (size_t i = 0; i < m_ClippingPlanes.size(); i++)
+			{
+				std::string uniformBase = std::string(ClippingPlanesArrayBase) + "[" + std::to_string(i) + "]";
+				shader->SetUniform(uniformBase, m_ClippingPlanes[i]);
 			}
 		}
 	}

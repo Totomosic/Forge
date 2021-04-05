@@ -3,6 +3,8 @@
 
 namespace Forge
 {
+	
+	constexpr int MAX_CLIPPING_PLANES = 8;
 
 	class FORGE_API ShaderLibrary
 	{
