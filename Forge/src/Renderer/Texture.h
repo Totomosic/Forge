@@ -60,6 +60,7 @@ namespace Forge
 	{
 	private:
 		TextureFormat m_Format;
+		bool m_HasMipmaps;
 
 	public:
 		Texture2D(uint32_t width, uint32_t height);
@@ -70,6 +71,8 @@ namespace Forge
 		virtual void Bind(int slot) const override;
 		virtual void Unbind(int slot) const override;
 
+		void GenerateMipmaps();
+
 	public:
 		static Ref<Texture2D> Create(uint32_t width, uint32_t height);
 		static Ref<Texture2D> Create(const std::string& filename);
@@ -77,6 +80,35 @@ namespace Forge
 	private:
 		void Init(const void* data, uint32_t width, uint32_t height, uint32_t format);
 
+	};
+
+	class FORGE_API TextureCube : public Texture
+	{
+	private:
+		TextureFormat m_Format;
+		bool m_HasMipmaps;
+
+	public:
+		TextureCube(uint32_t width, uint32_t height);
+		TextureCube(const void** pixels, uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA);
+
+		virtual void Bind(int slot) const override;
+		virtual void Unbind(int slot) const override;
+
+		void GenerateMipmaps();
+
+	public:
+		static Ref<TextureCube> Create(
+			const std::string& front,
+			const std::string& back,
+			const std::string& left,
+			const std::string& right,
+			const std::string& bottom,
+			const std::string& top
+		);
+
+	private:
+		void Init(const void** data, uint32_t width, uint32_t height, uint32_t format);
 	};
 
 	enum class TextureComponent

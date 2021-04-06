@@ -8,27 +8,34 @@ namespace Forge
 	void Renderer3D::BeginScene(const Ref<Framebuffer>& framebuffer, const CameraData& camera, const std::vector<LightSource>& lightSources)
 	{
 		FORGE_ASSERT(framebuffer != nullptr, "Invalid framebuffer");
-		if (framebuffer != m_CurrentFramebuffer || framebuffer->RequiresRebind())
+		if (framebuffer != m_CurrentFramebuffer)
 		{
 			framebuffer->Bind();
-			RenderCommand::SetViewport(framebuffer->GetViewport());
 			m_CurrentFramebuffer = framebuffer;
 		}
-		RenderCommand::Clear();
+		if (m_ClearedFramebuffers.find(framebuffer.get()) == m_ClearedFramebuffers.end())
+		{
+			RenderCommand::SetClearColor(camera.ClearColor);
+			RenderCommand::Clear();
+			m_ClearedFramebuffers.insert(framebuffer.get());
+		}
 		m_Context.Reset();
 		m_Context.SetCamera(camera);
 		m_Context.SetLightSources(lightSources);
 		m_Context.SetClippingPlanes(camera.ClippingPlanes);
 
 		RenderCommand::EnableClippingPlanes(camera.ClippingPlanes.size());
+		RenderCommand::SetViewport(camera.Viewport);
 	}
 
 	void Renderer3D::EndScene()
 	{
+		
 	}
 
 	void Renderer3D::Flush()
 	{
+		m_ClearedFramebuffers.clear();
 	}
 
 	void Renderer3D::RenderModel(const Ref<Model>& model, const glm::mat4& transform)

@@ -4,6 +4,18 @@
 namespace Forge
 {
 
+	struct FORGE_API LayerId
+	{
+	public:
+		uint64_t Mask = 0;
+
+	public:
+		LayerId() = default;
+		inline LayerId(uint64_t mask)
+			: Mask(mask)
+		{}
+	};
+
 	struct FORGE_API LightSourceComponent
 	{
 	public:

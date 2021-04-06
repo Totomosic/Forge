@@ -16,6 +16,9 @@ namespace Forge
 
 	class FORGE_API RenderCommand
 	{
+	private:
+		static int s_LastClipPlaneCount;
+
 	public:
 		static void Init();
 		static void BindDefaultFramebuffer();

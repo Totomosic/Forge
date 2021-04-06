@@ -3,6 +3,8 @@
 #include "Framebuffer.h"
 #include "Model.h"
 
+#include <unordered_set>
+
 namespace Forge
 {
 
@@ -11,6 +13,7 @@ namespace Forge
 	private:
 		RendererContext m_Context;
 		Ref<Framebuffer> m_CurrentFramebuffer = nullptr;
+		std::unordered_set<const Framebuffer*> m_ClearedFramebuffers;
 
 	public:
 		void BeginScene(const Ref<Framebuffer>& framebuffer, const CameraData& camera, const std::vector<LightSource>& lightSources = {});

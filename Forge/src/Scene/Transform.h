@@ -26,6 +26,8 @@ namespace Forge
 		mutable glm::mat4 m_CacheTransform;
 		mutable glm::mat4 m_CacheInvTransform;
 
+		bool m_Flip = false;
+
 	public:
 		inline TransformComponent(const glm::vec3& position = { 0, 0, 0 }, const glm::quat& rotation = { 1.0f, 0.0f, 0.0f, 0.0f }, const glm::vec3& scale = { 1.0f, 1.0f, 1.0f })
 			: m_Position(position), m_Rotation(rotation), m_Scale(scale), m_Dirty(true), m_CacheTransform(), m_CacheInvTransform()
@@ -93,15 +95,43 @@ namespace Forge
 			SetScale(GetScale() * scale);
 		}
 
+		inline void SetFromTransform(const TransformComponent& transform)
+		{
+			m_Position = transform.m_Position;
+			m_Rotation = transform.m_Rotation;
+			m_Scale = transform.m_Scale;
+
+			m_Dirty = transform.m_Dirty;
+			m_CacheTransform = transform.m_CacheTransform;
+			m_CacheInvTransform = transform.m_CacheInvTransform;
+		}
+
+		inline void FlipX()
+		{
+			m_Flip = true;
+			m_Dirty = true;
+		}
+
 	private:
 		inline void RecalculateMatrices() const
 		{
 			if (m_Dirty)
 			{
-				m_CacheTransform = glm::translate(glm::mat4(1.0f), m_Position) * glm::toMat4(m_Rotation) * glm::scale(glm::mat4(1.0f), m_Scale);
+				m_CacheTransform = glm::translate(glm::mat4(1.0f), m_Position) * GetRotationMatrix() * glm::scale(glm::mat4(1.0f), m_Scale);
 				m_CacheInvTransform = glm::inverse(m_CacheTransform);
 				m_Dirty = false;
 			}
+		}
+
+		inline glm::mat4 GetRotationMatrix() const
+		{
+			glm::mat4 matrix = glm::toMat4(m_Rotation);
+			if (m_Flip)
+			{
+				glm::mat4 flip = glm::scale(glm::mat4(1.0f), glm::vec3{ 1.0f, -1.0f, 1.0f });
+				matrix = flip * matrix * flip;
+			}
+			return matrix;
 		}
 
 	};

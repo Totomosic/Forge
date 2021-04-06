@@ -75,7 +75,6 @@ namespace Forge
 		inline uint32_t GetHeight() const { return GetFramebuffer()->GetHeight(); }
 		inline void* GetNativeHandle() const { return (void*)m_Handle.get(); }
 		inline float GetAspectRatio() const { return GetFramebuffer()->GetAspect(); }
-		inline const Viewport& GetViewport() const { return GetFramebuffer()->GetViewport(); }
 
 		void Update();
 

@@ -18,8 +18,8 @@ void main()
 	vec4 worldPosition = u_ModelMatrix * vec4(in_Position, 1.0);
 	clipPlanes(worldPosition.xyz, u_ClippingPlanes, u_UsedClippingPlanes);
 	gl_Position = u_ProjViewMatrix * worldPosition;
-	f_Normal = (u_ModelMatrix * vec4(in_Normal, 0.0)).xyz;
-	f_Position = (u_ModelMatrix * vec4(in_Position, 1.0)).xyz;
+	f_Normal = (transpose(inverse(u_ModelMatrix)) * vec4(in_Normal, 0.0)).xyz;
+	f_Position = worldPosition.xyz;
 }
 
 #shader FRAGMENT

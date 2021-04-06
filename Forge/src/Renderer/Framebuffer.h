@@ -53,14 +53,9 @@ namespace Forge
 		Viewport m_Viewport;
 		std::unordered_map<ColorBuffer, Ref<Texture2D>> m_TextureBuffers;
 
-		mutable bool m_Dirty = false;
-
 	public:
 		Framebuffer(uint32_t width, uint32_t height, int samples = 0);
 
-		inline const Viewport& GetViewport() const { return m_Viewport; }
-		inline void SetViewport(const Viewport& viewport) { m_Viewport = viewport; m_Dirty = true; }
-		inline bool RequiresRebind() const { return m_Dirty; }
 		inline uint32_t GetWidth() const { return m_Width; }
 		inline uint32_t GetHeight() const { return m_Height; }
 		inline int GetSamples() const { return m_Samples; }

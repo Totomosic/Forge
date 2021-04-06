@@ -11,13 +11,17 @@ namespace Forge
 	{
 	public:
 		glm::mat4 ProjectionMatrix;
+		Forge::Viewport Viewport;
+		uint64_t LayerMask = 0xFFFFFFFFFFFFFFFF;
+		int Priority = 0;
 		Ref<Framebuffer> RenderTarget = nullptr;
 		std::vector<glm::vec4> ClippingPlanes = {};
+		Color ClearColor = COLOR_BLACK;
 
 	public:
 		CameraComponent() = default;
 		inline CameraComponent(const glm::mat4& projection)
-			: ProjectionMatrix(projection)
+			: ProjectionMatrix(projection), Viewport()
 		{}
 
 	};

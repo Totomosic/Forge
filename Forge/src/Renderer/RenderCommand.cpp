@@ -19,6 +19,8 @@ namespace Forge
 		}
 	}
 
+	int RenderCommand::s_LastClipPlaneCount = 0;
+
 	void RenderCommand::Init()
 	{
 #ifndef FORGE_DIST
@@ -70,14 +72,15 @@ namespace Forge
 
 	void RenderCommand::EnableClippingPlanes(int count)
 	{
-		for (int i = 0; i < count; i++)
+		for (int i = s_LastClipPlaneCount; i < count; i++)
 		{
 			glEnable(GL_CLIP_DISTANCE0 + i);
 		}
-		for (int i = count; i < MAX_CLIPPING_PLANES; i++)
+		for (int i = count; i < s_LastClipPlaneCount; i++)
 		{
 			glDisable(GL_CLIP_DISTANCE0 + i);
 		}
+		s_LastClipPlaneCount = count;
 	}
 
 }

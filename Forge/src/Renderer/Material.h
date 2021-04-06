@@ -26,7 +26,7 @@ namespace Forge
 
 		virtual void Apply(const std::string& name, const Ref<Shader>& shader, RendererContext& context) const override
 		{
-			if constexpr (std::is_same_v<T, Ref<Texture2D>> || std::is_same_v<T, Ref<Texture>>)
+			if constexpr (std::is_same_v<T, Ref<Texture2D>> || std::is_same_v<T, Ref<Texture>> || std::is_same_v<T, Ref<RenderTexture>> || std::is_same_v<T, Ref<TextureCube>>)
 			{
 				int slot = context.BindTexture(Value);
 				shader->SetUniform(name, slot);

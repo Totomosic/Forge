@@ -5,14 +5,13 @@ namespace Forge
 {
 
     Framebuffer::Framebuffer(uint32_t width, uint32_t height, int samples)
-        : m_Handle(), m_Width(width), m_Height(height), m_Samples(samples), m_Viewport(Viewport{ 0, 0, width, height }), m_TextureBuffers(), m_Dirty(false)
+        : m_Handle(), m_Width(width), m_Height(height), m_Samples(samples), m_Viewport(Viewport{ 0, 0, width, height }), m_TextureBuffers()
     {
     }
 
     void Framebuffer::Bind() const
     {
         glBindFramebuffer(GL_FRAMEBUFFER, m_Handle.Id);
-        m_Dirty = false;
     }
 
     void Framebuffer::Unbind() const

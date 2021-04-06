@@ -4,6 +4,7 @@
 #include "Renderer/Renderer3D.h"
 
 #include <entt/entt.hpp>
+#include <map>
 
 namespace Forge
 {
@@ -13,6 +14,8 @@ namespace Forge
 	class FORGE_API Scene
 	{
 	private:
+		static constexpr uint8_t DEFAULT_LAYER = 0;
+
 		entt::registry m_Registry;
 		entt::entity m_PrimaryCamera;
 
@@ -23,10 +26,15 @@ namespace Forge
 
 		inline bool HasPrimaryCamera() { FindPrimaryCamera(); return m_PrimaryCamera != entt::null; }
 		Entity GetPrimaryCamera();
-		Entity CreateEntity();
+		Entity CreateEntity(uint8_t layer = DEFAULT_LAYER);
 		void DestroyEntity(const Entity& entity);
+		void SetLayer(Entity entity, uint8_t layer);
+		void AddLayer(Entity entity, uint8_t layer);
+		void RemoveLayer(Entity entity, uint8_t layer);
+		void AddToAllLayers(Entity entity);
 
 		void SetPrimaryCamera(const Entity& entity);
+		Entity CreateCamera(const glm::mat4& projection);
 
 		void OnUpdate(Timestep ts, Renderer3D& renderer);
 
@@ -34,6 +42,7 @@ namespace Forge
 
 	private:
 		void FindPrimaryCamera();
+		bool CheckLayerMask(entt::entity entity, uint64_t layerMask) const;
 
 	};
 

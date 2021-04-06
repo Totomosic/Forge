@@ -12,12 +12,6 @@ namespace Forge
     {
         RenderCommand::Init();
         Input::SetWindow(&m_Window);
-
-        m_Window.Events.Resize.AddEventListener([&](const WindowResize& evt)
-        {
-            m_Window.GetFramebuffer()->SetViewport({ 0, 0, evt.NewWidth, evt.NewHeight });
-            return false;
-        });
     }
 
     void Application::SetClearColor(const Color& color)
