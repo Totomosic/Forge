@@ -1,6 +1,8 @@
 #include "ForgePch.h"
 #include "Material.h"
 
+#include "GraphicsCache.h"
+
 namespace Forge
 {
 
@@ -17,19 +19,49 @@ namespace Forge
 		}
 	}
 
-	Material::Material()
-		: m_Shader(), m_Uniforms()
+	Material::Material() : Material(nullptr)
 	{
 	}
 
-	Material::Material(const Ref<Shader>& shader)
-		: m_Shader(shader), m_Uniforms()
+	Material::Material(const Ref<Shader>& shader) : Material({ GraphicsCache::DefaultShadowShader(), shader, shader })
 	{
 	}
 
-	void Material::Apply(RendererContext& context) const
+	Material::Material(std::array<Ref<Shader>, RENDER_PASS_COUNT> shaders)
+		: m_Shaders(shaders), m_Uniforms()
 	{
-		m_Uniforms.Apply(m_Shader, context);
+	}
+
+	void Material::Apply(RenderPass pass, RendererContext& context) const
+	{
+		m_Uniforms.Apply(GetShader(pass), context);
+	}
+
+	Ref<Material> Material::CreateFromShaderSource(const std::string& vertexSource, const std::string& fragmentSource, ShaderDefines defines)
+	{
+		Ref<Shader> shadowFormationShader = GraphicsCache::DefaultShadowShader();
+		Ref<Shader> withoutShadowShader = Shader::CreateFromSource(vertexSource, fragmentSource, defines);
+		defines.push_back(ShadowMapShaderDefine);
+		Ref<Shader> shadowShader = Shader::CreateFromSource(vertexSource, fragmentSource, defines);
+		return CreateRef<Material>(std::array<Ref<Shader>, RENDER_PASS_COUNT>{ shadowFormationShader, shadowShader, withoutShadowShader });
+	}
+
+	Ref<Material> Material::CreateFromShaderFile(const std::string& vertexFilePath, const std::string& fragmentFilePath, ShaderDefines defines)
+	{
+		Ref<Shader> shadowFormationShader = GraphicsCache::DefaultShadowShader();
+		Ref<Shader> withoutShadowShader = Shader::CreateFromFile(vertexFilePath, fragmentFilePath, defines);
+		defines.push_back(ShadowMapShaderDefine);
+		Ref<Shader> shadowShader = Shader::CreateFromFile(vertexFilePath, fragmentFilePath, defines);
+		return CreateRef<Material>(std::array<Ref<Shader>, RENDER_PASS_COUNT>{ shadowFormationShader, shadowShader, withoutShadowShader });
+	}
+
+	Ref<Material> Material::CreateFromShaderFile(const std::string& shaderFilePath, ShaderDefines defines)
+	{
+		Ref<Shader> shadowFormationShader = GraphicsCache::DefaultShadowShader();
+		Ref<Shader> withoutShadowShader = Shader::CreateFromFile(shaderFilePath, defines);
+		defines.push_back(ShadowMapShaderDefine);
+		Ref<Shader> shadowShader = Shader::CreateFromFile(shaderFilePath, defines);
+		return CreateRef<Material>(std::array<Ref<Shader>, RENDER_PASS_COUNT>{ shadowFormationShader, shadowShader, withoutShadowShader });
 	}
 
 }

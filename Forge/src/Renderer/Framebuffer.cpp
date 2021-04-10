@@ -72,6 +72,7 @@ namespace Forge
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glFramebufferTexture2D(GL_FRAMEBUFFER, (GLenum)buffer, GL_TEXTURE_2D, texture->GetId(), 0);
         glDrawBuffer((GLenum)buffer);
+        glReadBuffer((GLenum)buffer);
     }
 
     void Framebuffer::CreateDepthTextureBuffer(const Texture2D* texture)
@@ -93,6 +94,9 @@ namespace Forge
     void Framebuffer::Init()
     {
         glGenFramebuffers(1, &m_Handle.Id);
+        Bind();
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
     }
 
 }

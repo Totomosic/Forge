@@ -11,6 +11,7 @@ namespace Forge
     Ref<Shader> GraphicsCache::s_DefaultTextureShader;
     Ref<Shader> GraphicsCache::s_LitColorShader;
     Ref<Shader> GraphicsCache::s_LitTextureShader;
+    Ref<Shader> GraphicsCache::s_DefaultShadowShader;
     std::unordered_map<int, Ref<Shader>> GraphicsCache::s_DefaultColorAnimatedShaders;
     std::unordered_map<int, Ref<Shader>> GraphicsCache::s_LitTextureAnimatedShaders;
 
@@ -23,6 +24,7 @@ namespace Forge
         CreateDefaultTextureShader();
         CreateLitColorShader();
         CreateLitTextureShader();
+        CreateDefaultShadowShader();
 
         CreateSquareMesh();
         CreateCubeMesh();
@@ -149,9 +151,11 @@ namespace Forge
             "uniform mat4 u_ProjViewMatrix;\n"
             "uniform vec4 u_ClippingPlanes[MAX_CLIPPING_PLANES];\n"
             "uniform int u_UsedClippingPlanes;\n"
+            "uniform mat4 u_LightSpaceTransform;\n"
             "\n"
             "out vec3 f_Position;\n"
             "out vec3 f_Normal;\n"
+            "out vec4 f_LightSpacePosition;\n"
             "\n"
             "void main()\n"
             "{\n"
@@ -160,31 +164,36 @@ namespace Forge
             "    gl_Position = u_ProjViewMatrix * worldPosition;\n"
             "    f_Position = worldPosition.xyz;\n"
             "    f_Normal = vec3(transpose(inverse(u_ModelMatrix)) * vec4(v_Normal, 0.0));\n"
+            "    f_LightSpacePosition = u_LightSpaceTransform * worldPosition;\n"
             "}\n";
 
         std::string fragmentShaderSource =
             SHADER_VERSION_STRING + '\n' +
             "#include <Lighting.h>\n"
+            "#include <Shadows.h>\n"
             "\n"
             "layout (location = 0) out vec4 f_FinalColor;\n"
             "\n"
             "uniform vec4 u_Color;\n"
             "uniform LightSource u_LightSources[MAX_LIGHT_COUNT];\n"
             "uniform int u_UsedLightSources;\n"
+            "uniform sampler2D u_ShadowMap;\n"
             "\n"
             "in vec3 f_Position;\n"
             "in vec3 f_Normal;\n"
+            "in vec4 f_LightSpacePosition;\n"
             "\n"
             "void main()\n"
             "{\n"
             "    vec3 color = vec3(0.0);\n"
             "\n"
+            "    float shadow = calculateShadow(f_LightSpacePosition, u_ShadowMap, f_Normal, normalize(f_Position - u_LightSources[0].Position));\n"
             "    for (int i = 0; i < u_UsedLightSources; i++)\n"
             "    {\n"
             "        vec3 lightDirection = normalize(u_LightSources[i].Position - f_Position);\n"
             "        vec3 normal = normalize(f_Normal);\n"
             "        float diffusePower = max(dot(normal, lightDirection), 0.0);\n"
-            "        vec4 diffuseColor = diffusePower * u_LightSources[i].Color;\n"
+            "        vec4 diffuseColor = diffusePower * u_LightSources[i].Color * (1.0 - shadow);\n"
             "        color += diffuseColor.xyz + u_LightSources[i].Ambient * u_LightSources[i].Color.xyz;\n"
             "    }\n"
             "\n"
@@ -372,6 +381,29 @@ namespace Forge
         Ref<Shader> shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, { { "JOINT_COUNT", std::to_string(maxJoints) } });
         s_LitTextureAnimatedShaders[maxJoints] = shader;
         return shader;
+    }
+
+    void GraphicsCache::CreateDefaultShadowShader()
+    {
+        std::string vertexShaderSource =
+            SHADER_VERSION_STRING + '\n' +
+            "layout (location = 0) in vec3 v_Position;\n"
+            "\n"
+            "uniform mat4 u_ModelMatrix;\n"
+            "uniform mat4 u_ProjViewMatrix;\n"
+            "\n"
+            "void main()\n"
+            "{\n"
+            "    gl_Position = u_ProjViewMatrix * u_ModelMatrix * vec4(v_Position, 1.0);\n"
+            "}\n";
+        
+        std::string fragmentShaderSource =
+            SHADER_VERSION_STRING + '\n' +
+            "void main()\n"
+            "{\n"
+            "}\n";
+
+        s_DefaultShadowShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
     }
 
     void GraphicsCache::CreateSquareMesh()

@@ -11,6 +11,45 @@
 namespace Forge
 {
 
+    void PreprocessIfDefs(std::string& result, const std::string& identifier, const std::function<bool(const std::string&)>& fn)
+    {
+        size_t directiveStart = result.find(identifier);
+        size_t ifdefLength = identifier.size();
+        size_t endifLength = strlen("#endif");
+        size_t elseLength = strlen("#else");
+        while (directiveStart != std::string::npos)
+        {
+            size_t directiveEnd = result.find_first_of("\r\n", directiveStart);
+            std::string define = result.substr(directiveStart + ifdefLength, directiveEnd - directiveStart - ifdefLength);
+            size_t blockEnd = result.find("#endif", directiveStart);
+            FORGE_ASSERT(blockEnd != std::string::npos, "Missing #endif");
+            size_t elseDirective = result.find("#else", directiveStart);
+            bool hasElse = elseDirective != std::string::npos && elseDirective < blockEnd;
+            if (fn(define))
+            {
+                size_t erasedCount = directiveEnd - directiveStart;
+                result.erase(directiveStart, erasedCount);
+                if (hasElse)
+                    result.erase(elseDirective - erasedCount, blockEnd + endifLength - elseDirective);
+                else
+                    result.erase(blockEnd - erasedCount, endifLength);
+            }
+            else
+            {
+                if (hasElse)
+                {
+                    size_t erasedCount = elseDirective + elseLength - directiveStart;
+                    result.erase(directiveStart, erasedCount);
+                    result.erase(blockEnd - erasedCount, endifLength);
+                }
+                else
+                    result.erase(directiveStart, blockEnd + endifLength - directiveStart);
+            }
+
+            directiveStart = result.find(identifier, directiveStart + 1);
+        }
+    }
+
     Shader::Shader(const std::string& vertexSource, const std::string& fragmentSource, const ShaderDefines& defines)
         : m_Handle()
     {
@@ -197,9 +236,10 @@ namespace Forge
     {
         std::string result = source;
         size_t directiveStart = result.find("#include ");
+        size_t includeLength = strlen("#include ");
         while (directiveStart != std::string::npos)
         {
-            size_t quotePosition = directiveStart + strlen("#include ");
+            size_t quotePosition = directiveStart + includeLength;
             char quoteCharacter = result[quotePosition];
             char endQuoteCharacter = quoteCharacter;
             if (endQuoteCharacter == '<')
@@ -214,19 +254,9 @@ namespace Forge
 
             directiveStart = result.find("#include ");
         }
-
-        for (const auto& pair : defines)
-        {
-            size_t start = result.find(pair.first);
-            while (start != std::string::npos)
-            {
-                size_t end = start + pair.first.size();
-                result.erase(start, pair.first.size());
-                result.insert(start, pair.second);
-                start = result.find(pair.first);
-            }
-        }
-
+        PreprocessIfDefs(result, "#ifdef ", [&defines](const std::string& define) { return std::find(defines.begin(), defines.end(), define) != defines.end(); });
+        PreprocessIfDefs(result, "#ifndef ", [&defines](const std::string& define) { return std::find(defines.begin(), defines.end(), define) == defines.end(); });
+        PreprocessIfDefs(result, "#if ", [](const std::string& value) { return value == "1" || value == "true"; });
         return result;
     }
 

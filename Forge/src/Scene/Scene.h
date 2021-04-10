@@ -9,6 +9,8 @@
 namespace Forge
 {
 
+#define FORGE_LAYER(number) (1ULL << (number))
+
 	class Entity;
 
 	class FORGE_API Scene
@@ -43,6 +45,7 @@ namespace Forge
 	private:
 		void FindPrimaryCamera();
 		bool CheckLayerMask(entt::entity entity, uint64_t layerMask) const;
+		glm::mat4 GenerateProjViewMatrixForLight(const LightSource& light) const;
 
 	};
 

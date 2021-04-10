@@ -78,7 +78,6 @@ namespace Forge
 		}
 		else
 		{
-			m_Framebuffer->CreateTextureBuffer(ColorBuffer::Color0);
 			m_Framebuffer->CreateDepthTextureBuffer(this);
 		}
 	}

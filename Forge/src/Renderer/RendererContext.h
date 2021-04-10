@@ -23,6 +23,17 @@ namespace Forge
 	constexpr const char ClippingPlanesArrayUniformName[] = "u_ClippingPlanes[0]";
 	constexpr const char UsedClippingPlanesUniformName[] = "u_UsedClippingPlanes";
 
+	constexpr const char ShadowMapUniformName[] = "u_ShadowMap";
+	constexpr const char LightSpaceTransformUniformName[] = "u_LightSpaceTransform";
+
+	enum class RenderPass
+	{
+		ShadowFormation,
+		WithShadow,
+		WithoutShadow,
+	};
+	constexpr int RENDER_PASS_COUNT = 3;
+
 	struct FORGE_API ShaderRequirements
 	{
 	public:
@@ -34,10 +45,15 @@ namespace Forge
 		bool LightSources;
 		bool Animation;
 		bool ClippingPlanes;
+
+		bool ShadowMap;
 	};
 
 	class FORGE_API RendererContext
 	{
+	private:
+		static constexpr int SHADOW_MAP_TEXTURE_SLOT = 0;
+
 	private:
 		glm::mat4 m_ProjectionMatrix;
 		glm::mat4 m_ViewMatrix;
@@ -46,10 +62,14 @@ namespace Forge
 		std::vector<LightSource> m_LightSources;
 		std::vector<glm::vec4> m_ClippingPlanes;
 		int m_NextTextureSlot;
+		Ref<Texture2D> m_ShadowMap;
+		glm::mat4 m_LightSpaceTransform;
 
 		std::unordered_map<const Shader*, ShaderRequirements> m_RequirementsMap;
 
 	public:
+		void SetShadowMap(const Ref<Texture2D>& shadowMap);
+		inline void SetLightSpaceTransform(const glm::mat4& transform) { m_LightSpaceTransform = transform; }
 		void SetCamera(const CameraData& camera);
 		void SetLightSources(const std::vector<LightSource>& lights);
 		void AddLightSource(const LightSource& light);

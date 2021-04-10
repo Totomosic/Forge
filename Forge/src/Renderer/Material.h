@@ -6,6 +6,8 @@
 namespace Forge
 {
 
+	constexpr const char ShadowMapShaderDefine[] = "SHADOW_MAP";
+
 	class FORGE_API UniformContainerBase
 	{
 	public:
@@ -63,19 +65,26 @@ namespace Forge
 	class FORGE_API Material
 	{
 	private:
-		Ref<Shader> m_Shader;
+		std::array<Ref<Shader>, RENDER_PASS_COUNT> m_Shaders;
 		UniformContext m_Uniforms;
 
 	public:
 		Material();
 		Material(const Ref<Shader>& shader);
+		Material(std::array<Ref<Shader>, RENDER_PASS_COUNT> shaders);
 		virtual ~Material() = default;
 
-		inline const Ref<Shader>& GetShader() const { return m_Shader; }
+		inline const Ref<Shader>& GetShader(RenderPass pass) const { return m_Shaders[int(pass)]; }
 		inline const UniformContext& GetUniforms() const { return m_Uniforms; }
 		inline UniformContext& GetUniforms() { return m_Uniforms; }
+		inline void SetShader(RenderPass pass, const Ref<Shader>& shader) { m_Shaders[int(pass)] = shader; }
 
-		void Apply(RendererContext& context) const;
+		void Apply(RenderPass pass, RendererContext& context) const;
+
+	public:
+		static Ref<Material> CreateFromShaderSource(const std::string& vertexSource, const std::string& fragmentSource, ShaderDefines defines = {});
+		static Ref<Material> CreateFromShaderFile(const std::string& vertexFilePath, const std::string& fragmentFilePath, ShaderDefines defines = {});
+		static Ref<Material> CreateFromShaderFile(const std::string& shaderFilePath, ShaderDefines defines = {});
 
 	};
 

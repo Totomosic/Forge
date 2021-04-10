@@ -10,8 +10,11 @@ uniform mat4 u_ProjViewMatrix;
 uniform vec4 u_ClippingPlanes[MAX_CLIPPING_PLANES];
 uniform int u_UsedClippingPlanes;
 
+uniform mat4 u_LightSpaceTransform;
+
 out vec3 f_Position;
 out vec3 f_Normal;
+out vec4 f_LightSpacePosition;
 
 void main()
 {
@@ -20,11 +23,14 @@ void main()
 	gl_Position = u_ProjViewMatrix * worldPosition;
 	f_Normal = (transpose(inverse(u_ModelMatrix)) * vec4(in_Normal, 0.0)).xyz;
 	f_Position = worldPosition.xyz;
+
+	f_LightSpacePosition = u_LightSpaceTransform * worldPosition;
 }
 
 #shader FRAGMENT
 #version 430 core
 #include "Lighting.h"
+#include "Shadows.h"
 
 out layout(location = 0) vec4 out_FragColor;
 
@@ -38,17 +44,20 @@ const float FLATNESS_PROPORTION = 0.6;
 uniform vec4 u_Color;
 uniform LightSource u_LightSources[MAX_LIGHT_COUNT];
 uniform int u_UsedLightSources;
+uniform sampler2D u_ShadowMap;
 
 in vec3 f_Position;
 in vec3 f_Normal;
+in vec4 f_LightSpacePosition;
 
 void main()
 {
+	float shadow = calculateShadow(f_LightSpacePosition, u_ShadowMap, f_Normal, normalize(f_Position - u_LightSources[0].Position));
 	float flatness = dot(WORLD_UP, f_Normal);
 	vec4 baseColor = u_Color;
-	if (f_Position.y > 10 && flatness >= FLATNESS_PROPORTION)
+	if (f_Position.y > 0 && flatness >= FLATNESS_PROPORTION)
 	{
 		baseColor = mix(baseColor, GRASS_COLOR, max((flatness - FLATNESS_PROPORTION) / (1.0 - FLATNESS_PROPORTION), 0.5));
 	}
-	out_FragColor = baseColor * calculateLightDiffuse(f_Position, f_Normal, u_LightSources, u_UsedLightSources);
+	out_FragColor = baseColor * calculateLightDiffuse(f_Position, f_Normal, u_LightSources, u_UsedLightSources, shadow);
 }

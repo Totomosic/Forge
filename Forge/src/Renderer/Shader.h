@@ -21,7 +21,7 @@ namespace Forge
 
 	}
 
-	using ShaderDefines = std::unordered_map<std::string, std::string>;
+	using ShaderDefines = std::vector<std::string>;
 
 	class FORGE_API Shader
 	{

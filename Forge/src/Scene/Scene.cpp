@@ -70,6 +70,7 @@ namespace Forge
 
     void Scene::OnUpdate(Timestep ts, Renderer3D& renderer)
     {
+        static std::vector<LightSource> s_LightSources;
         auto cameraView = m_Registry.view<TransformComponent, CameraComponent>();
         std::vector<entt::entity> cameras = { cameraView.begin(), cameraView.end() };
         std::sort(cameras.begin(), cameras.end(), [this](entt::entity a, entt::entity b)
@@ -113,7 +114,7 @@ namespace Forge
                 }
             }
 
-            std::vector<LightSource> lightSources;
+            s_LightSources.clear();
             for (auto entity : m_Registry.view<TransformComponent, LightSourceComponent>())
             {
                 if (CheckLayerMask(entity, cameraComponent.LayerMask))
@@ -126,19 +127,19 @@ namespace Forge
                     source.Color = light.Color;
                     source.Attenuation = light.Attenuation;
                     source.Type = light.Type;
-                    lightSources.push_back(source);
+                    s_LightSources.push_back(source);
                 }
             }
 
             Ref<Framebuffer> framebuffer = cameraComponent.RenderTarget ? cameraComponent.RenderTarget : m_DefaultFramebuffer;
 
-            renderer.BeginScene(framebuffer, data, lightSources);
+            renderer.BeginScene(framebuffer, data, s_LightSources, cameraComponent.Shadows.Enabled ? cameraComponent.Shadows.RenderTarget : nullptr);
             for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent>())
             {
                 if (CheckLayerMask(entity, cameraComponent.LayerMask))
                 {
                     auto [transform, model] = m_Registry.get<TransformComponent, ModelRendererComponent>(entity);
-                    renderer.RenderModel(model.Model, transform.GetMatrix());
+                    renderer.RenderModel(model.Model, transform.GetMatrix(), CheckLayerMask(entity, cameraComponent.Shadows.LayerMask));
                 }
             }
             renderer.EndScene();
@@ -161,6 +162,11 @@ namespace Forge
     bool Scene::CheckLayerMask(entt::entity entity, uint64_t layerMask) const
     {
         return layerMask & m_Registry.get<LayerId>(entity).Mask;
+    }
+
+    glm::mat4 Scene::GenerateProjViewMatrixForLight(const LightSource& light) const
+    {
+        return glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 500.0f) * glm::lookAt(light.Position, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
     }
 
 }
