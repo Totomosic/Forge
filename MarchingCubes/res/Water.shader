@@ -52,7 +52,8 @@ uniform sampler2D u_ReflectionTexture;
 uniform sampler2D u_DepthTexture;
 uniform sampler2D u_NormalMap;
 uniform sampler2D u_DUDVMap;
-uniform vec2 u_CameraPlanes;
+uniform float u_FarPlane;
+uniform float u_NearPlane;
 uniform float u_Time;
 
 const float waveStrength = 0.05;
@@ -69,7 +70,7 @@ const vec4 BLUE = vec4(0.1, 0.5, 0.8, 1.0);
 
 float unprojectDepth(float depth)
 {
-	return 2.0 * u_CameraPlanes[0] * u_CameraPlanes[1] / (u_CameraPlanes[1] + u_CameraPlanes[0] - (2.0 * depth - 1.0) * (u_CameraPlanes[1] - u_CameraPlanes[0]));
+	return 2.0 * u_NearPlane * u_FarPlane / (u_FarPlane + u_NearPlane - (2.0 * depth - 1.0) * (u_FarPlane - u_NearPlane));
 }
 
 void main()

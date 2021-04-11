@@ -61,10 +61,10 @@ namespace Forge
         m_PrimaryCamera = entity;
     }
 
-    Entity Scene::CreateCamera(const glm::mat4& projection)
+    Entity Scene::CreateCamera(const Frustum& frustum)
     {
         Entity camera = CreateEntity();
-        camera.AddComponent<CameraComponent>(projection).Viewport = { 0, 0, m_DefaultFramebuffer->GetWidth(), m_DefaultFramebuffer->GetHeight() };
+        camera.AddComponent<CameraComponent>(frustum).Viewport = { 0, 0, m_DefaultFramebuffer->GetWidth(), m_DefaultFramebuffer->GetHeight() };
         return camera;
     }
 
@@ -91,7 +91,7 @@ namespace Forge
         {
             CameraData data;
             auto [transform, cameraComponent] = m_Registry.get<TransformComponent, CameraComponent>(camera);
-            data.ProjectionMatrix = cameraComponent.ProjectionMatrix;
+            data.Frustum = cameraComponent.Frustum;
             data.ViewMatrix = transform.GetInverseMatrix();
             data.Viewport = cameraComponent.Viewport;
             data.ClippingPlanes = cameraComponent.ClippingPlanes;

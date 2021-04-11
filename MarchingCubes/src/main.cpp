@@ -42,7 +42,7 @@ int main()
 	screenMaterial->GetUniforms().AddUniform("u_Texture", screen);
 
 	Scene& scene = app.CreateScene();
-	Entity camera = scene.CreateCamera(glm::perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 1000.0f));
+	Entity camera = scene.CreateCamera(Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 1000.0f));
 	camera.GetComponent<TransformComponent>().SetPosition({ 0, 2, 10 });
 	camera.GetComponent<CameraComponent>().ClearColor = SKY_BLUE;
 	camera.GetComponent<CameraComponent>().CreateShadowPass(2048, 2048);
@@ -52,7 +52,7 @@ int main()
 	camera.GetComponent<CameraComponent>().Priority = 1;
 	camera.GetComponent<CameraComponent>().Viewport = { 0, 0, screen->GetWidth(), screen->GetHeight() };
 
-	Entity screenCamera = scene.CreateCamera(glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f));
+	Entity screenCamera = scene.CreateCamera(Frustum::Orthographic(-0.5f, 0.5f, -0.5f, 0.5f));
 	screenCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(UI_LAYER);
 
 	Entity screenRectangle = scene.CreateEntity(UI_LAYER);
@@ -95,7 +95,7 @@ int main()
 	skybox.GetTransform().SetScale({ 200, 200, 200 });
 
 	Ref<RenderTexture> refractionTexture = RenderTexture::Create(1280, 720);
-	Entity refractionCamera = scene.CreateCamera(camera.GetComponent<CameraComponent>().ProjectionMatrix);
+	Entity refractionCamera = scene.CreateCamera(camera.GetComponent<CameraComponent>().Frustum);
 	refractionCamera.GetComponent<CameraComponent>().ClearColor = SKY_BLUE;
 	refractionCamera.GetComponent<CameraComponent>().RenderTarget = *refractionTexture;
 	refractionCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(DEFAULT_LAYER, SKYBOX_LAYER);
@@ -103,7 +103,7 @@ int main()
 	glm::vec4& refractionPlane = refractionCamera.GetComponent<CameraComponent>().ClippingPlanes[0];
 
 	Ref<RenderTexture> reflectionTexture = RenderTexture::Create(1280, 720);
-	Entity reflectionCamera = scene.CreateCamera(camera.GetComponent<CameraComponent>().ProjectionMatrix);
+	Entity reflectionCamera = scene.CreateCamera(camera.GetComponent<CameraComponent>().Frustum);
 	reflectionCamera.GetComponent<CameraComponent>().ClearColor = SKY_BLUE;
 	reflectionCamera.GetComponent<CameraComponent>().RenderTarget = *reflectionTexture;
 	reflectionCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(DEFAULT_LAYER, SKYBOX_LAYER);
@@ -116,13 +116,12 @@ int main()
 	waterMaterial->GetUniforms().AddUniform("u_RefractionTexture", refractionTexture);
 	waterMaterial->GetUniforms().AddUniform("u_ReflectionTexture", reflectionTexture);
 	waterMaterial->GetUniforms().AddUniform("u_DepthTexture", refractionTexture->GetFramebuffer()->GetTexture(ColorBuffer::Depth));
-	waterMaterial->GetUniforms().AddUniform("u_CameraPlanes", glm::vec2{ 0.1f, 1000.0f });
 	waterMaterial->GetUniforms().AddUniform("u_NormalMap", normal);
 	waterMaterial->GetUniforms().AddUniform("u_DUDVMap", dudv);
 	waterMaterial->GetUniforms().AddUniform("u_Time", 0.0f);
 
 	// Scene& uiScene = app.CreateScene();
-	Entity uiCamera = scene.CreateCamera(glm::ortho<float>(0.0f, app.GetWindow().GetWidth(), 0.0f, app.GetWindow().GetHeight()));
+	Entity uiCamera = scene.CreateCamera(Frustum::Orthographic(0.0f, app.GetWindow().GetWidth(), 0.0f, app.GetWindow().GetHeight()));
 	uiCamera.GetComponent<CameraComponent>().RenderTarget = *screen;
 	uiCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(TEXTURE_LAYER);
 	uiCamera.GetComponent<CameraComponent>().Mode = CameraMode::Overlay;

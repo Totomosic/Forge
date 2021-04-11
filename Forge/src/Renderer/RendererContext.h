@@ -7,10 +7,14 @@
 namespace Forge
 {
 
+	class UniformContext;
+
 	constexpr const char ProjectionMatrixUniformName[] = "u_ProjectionMatrix";
 	constexpr const char ViewMatrixUniformName[] = "u_ViewMatrix";
 	constexpr const char ProjViewMatrixUniformName[] = "u_ProjViewMatrix";
 	constexpr const char ModelMatrixUniformName[] = "u_ModelMatrix";
+	constexpr const char CameraFarPlaneUniformName[] = "u_FarPlane";
+	constexpr const char CameraNearPlaneUniformName[] = "u_NearPlane";
 
 	constexpr const char LightSourceArrayBase[] = "u_LightSources";
 	constexpr const char LightSourceArrayUniformName[] = "u_LightSources[0].Position";
@@ -22,9 +26,6 @@ namespace Forge
 	constexpr const char ClippingPlanesArrayBase[] = "u_ClippingPlanes";
 	constexpr const char ClippingPlanesArrayUniformName[] = "u_ClippingPlanes[0]";
 	constexpr const char UsedClippingPlanesUniformName[] = "u_UsedClippingPlanes";
-
-	constexpr const char ShadowMapUniformName[] = "u_ShadowMap";
-	constexpr const char LightSpaceTransformUniformName[] = "u_LightSpaceTransform";
 
 	enum class RenderPass
 	{
@@ -41,12 +42,12 @@ namespace Forge
 		bool ViewMatrix;
 		bool ProjViewMatrix;
 		bool ModelMatrix;
+		bool CameraFarPlane;
+		bool CameraNearPlane;
 
 		bool LightSources;
 		bool Animation;
 		bool ClippingPlanes;
-
-		bool ShadowMap;
 	};
 
 	class FORGE_API RendererContext
@@ -58,18 +59,22 @@ namespace Forge
 		glm::mat4 m_ProjectionMatrix;
 		glm::mat4 m_ViewMatrix;
 		glm::mat4 m_ProjViewMatrix;
+		float m_CameraFarPlane;
+		float m_CameraNearPlane;
 		
 		std::vector<LightSource> m_LightSources;
 		std::vector<glm::vec4> m_ClippingPlanes;
 		int m_NextTextureSlot;
-		Ref<Texture> m_ShadowMap;
-		glm::mat4 m_LightSpaceTransform;
+
+		Scope<UniformContext> m_PassUniforms;
 
 		std::unordered_map<const Shader*, ShaderRequirements> m_RequirementsMap;
 
 	public:
-		void SetShadowMap(const Ref<Texture>& shadowMap);
-		inline void SetLightSpaceTransform(const glm::mat4& transform) { m_LightSpaceTransform = transform; }
+		RendererContext();
+
+		inline UniformContext& GetUniforms() const { return *m_PassUniforms; }
+
 		void SetCamera(const CameraData& camera);
 		void SetLightSources(const std::vector<LightSource>& lights);
 		void AddLightSource(const LightSource& light);

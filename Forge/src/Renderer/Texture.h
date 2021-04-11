@@ -121,6 +121,8 @@ namespace Forge
 		TextureCube(const void** pixels, uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
 
 	public:
+		static Ref<TextureCube> Create(uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
+
 		static Ref<TextureCube> Create(
 			const std::string& front,
 			const std::string& back,

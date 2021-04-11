@@ -11,6 +11,11 @@ namespace Forge
 	{
 	}
 
+	void UniformContext::Clear()
+	{
+		m_Uniforms.clear();
+	}
+
 	void UniformContext::Apply(const Ref<Shader>& shader, RendererContext& context) const
 	{
 		for (const auto& pair : m_Uniforms)

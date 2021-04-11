@@ -55,9 +55,10 @@ namespace Forge
 		template<typename T>
 		void UpdateUniform(const std::string& name, const T& value)
 		{
-			((UniformContainer<T>*)m_Uniforms[name].get())->Value = value;
+			((UniformContainer<T>*)m_Uniforms[name].get())->Value = value; 
 		}
 
+		void Clear();
 		void Apply(const Ref<Shader>& shader, RendererContext& context) const;
 
 	};

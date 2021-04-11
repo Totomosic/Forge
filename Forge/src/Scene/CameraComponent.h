@@ -22,7 +22,7 @@ namespace Forge
 	struct FORGE_API CameraComponent
 	{
 	public:
-		glm::mat4 ProjectionMatrix;
+		Forge::Frustum Frustum;
 		Forge::Viewport Viewport;
 		uint64_t LayerMask = 0xFFFFFFFFFFFFFFFF;
 		int Priority = 0;
@@ -34,8 +34,8 @@ namespace Forge
 
 	public:
 		CameraComponent() = default;
-		inline CameraComponent(const glm::mat4& projection)
-			: ProjectionMatrix(projection), Viewport()
+		inline CameraComponent(const Forge::Frustum& frustum)
+			: Frustum(frustum), Viewport()
 		{}
 
 		void CreateShadowPass(uint32_t width = DEFAULT_SHADOW_WIDTH, uint32_t height = DEFAULT_SHADOW_HEIGHT)

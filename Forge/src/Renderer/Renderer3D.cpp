@@ -41,16 +41,16 @@ namespace Forge
 			RenderAll();
 
 			m_CurrentRenderPass = RenderPass::WithShadow;
-			m_Context.SetShadowMap(m_ShadowRenderTarget->GetTexture(ColorBuffer::Depth));
-			m_Context.SetLightSpaceTransform(shadowScene.Camera.ProjectionMatrix * shadowScene.Camera.ViewMatrix);
+			Ref<Texture> shadowMap = m_ShadowRenderTarget->GetTexture(ColorBuffer::Depth);
 			m_ShadowRenderTarget = nullptr;
 
 			SetupScene(m_CurrentScene);
+			m_Context.GetUniforms().AddUniform("u_ShadowMap", shadowMap);
+			m_Context.GetUniforms().AddUniform("u_LightSpaceTransform", shadowScene.Camera.Frustum.ProjectionMatrix * shadowScene.Camera.ViewMatrix);
 			RenderAll();
 		}
 		else
 		{
-			m_Context.SetShadowMap(nullptr);
 			m_CurrentRenderPass = RenderPass::WithoutShadow;
 			SetupScene(m_CurrentScene);
 			RenderAll();
@@ -77,7 +77,7 @@ namespace Forge
 		}
 		if (data.RenderTarget == m_ShadowRenderTarget)
 		{
-			RenderCommand::Clear();
+			RenderCommand::ClearDepth();
 		}
 		else if (m_ClearedFramebuffers.find(data.RenderTarget.get()) == m_ClearedFramebuffers.end())
 		{
@@ -132,8 +132,12 @@ namespace Forge
 		CameraData camera;
 		camera.Viewport = { 0, 0, m_ShadowRenderTarget->GetWidth(), m_ShadowRenderTarget->GetHeight() };
 		camera.ViewMatrix = glm::lookAt(light.Position, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
-		camera.ProjectionMatrix = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 50.0f);
+		camera.Frustum = Frustum::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 50.0f);
 		return camera;
+	}
+
+	void Renderer3D::GetCameraTransformsFromLightSource(const LightSource& light, glm::mat4 transforms[6])
+	{
 	}
 
 }

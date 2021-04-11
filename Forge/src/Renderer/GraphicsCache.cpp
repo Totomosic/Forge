@@ -12,6 +12,7 @@ namespace Forge
     Ref<Shader> GraphicsCache::s_LitColorShader;
     Ref<Shader> GraphicsCache::s_LitTextureShader;
     Ref<Shader> GraphicsCache::s_DefaultShadowShader;
+    Ref<Shader> GraphicsCache::s_DefaultPointShadowShader;
     std::unordered_map<int, Ref<Shader>> GraphicsCache::s_DefaultColorAnimatedShaders;
     std::unordered_map<int, Ref<Shader>> GraphicsCache::s_LitTextureAnimatedShaders;
 
@@ -25,6 +26,7 @@ namespace Forge
         CreateLitColorShader();
         CreateLitTextureShader();
         CreateDefaultShadowShader();
+        CreateDefaultPointShadowShader();
 
         CreateSquareMesh();
         CreateCubeMesh();
@@ -404,6 +406,56 @@ namespace Forge
             "}\n";
 
         s_DefaultShadowShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+    }
+
+    void GraphicsCache::CreateDefaultPointShadowShader()
+    {
+        std::string vertexShaderSource =
+            SHADER_VERSION_STRING + '\n' +
+            "layout (location = 0) in vec3 v_Position;\n"
+            "\n"
+            "uniform mat4 u_ModelMatrix;\n"
+            "\n"
+            "void main()\n"
+            "{\n"
+            "    gl_Position = u_ModelMatrix * vec4(v_Position, 1.0);\n"
+            "}\n";
+
+        std::string geometryShaderSource =
+            SHADER_VERSION_STRING + '\n' +
+            "layout(triangles) in;\n"
+            "layout(triangle_strip, max_vertices=18) out;\n"
+            "\n"
+            "uniform mat4 u_PointShadowMatrices[6];\n"
+            "out vec4 f_FragPosition;\n"
+            "void main()\n"
+            "{\n"
+            "   for (int face = 0; face < 6; face++)\n"
+            "   {\n"
+            "       gl_Layer = face;\n"
+            "       for (int i = 0; i < 3; i++)\n"
+            "       {\n"
+            "           f_FragPosition = gl_in[i].gl_Position;\n"
+            "           gl_Position = u_PointShadowMatrices[face] * f_FragPosition;\n"
+            "           EmitVertex();\n"
+            "       }\n"
+            "       EndPrimitive();\n"
+            "   }\n"
+            "}\n";
+
+        std::string fragmentShaderSource =
+            SHADER_VERSION_STRING + '\n' +
+            "in vec4 f_FragPosition;\n"
+            "uniform vec3 u_LightPosition;\n"
+            "uniform float u_FarPlane;\n"
+            "void main()\n"
+            "{\n"
+            "   float lightDistance = length(f_FragPosition.xyz - u_LightPosition);\n"
+            "   lightDistance = lightDistance / u_FarPlane;\n"
+            "   gl_FragDepth = lightDistance;\n"
+            "}\n";
+
+        s_DefaultPointShadowShader = Shader::CreateFromSource(vertexShaderSource, geometryShaderSource, fragmentShaderSource);
     }
 
     void GraphicsCache::CreateSquareMesh()

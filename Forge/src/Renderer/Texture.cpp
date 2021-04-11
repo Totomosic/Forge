@@ -113,6 +113,11 @@ namespace Forge
 		Init(pixels, width, height, uint32_t(format));
 	}
 
+	Ref<TextureCube> TextureCube::Create(uint32_t width, uint32_t height, TextureFormat format, InternalTextureFormat internalFormat)
+	{
+		return CreateRef<TextureCube>(width, height, format, internalFormat);
+	}
+
 	Ref<TextureCube> TextureCube::Create(const std::string& front, const std::string& back, const std::string& left, const std::string& right, const std::string& bottom, const std::string& top)
 	{
 		int width;

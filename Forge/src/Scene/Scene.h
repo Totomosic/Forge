@@ -48,7 +48,7 @@ namespace Forge
 		void AddToAllLayers(Entity entity);
 
 		void SetPrimaryCamera(const Entity& entity);
-		Entity CreateCamera(const glm::mat4& projection);
+		Entity CreateCamera(const Frustum& frustum);
 
 		void OnUpdate(Timestep ts, Renderer3D& renderer);
 

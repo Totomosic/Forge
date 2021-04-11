@@ -52,6 +52,7 @@ namespace Forge
 		void RenderModelInternal(const RenderData& data);
 
 		CameraData CreateCameraFromLightSource(const LightSource& light) const;
+		void GetCameraTransformsFromLightSource(const LightSource& light, glm::mat4 transforms[6]);
 
 	};
 
