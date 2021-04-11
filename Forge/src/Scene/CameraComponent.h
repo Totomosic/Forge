@@ -42,7 +42,7 @@ namespace Forge
 		{
 			Shadows.Enabled = true;
 			Shadows.RenderTarget = Framebuffer::Create(width, height);
-			Shadows.RenderTarget->CreateTextureBuffer(ColorBuffer::Depth);
+			Shadows.RenderTarget->CreateTextureBuffer<TextureCube>(ColorBuffer::Depth);
 		}
 
 	};

@@ -30,14 +30,25 @@ namespace Forge
 		if (m_ShadowRenderTarget)
 		{
 			FORGE_ASSERT(m_CurrentScene.LightSources.size() > 0, "Cannot run shadow pass without light sources");
+			CameraData camera = m_CurrentScene.Camera;
+			camera.Viewport = { 0, 0, m_ShadowRenderTarget->GetWidth(), m_ShadowRenderTarget->GetHeight() };
 			SceneData shadowScene = {
 				m_ShadowRenderTarget,
-				CreateCameraFromLightSource(m_CurrentScene.LightSources[0]),
+				camera,
 				std::vector<LightSource>{}
 			};
 
 			m_CurrentRenderPass = RenderPass::ShadowFormation;
+			glm::mat4 projections[6];
+			GetCameraTransformsFromLightSource(m_CurrentScene.LightSources[0], m_ShadowRenderTarget->GetAspect(), camera.Frustum, projections);
 			SetupScene(shadowScene);
+			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[0]", projections[0]);
+			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[1]", projections[1]);
+			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[2]", projections[2]);
+			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[3]", projections[3]);
+			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[4]", projections[4]);
+			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[5]", projections[5]);
+			m_Context.GetUniforms().AddUniform("u_LightPosition", m_CurrentScene.LightSources[0].Position);
 			RenderAll();
 
 			m_CurrentRenderPass = RenderPass::WithShadow;
@@ -46,7 +57,8 @@ namespace Forge
 
 			SetupScene(m_CurrentScene);
 			m_Context.GetUniforms().AddUniform("u_ShadowMap", shadowMap);
-			m_Context.GetUniforms().AddUniform("u_LightSpaceTransform", shadowScene.Camera.Frustum.ProjectionMatrix * shadowScene.Camera.ViewMatrix);
+			m_Context.GetUniforms().AddUniform("u_LightPosition", m_CurrentScene.LightSources[0].Position);
+			//m_Context.GetUniforms().AddUniform("u_LightSpaceTransform", shadowScene.Camera.Frustum.ProjectionMatrix * shadowScene.Camera.ViewMatrix);
 			RenderAll();
 		}
 		else
@@ -132,12 +144,19 @@ namespace Forge
 		CameraData camera;
 		camera.Viewport = { 0, 0, m_ShadowRenderTarget->GetWidth(), m_ShadowRenderTarget->GetHeight() };
 		camera.ViewMatrix = glm::lookAt(light.Position, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
-		camera.Frustum = Frustum::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 50.0f);
+		camera.Frustum = Frustum::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 50.0f);
 		return camera;
 	}
 
-	void Renderer3D::GetCameraTransformsFromLightSource(const LightSource& light, glm::mat4 transforms[6])
+	void Renderer3D::GetCameraTransformsFromLightSource(const LightSource& light, float aspect, const Frustum& frustum, glm::mat4 transforms[6])
 	{
+		glm::mat4 projection = glm::perspective(glm::radians(90.0f), aspect, frustum.NearPlane, frustum.FarPlane);
+		transforms[0] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 1.0, 0.0, 0.0 }, glm::vec3{ 0, -1, 0 });
+		transforms[1] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{-1.0, 0.0, 0.0 }, glm::vec3{ 0, -1, 0 });
+		transforms[2] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0, 1.0, 0.0 }, glm::vec3{ 0, 0, 1 });
+		transforms[3] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0,-1.0, 0.0 }, glm::vec3{ 0, 0,-1 });
+		transforms[4] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0, 0.0, 1.0 }, glm::vec3{ 0, -1, 0 });
+		transforms[5] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0, 0.0,-1.0 }, glm::vec3{ 0, -1, 0 });
 	}
 
 }

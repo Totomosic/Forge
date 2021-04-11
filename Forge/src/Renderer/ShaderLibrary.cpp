@@ -81,6 +81,16 @@ namespace Forge
             "   float closestDepth = texture(shadowMap, projCoords.xy).r;\n"
             "   return shadow / 9.0;\n"
             "}\n"
+            "\n"
+            "float calculatePointShadow(vec3 position, samplerCube shadowMap, float farPlane, vec3 lightPosition)\n"
+            "{\n"
+            "   float bias = 0.1;\n"
+            "   vec3 lightToFrag = position - lightPosition;\n"
+            "   float closestDepth = texture(shadowMap, lightToFrag).r;\n"
+            "   closestDepth *= farPlane;\n"
+            "   float currentDepth = length(lightToFrag);\n"
+            "   return currentDepth - bias > closestDepth ? 1.0 : 0.0;\n"
+            "}\n"
         },
         {
             "Clipping.h",

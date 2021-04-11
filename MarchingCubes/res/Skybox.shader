@@ -21,7 +21,7 @@ void main()
 	viewMatrix[3] = vec4(0.0, 0.0, 0.0, viewMatrix[3][3]);
 
 	gl_Position = u_ProjectionMatrix * viewMatrix * worldPosition;
-	f_TexCoord = normalize(in_Position);
+	f_TexCoord = in_Position;
 }
 
 #shader FRAGMENT

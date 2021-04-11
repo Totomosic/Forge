@@ -45,7 +45,8 @@ out layout(location = 0) vec4 out_FragColor;
 uniform vec4 u_Color;
 uniform LightSource u_LightSources[MAX_LIGHT_COUNT];
 uniform int u_UsedLightSources;
-uniform sampler2D u_ShadowMap;
+uniform samplerCube u_ShadowMap;
+uniform vec3 u_LightPosition;
 
 uniform sampler2D u_RefractionTexture;
 uniform sampler2D u_ReflectionTexture;
@@ -106,7 +107,7 @@ void main()
 
 	vec4 color = mix(reflection, refraction, max(refractiveFactor, 0.0));
 
-	float shadow = calculateShadow(f_LightSpacePosition, u_ShadowMap, unitNormal, normalize(f_Position - u_LightSources[0].Position));
+	float shadow = calculatePointShadow(f_Position, u_ShadowMap, u_FarPlane, u_LightPosition);
 
 	out_FragColor = BLUE * color * (calculateLightDiffuse(f_Position, unitNormal, u_LightSources, u_UsedLightSources, shadow) + calculateLightSpecular(f_Position, unitNormal, 8.0, 10.0, unitToCamera, u_LightSources, u_UsedLightSources, shadow));
 	out_FragColor.a = clamp(waterDepth / 0.5, 0.0, 1.0);

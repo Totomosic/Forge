@@ -28,7 +28,7 @@ namespace Forge
 	{
 	}
 
-	Material::Material(const Ref<Shader>& shader) : Material({ GraphicsCache::DefaultShadowShader(), shader, shader })
+	Material::Material(const Ref<Shader>& shader) : Material({ GraphicsCache::DefaultPointShadowShader(), shader, shader })
 	{
 	}
 
@@ -49,7 +49,7 @@ namespace Forge
 
 	Ref<Material> Material::CreateFromShaderFile(const std::string& vertexFilePath, const std::string& fragmentFilePath, ShaderDefines defines)
 	{
-		Ref<Shader> shadowFormationShader = GraphicsCache::DefaultShadowShader();
+		Ref<Shader> shadowFormationShader = GraphicsCache::DefaultPointShadowShader();
 		Ref<Shader> withoutShadowShader = Shader::CreateFromFile(vertexFilePath, fragmentFilePath, defines);
 		defines.push_back(ShadowMapShaderDefine);
 		Ref<Shader> shadowShader = Shader::CreateFromFile(vertexFilePath, fragmentFilePath, defines);
@@ -58,7 +58,7 @@ namespace Forge
 
 	Ref<Material> Material::CreateFromShaderSource(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource, ShaderDefines defines)
 	{
-		Ref<Shader> shadowFormationShader = GraphicsCache::DefaultShadowShader();
+		Ref<Shader> shadowFormationShader = GraphicsCache::DefaultPointShadowShader();
 		Ref<Shader> withoutShadowShader = Shader::CreateFromSource(vertexSource, geometrySource, fragmentSource, defines);
 		defines.push_back(ShadowMapShaderDefine);
 		Ref<Shader> shadowShader = Shader::CreateFromSource(vertexSource, geometrySource, fragmentSource, defines);
@@ -67,7 +67,7 @@ namespace Forge
 
 	Ref<Material> Material::CreateFromShaderFile(const std::string& vertexFilePath, const std::string& geometryFilePath, const std::string& fragmentFilePath, ShaderDefines defines)
 	{
-		Ref<Shader> shadowFormationShader = GraphicsCache::DefaultShadowShader();
+		Ref<Shader> shadowFormationShader = GraphicsCache::DefaultPointShadowShader();
 		Ref<Shader> withoutShadowShader = Shader::CreateFromFile(vertexFilePath, geometryFilePath, fragmentFilePath, defines);
 		defines.push_back(ShadowMapShaderDefine);
 		Ref<Shader> shadowShader = Shader::CreateFromFile(vertexFilePath, geometryFilePath, fragmentFilePath, defines);
@@ -76,7 +76,7 @@ namespace Forge
 
 	Ref<Material> Material::CreateFromShaderFile(const std::string& shaderFilePath, ShaderDefines defines)
 	{
-		Ref<Shader> shadowFormationShader = GraphicsCache::DefaultShadowShader();
+		Ref<Shader> shadowFormationShader = GraphicsCache::DefaultPointShadowShader();
 		Ref<Shader> withoutShadowShader = Shader::CreateFromFile(shaderFilePath, defines);
 		defines.push_back(ShadowMapShaderDefine);
 		Ref<Shader> shadowShader = Shader::CreateFromFile(shaderFilePath, defines);
