@@ -62,13 +62,13 @@ namespace Forge
 		std::vector<LightSource> m_LightSources;
 		std::vector<glm::vec4> m_ClippingPlanes;
 		int m_NextTextureSlot;
-		Ref<Texture2D> m_ShadowMap;
+		Ref<Texture> m_ShadowMap;
 		glm::mat4 m_LightSpaceTransform;
 
 		std::unordered_map<const Shader*, ShaderRequirements> m_RequirementsMap;
 
 	public:
-		void SetShadowMap(const Ref<Texture2D>& shadowMap);
+		void SetShadowMap(const Ref<Texture>& shadowMap);
 		inline void SetLightSpaceTransform(const glm::mat4& transform) { m_LightSpaceTransform = transform; }
 		void SetCamera(const CameraData& camera);
 		void SetLightSources(const std::vector<LightSource>& lights);

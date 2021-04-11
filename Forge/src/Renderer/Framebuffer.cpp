@@ -26,18 +26,6 @@ namespace Forge
         m_Height = height;
     }
 
-    Ref<Texture2D> Framebuffer::CreateTextureBuffer(ColorBuffer buffer, Ref<Texture2D> texture)
-    {
-        if (!texture)
-            texture = Texture2D::Create(GetWidth(), GetHeight());
-        if (buffer == ColorBuffer::Depth)
-            CreateDepthTextureBuffer(texture.get());
-        else
-            CreateColorTextureBuffer(buffer, texture.get());
-        m_TextureBuffers[buffer] = texture;
-        return texture;
-    }
-
     FramebufferTextures Framebuffer::CreateDefaultBuffers()
     {
         return { CreateTextureBuffer(ColorBuffer::Color0), CreateTextureBuffer(ColorBuffer::Depth) };
@@ -57,38 +45,28 @@ namespace Forge
         return framebuffer;
     }
 
-    void Framebuffer::CreateColorTextureBuffer(ColorBuffer buffer, const Texture2D* texture)
+    void Framebuffer::CreateColorTextureBuffer(ColorBuffer buffer, const Texture* texture)
     {
         FORGE_ASSERT(m_Handle.Id != 0, "Invalid framebuffer");
         FORGE_ASSERT(!HasTexture(buffer), "Buffer already exists");
         FORGE_ASSERT(!IsMultisampled(), "Multisampled framebuffer cannot have texture attachments");
         Bind();
-        texture->Bind(0);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texture->GetWidth(), texture->GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, (GLenum)buffer, GL_TEXTURE_2D, texture->GetId(), 0);
+        texture->Bind();
+        texture->SetWrapMode(TextureWrap::ClampToEdge);
+        glFramebufferTexture(GL_FRAMEBUFFER, (GLenum)buffer, texture->GetId(), 0);
         glDrawBuffer((GLenum)buffer);
         glReadBuffer((GLenum)buffer);
     }
 
-    void Framebuffer::CreateDepthTextureBuffer(const Texture2D* texture)
+    void Framebuffer::CreateDepthTextureBuffer(const Texture* texture)
     {
         FORGE_ASSERT(m_Handle.Id != 0, "Invalid framebuffer");
         FORGE_ASSERT(!HasTexture(ColorBuffer::Depth), "Buffer already exists");
         FORGE_ASSERT(!IsMultisampled(), "Multisampled framebuffer cannot have texture attachments");
         Bind();
-        texture->Bind(0);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, texture->GetWidth(), texture->GetHeight(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture->GetId(), 0);
+        texture->Bind();
+        texture->SetWrapMode(TextureWrap::ClampToEdge);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture->GetId(), 0);
     }
 
     void Framebuffer::Init()

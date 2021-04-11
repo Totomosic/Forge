@@ -1,6 +1,7 @@
 #pragma once
 #include "ForgePch.h"
 #include "Renderer/Framebuffer.h"
+#include "Renderer/CameraData.h"
 
 #include <glm/glm.hpp>
 
@@ -28,6 +29,7 @@ namespace Forge
 		Ref<Framebuffer> RenderTarget = nullptr;
 		std::vector<glm::vec4> ClippingPlanes = {};
 		Color ClearColor = COLOR_BLACK;
+		CameraMode Mode = CameraMode::Normal;
 		ShadowPass Shadows;
 
 	public:

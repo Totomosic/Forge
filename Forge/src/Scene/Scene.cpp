@@ -81,7 +81,11 @@ namespace Forge
                 return false;
             if (ccB.RenderTarget == nullptr && ccA.RenderTarget != nullptr)
                 return true;
-            return ccA.Priority <= ccB.Priority;
+            if (ccA.Mode == CameraMode::Overlay && ccB.Mode != CameraMode::Overlay)
+                return false;
+            if (ccB.Mode == CameraMode::Overlay && ccA.Mode != CameraMode::Overlay)
+                return true;
+            return ccA.Priority < ccB.Priority;
         });
         for (entt::entity camera : cameras)
         {
@@ -92,6 +96,7 @@ namespace Forge
             data.Viewport = cameraComponent.Viewport;
             data.ClippingPlanes = cameraComponent.ClippingPlanes;
             data.ClearColor = cameraComponent.ClearColor;
+            data.Mode = cameraComponent.Mode;
 
             for (auto entity : m_Registry.view<AnimatorComponent>())
             {

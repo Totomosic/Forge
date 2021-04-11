@@ -3,8 +3,10 @@
 
 namespace Forge
 {
-	void RendererContext::SetShadowMap(const Ref<Texture2D>& shadowMap)
+	void RendererContext::SetShadowMap(const Ref<Texture>& shadowMap)
 	{
+		if (m_ShadowMap && shadowMap == nullptr)
+			m_ShadowMap->Unbind(SHADOW_MAP_TEXTURE_SLOT);
 		m_ShadowMap = shadowMap;
 		if (shadowMap)
 			m_ShadowMap->Bind(SHADOW_MAP_TEXTURE_SLOT);

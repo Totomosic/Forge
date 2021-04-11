@@ -51,7 +51,7 @@ namespace Forge
 		uint32_t m_Height;
 		int m_Samples;
 		Viewport m_Viewport;
-		std::unordered_map<ColorBuffer, Ref<Texture2D>> m_TextureBuffers;
+		std::unordered_map<ColorBuffer, Ref<Texture>> m_TextureBuffers;
 
 	public:
 		Framebuffer(uint32_t width, uint32_t height, int samples = 0);
@@ -62,13 +62,29 @@ namespace Forge
 		inline float GetAspect() const { return float(GetWidth()) / float(GetHeight()); }
 		inline bool IsMultisampled() const { return GetSamples() > 0; }
 		inline bool HasTexture(ColorBuffer buffer) const { return m_TextureBuffers.find(buffer) != m_TextureBuffers.end(); }
-		inline Ref<Texture2D> GetTexture(ColorBuffer buffer) const { return m_TextureBuffers.at(buffer); }
+		inline Ref<Texture> GetTexture(ColorBuffer buffer) const { return m_TextureBuffers.at(buffer); }
 
 		void Bind() const;
 		void Unbind() const;
 		void SetSize(uint32_t width, uint32_t height);
 
-		Ref<Texture2D> CreateTextureBuffer(ColorBuffer buffer = ColorBuffer::Color0, Ref<Texture2D> texture = nullptr);
+		template<typename T = Texture2D>
+		Ref<T> CreateTextureBuffer(ColorBuffer buffer = ColorBuffer::Color0, Ref<T> texture = nullptr)
+		{
+			if (!texture)
+			{
+				if (buffer == ColorBuffer::Depth)
+					texture = T::Create(GetWidth(), GetHeight(), TextureFormat::DEPTH, InternalTextureFormat::DEPTH);
+				else
+					texture = T::Create(GetWidth(), GetHeight());
+			}
+			if (buffer == ColorBuffer::Depth)
+				CreateDepthTextureBuffer(texture.get());
+			else
+				CreateColorTextureBuffer(buffer, texture.get());
+			m_TextureBuffers[buffer] = texture;
+			return texture;
+		}
 		FramebufferTextures CreateDefaultBuffers();
 
 		friend class RenderTexture;
@@ -78,8 +94,8 @@ namespace Forge
 		static Ref<Framebuffer> CreateWindowFramebuffer(uint32_t width, uint32_t height);
 
 	private:
-		void CreateColorTextureBuffer(ColorBuffer buffer, const Texture2D* texture);
-		void CreateDepthTextureBuffer(const Texture2D* texture);
+		void CreateColorTextureBuffer(ColorBuffer buffer, const Texture* texture);
+		void CreateDepthTextureBuffer(const Texture* texture);
 		void Init();
 
 	};

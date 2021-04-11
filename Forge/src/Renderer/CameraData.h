@@ -8,6 +8,12 @@
 namespace Forge
 {
 
+	enum class CameraMode
+	{
+		Normal,
+		Overlay,
+	};
+
 	struct FORGE_API CameraData
 	{
 	public:
@@ -16,6 +22,7 @@ namespace Forge
 		Forge::Viewport Viewport;
 		std::vector<glm::vec4> ClippingPlanes;
 		Color ClearColor;
+		CameraMode Mode = CameraMode::Normal;
 	};
 
 }

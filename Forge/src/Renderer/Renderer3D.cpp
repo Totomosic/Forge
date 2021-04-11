@@ -50,6 +50,7 @@ namespace Forge
 		}
 		else
 		{
+			m_Context.SetShadowMap(nullptr);
 			m_CurrentRenderPass = RenderPass::WithoutShadow;
 			SetupScene(m_CurrentScene);
 			RenderAll();
@@ -83,6 +84,10 @@ namespace Forge
 			RenderCommand::SetClearColor(data.Camera.ClearColor);
 			RenderCommand::Clear();
 			m_ClearedFramebuffers.insert(data.RenderTarget.get());
+		}
+		else if (data.Camera.Mode == CameraMode::Overlay)
+		{
+			RenderCommand::ClearDepth();
 		}
 		m_Context.Reset();
 		m_Context.SetCamera(data.Camera);

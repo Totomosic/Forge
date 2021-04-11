@@ -9,7 +9,19 @@
 namespace Forge
 {
 
-#define FORGE_LAYER(number) (1ULL << (number))
+	namespace Detail
+	{
+
+		// C++17 fold expression https://en.cppreference.com/w/cpp/language/fold
+		template<typename ... Args>
+		inline constexpr uint64_t CreateLayerMask(Args... args)
+		{
+			return ((1ULL << args) | ...);
+		}
+
+	}
+
+#define FORGE_LAYERS(...) ::Forge::Detail::CreateLayerMask(__VA_ARGS__)
 
 	class Entity;
 

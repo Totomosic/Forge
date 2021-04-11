@@ -32,7 +32,7 @@ namespace Forge
 		std::unordered_map<std::string, int> m_UniformLocations;
 
 	public:
-		Shader(const std::string& vertexSource, const std::string& fragmentSource, const ShaderDefines& defines = {});
+		Shader(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource, const ShaderDefines& defines = {});
 
 		void Bind() const;
 		void Unbind() const;
@@ -53,10 +53,12 @@ namespace Forge
 	public:
 		static Ref<Shader> CreateFromSource(const std::string& vertexSource, const std::string& fragmentSource, const ShaderDefines& defines = {});
 		static Ref<Shader> CreateFromFile(const std::string& vertexFilePath, const std::string& fragmentFilePath, const ShaderDefines& defines = {});
+		static Ref<Shader> CreateFromSource(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource, const ShaderDefines& defines = {});
+		static Ref<Shader> CreateFromFile(const std::string& vertexFilePath, const std::string& geometryFilePath, const std::string& fragmentFilePath, const ShaderDefines& defines = {});
 		static Ref<Shader> CreateFromFile(const std::string& shaderFilePath, const ShaderDefines& defines = {});
 
 	private:
-		void Init(const std::string& vertexSource, const std::string& fragmentSource);
+		void Init(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource);
 		int GetUniformLocation(const std::string& name);
 		
 		static std::string PreprocessShaderSource(const std::string& source, const ShaderDefines& defines);

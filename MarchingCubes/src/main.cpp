@@ -7,6 +7,13 @@ using namespace Forge;
 
 #include "Terrain.h"
 
+int DEFAULT_LAYER = 0;
+int WATER_LAYER = 1;
+int SKYBOX_LAYER = 2;
+
+int UI_LAYER = 32;
+int TEXTURE_LAYER = 33;
+
 int main()
 {
 	ForgeInstance::Init();
@@ -29,7 +36,7 @@ int main()
 	Ref<Material> skyboxMaterial = Material::CreateFromShaderFile("res/Skybox.shader");
 	skyboxMaterial->GetUniforms().AddUniform("u_Texture", skyboxTexture);
 
-	Ref<RenderTexture> screen = RenderTexture::Create(app.GetWindow().GetWidth() * 2, app.GetWindow().GetHeight() * 2);
+	Ref<RenderTexture> screen = RenderTexture::Create(app.GetWindow().GetWidth(), app.GetWindow().GetHeight());
 	Ref<Material> screenMaterial = Material::CreateFromShaderFile("res/postprocessing/PostProcess.shader");
 	screenMaterial->GetUniforms().AddUniform("u_Depth", 1.0f);
 	screenMaterial->GetUniforms().AddUniform("u_Texture", screen);
@@ -39,16 +46,16 @@ int main()
 	camera.GetComponent<TransformComponent>().SetPosition({ 0, 2, 10 });
 	camera.GetComponent<CameraComponent>().ClearColor = SKY_BLUE;
 	camera.GetComponent<CameraComponent>().CreateShadowPass(2048, 2048);
-	camera.GetComponent<CameraComponent>().Shadows.LayerMask = FORGE_LAYER(0);
-	camera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYER(0) | FORGE_LAYER(1) | FORGE_LAYER(2);
-	camera.GetComponent<CameraComponent>().RenderTarget = screen->GetFramebuffer();
+	camera.GetComponent<CameraComponent>().Shadows.LayerMask = FORGE_LAYERS(DEFAULT_LAYER);
+	camera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(DEFAULT_LAYER, WATER_LAYER, SKYBOX_LAYER);
+	camera.GetComponent<CameraComponent>().RenderTarget = *screen;
 	camera.GetComponent<CameraComponent>().Priority = 1;
 	camera.GetComponent<CameraComponent>().Viewport = { 0, 0, screen->GetWidth(), screen->GetHeight() };
 
 	Entity screenCamera = scene.CreateCamera(glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f));
-	screenCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYER(32);
+	screenCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(UI_LAYER);
 
-	Entity screenRectangle = scene.CreateEntity(32);
+	Entity screenRectangle = scene.CreateEntity(UI_LAYER);
 	screenRectangle.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::SquareMesh(), screenMaterial));
 
 	app.GetWindow().Events.Resize.AddEventListener([screenCamera](const WindowResize& evt) mutable
@@ -64,54 +71,47 @@ int main()
 	sun.AddComponent<LightSourceComponent>();
 	sun.GetComponent<LightSourceComponent>().Ambient = 0.3f;
 	scene.AddToAllLayers(sun);
-	
+
 	Terrain terrain({ -100, -1450, 300 }, -10.0f);
 	Ref<Mesh> mesh = terrain.GenerateMesh({ 10, 20, 10 }, { 100, 200, 100 }, 2.0f);
 	Ref<Material> material = Material::CreateFromShaderFile("res/Terrain.shader");
 	material->GetUniforms().AddUniform("u_Color", Color{ 112, 72, 60 });
 	Ref<Model> model = Model::Create(mesh, material);
 
-	Entity water = scene.CreateEntity();
+	Entity water = scene.CreateEntity(WATER_LAYER);
 	Ref<Mesh> waterMesh = GraphicsCache::SquareMesh();
 	water.AddComponent<ModelRendererComponent>(Model::Create(waterMesh, waterMaterial));
 	water.GetTransform().SetScale({ 20.0f, 20.0f, 1.0f });
 	water.GetTransform().Rotate(-PI / 2.0f, glm::vec3{ 1, 0, 0 });
 	water.GetTransform().SetPosition({ 0, 0, 0 });
-	scene.SetLayer(water, 1);
 
-	/*Entity plane = scene.CreateEntity();
-	plane.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::SquareMesh(), GraphicsCache::LitColorMaterial()));
-	plane.GetTransform().SetScale({ 5.0f, 5.0f, 1.0f });
-	plane.GetTransform().Rotate(-PI / 2.0f, glm::vec3{ 1, 0, 0 });
-	plane.GetTransform().SetPosition({ 0, 1.5f, 0 });*/
-
-	Entity terrainEntity = scene.CreateEntity();
+	Entity terrainEntity = scene.CreateEntity(DEFAULT_LAYER);
 	terrainEntity.AddComponent<ModelRendererComponent>(model);
 	terrainEntity.GetTransform().SetPosition({ 0, -10, 0 });
 
-	Entity skybox = scene.CreateEntity();
+	Entity skybox = scene.CreateEntity(SKYBOX_LAYER);
 	skybox.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::CubeMesh(), skyboxMaterial));
 	skybox.GetTransform().SetPosition({ 0, 0, 0 });
 	skybox.GetTransform().SetScale({ 200, 200, 200 });
 
 	Ref<RenderTexture> refractionTexture = RenderTexture::Create(1280, 720);
-	Entity refractionCamera = scene.CreateCamera(glm::perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 1000.0f));
+	Entity refractionCamera = scene.CreateCamera(camera.GetComponent<CameraComponent>().ProjectionMatrix);
 	refractionCamera.GetComponent<CameraComponent>().ClearColor = SKY_BLUE;
-	refractionCamera.GetComponent<CameraComponent>().RenderTarget = refractionTexture->GetFramebuffer();
-	refractionCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYER(0);
+	refractionCamera.GetComponent<CameraComponent>().RenderTarget = *refractionTexture;
+	refractionCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(DEFAULT_LAYER, SKYBOX_LAYER);
 	refractionCamera.GetComponent<CameraComponent>().ClippingPlanes.push_back(glm::vec4{ 0.0f, -1.0f, 0.0f, 0.0f });
+	glm::vec4& refractionPlane = refractionCamera.GetComponent<CameraComponent>().ClippingPlanes[0];
 
 	Ref<RenderTexture> reflectionTexture = RenderTexture::Create(1280, 720);
-	Entity reflectionCamera = scene.CreateCamera(glm::perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 1000.0f));
+	Entity reflectionCamera = scene.CreateCamera(camera.GetComponent<CameraComponent>().ProjectionMatrix);
 	reflectionCamera.GetComponent<CameraComponent>().ClearColor = SKY_BLUE;
-	reflectionCamera.GetComponent<CameraComponent>().RenderTarget = reflectionTexture->GetFramebuffer();
-	reflectionCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYER(0);
+	reflectionCamera.GetComponent<CameraComponent>().RenderTarget = *reflectionTexture;
+	reflectionCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(DEFAULT_LAYER, SKYBOX_LAYER);
 	reflectionCamera.GetComponent<CameraComponent>().ClippingPlanes.push_back(glm::vec4{ 0.0f, 1.0f, 0.0f, 0.0f });
+	glm::vec4& reflectionPlane = reflectionCamera.GetComponent<CameraComponent>().ClippingPlanes[0];
 
 	Ref<Texture2D> normal = Texture2D::Create("res/normal.png");
 	Ref<Texture2D> dudv = Texture2D::Create("res/waterDUDV.png");
-	// normal->GenerateMipmaps();
-	dudv->GenerateMipmaps();
 
 	waterMaterial->GetUniforms().AddUniform("u_RefractionTexture", refractionTexture);
 	waterMaterial->GetUniforms().AddUniform("u_ReflectionTexture", reflectionTexture);
@@ -120,6 +120,23 @@ int main()
 	waterMaterial->GetUniforms().AddUniform("u_NormalMap", normal);
 	waterMaterial->GetUniforms().AddUniform("u_DUDVMap", dudv);
 	waterMaterial->GetUniforms().AddUniform("u_Time", 0.0f);
+
+	// Scene& uiScene = app.CreateScene();
+	Entity uiCamera = scene.CreateCamera(glm::ortho<float>(0.0f, app.GetWindow().GetWidth(), 0.0f, app.GetWindow().GetHeight()));
+	uiCamera.GetComponent<CameraComponent>().RenderTarget = *screen;
+	uiCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(TEXTURE_LAYER);
+	uiCamera.GetComponent<CameraComponent>().Mode = CameraMode::Overlay;
+
+	int index = 0;
+	Ref<Texture2D> textures[] = { refractionTexture, reflectionTexture };
+	for (const Ref<Texture2D>& tex : textures)
+	{
+		Entity e = scene.CreateEntity(TEXTURE_LAYER);
+		e.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::SquareMesh(), GraphicsCache::DefaultTextureMaterial(tex)));
+		e.GetTransform().SetPosition({ 100 + index * 200, 100, -0.5f });
+		e.GetTransform().SetScale({ 200, 200, 1 });
+		index++;
+	}
 
 	float time = 0.0f;
 
@@ -157,6 +174,8 @@ int main()
 		waterMaterial->GetUniforms().UpdateUniform("u_Time", time);
 
 		screenMaterial->GetUniforms().UpdateUniform("u_Depth", -transform.GetPosition().y);
+		refractionPlane.y = transform.GetPosition().y < 0 ? 1.0 : -1.0;
+		reflectionPlane.y = transform.GetPosition().y < 0 ? -1.0 : 1.0;
 
 		app.OnUpdate();
 	}

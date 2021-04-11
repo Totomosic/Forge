@@ -52,7 +52,11 @@ in vec4 f_LightSpacePosition;
 
 void main()
 {
+#ifdef SHADOW_MAP
 	float shadow = calculateShadow(f_LightSpacePosition, u_ShadowMap, f_Normal, normalize(f_Position - u_LightSources[0].Position));
+#else
+	float shadow = 0.0;
+#endif
 	float flatness = dot(WORLD_UP, f_Normal);
 	vec4 baseColor = u_Color;
 	if (f_Position.y > 0 && flatness >= FLATNESS_PROPORTION)

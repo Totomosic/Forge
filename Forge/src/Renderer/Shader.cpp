@@ -50,10 +50,10 @@ namespace Forge
         }
     }
 
-    Shader::Shader(const std::string& vertexSource, const std::string& fragmentSource, const ShaderDefines& defines)
+    Shader::Shader(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource, const ShaderDefines& defines)
         : m_Handle()
     {
-        Init(PreprocessShaderSource(vertexSource, defines), PreprocessShaderSource(fragmentSource, defines));
+        Init(PreprocessShaderSource(vertexSource, defines), PreprocessShaderSource(geometrySource, defines), PreprocessShaderSource(fragmentSource, defines));
     }
 
     void Shader::Bind() const
@@ -123,12 +123,22 @@ namespace Forge
 
     Ref<Shader> Shader::CreateFromSource(const std::string& vertexSource, const std::string& fragmentSource, const ShaderDefines& defines)
     {
-        return CreateRef<Shader>(vertexSource, fragmentSource, defines);
+        return CreateFromSource(vertexSource, "", fragmentSource, defines);
     }
 
     Ref<Shader> Shader::CreateFromFile(const std::string& vertexFilePath, const std::string& fragmentFilePath, const ShaderDefines& defines)
     {
         return CreateFromSource(FileUtils::ReadTextFile(vertexFilePath), FileUtils::ReadTextFile(fragmentFilePath), defines);
+    }
+
+    Ref<Shader> Shader::CreateFromSource(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource, const ShaderDefines& defines)
+    {
+        return CreateRef<Shader>(vertexSource, geometrySource, fragmentSource, defines);
+    }
+
+    Ref<Shader> Shader::CreateFromFile(const std::string& vertexFilePath, const std::string& geometryFilePath, const std::string& fragmentFilePath, const ShaderDefines& defines)
+    {
+        return CreateFromSource(FileUtils::ReadTextFile(vertexFilePath), FileUtils::ReadTextFile(geometryFilePath), FileUtils::ReadTextFile(fragmentFilePath), defines);
     }
 
     Ref<Shader> Shader::CreateFromFile(const std::string& shaderFilePath, const ShaderDefines& defines)
@@ -138,11 +148,13 @@ namespace Forge
             NONE,
             VERTEX,
             FRAGMENT,
+            GEOMETRY,
         };
 
         std::string fileData = FileUtils::ReadTextFile(shaderFilePath);
         std::stringstream vertexSource;
         std::stringstream fragmentSource;
+        std::stringstream geometrySource;
 
         ShaderType currentShader = ShaderType::NONE;
 
@@ -158,6 +170,8 @@ namespace Forge
                     currentShader = ShaderType::VERTEX;
                 else if (type == "fragment" || type == "FRAGMENT")
                     currentShader = ShaderType::FRAGMENT;
+                else if (type == "geometry" || type == "GEOMETRY")
+                    currentShader = ShaderType::GEOMETRY;
                 start = end + 1;
                 if (start < part.size() && (part[start] == '\r' || part[start] == '\n' || part[start] == ' '))
                     start++;
@@ -166,37 +180,54 @@ namespace Forge
                 vertexSource << part.substr(start);
             else if (currentShader == ShaderType::FRAGMENT)
                 fragmentSource << part.substr(start);
+            else if (currentShader == ShaderType::GEOMETRY)
+                geometrySource << part.substr(start);
         }
 
-        return CreateFromSource(vertexSource.str(), fragmentSource.str(), defines);
+        return CreateFromSource(vertexSource.str(), geometrySource.str(), fragmentSource.str(), defines);
     }
 
-    void Shader::Init(const std::string& vertexSource, const std::string& fragmentSource)
+    void Shader::Init(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource)
     {
+        bool useGeometryShader = !geometrySource.empty();
         FORGE_INFO("VERTEX SHADER SOURCE\n{}", vertexSource);
+        if (useGeometryShader)
+        {
+            FORGE_INFO("GEOMETRY SHADER SOURCE\n{}", geometrySource);
+        }
         FORGE_INFO("FRAGMENT SHADER SOURCE\n{}", fragmentSource);
 
         uint32_t vertexShader = glCreateShader(GL_VERTEX_SHADER);
         uint32_t fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        uint32_t geometryShader = 0;
+        if (useGeometryShader)
+            geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
 
         const char* vSourcePtr = vertexSource.c_str();
         const char* fSourcePtr = fragmentSource.c_str();
+        const char* gSourcePtr = geometrySource.c_str();
 
         glShaderSource(vertexShader, 1, &vSourcePtr, nullptr);
         glShaderSource(fragmentShader, 1, &fSourcePtr, nullptr);
+        if (useGeometryShader)
+            glShaderSource(geometryShader, 1, &gSourcePtr, nullptr);
 
         glCompileShader(vertexShader);
         glCompileShader(fragmentShader);
+        if (useGeometryShader)
+            glCompileShader(geometryShader);
 
         int success;
         char log[512];
-        for (uint32_t shader : { vertexShader, fragmentShader })
+        for (uint32_t shader : { vertexShader, fragmentShader, geometryShader })
         {
+            if (shader == geometryShader && !useGeometryShader)
+                continue;
             glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
             if (!success)
             {
                 glGetShaderInfoLog(shader, sizeof(log), nullptr, log);
-                FORGE_ERROR("Failed compiling shader: {}", shader == vertexShader ? "VERTEX" : "FRAGMENT");
+                FORGE_ERROR("Failed compiling shader: {}", shader == vertexShader ? "VERTEX" : shader == fragmentShader ? "FRAGMENT" : "GEOMETRY");
                 FORGE_ERROR("{}", log);
             }
         }
@@ -204,6 +235,8 @@ namespace Forge
         m_Handle.Id = glCreateProgram();
         glAttachShader(m_Handle.Id, vertexShader);
         glAttachShader(m_Handle.Id, fragmentShader);
+        if (useGeometryShader)
+            glAttachShader(m_Handle.Id, geometryShader);
         glLinkProgram(m_Handle.Id);
 
         glGetProgramiv(m_Handle.Id, GL_LINK_STATUS, &success);
@@ -216,6 +249,8 @@ namespace Forge
 
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
+        if (useGeometryShader)
+            glDeleteShader(geometryShader);
     }
 
     int Shader::GetUniformLocation(const std::string& name)

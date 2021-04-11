@@ -30,6 +30,26 @@ namespace Forge
 		RGBA = GL_RGBA,
 		BGRA = GL_BGRA,
 		BGR = GL_BGR,
+		DEPTH = GL_DEPTH_COMPONENT,
+	};
+
+	FORGE_API enum class InternalTextureFormat
+	{
+		RGBA = GL_RGBA,
+		DEPTH = GL_DEPTH_COMPONENT32,
+	};
+
+	FORGE_API enum class TextureFilter
+	{
+		Nearest,
+		Linear,
+	};
+
+	FORGE_API enum class TextureWrap
+	{
+		Repeat = GL_REPEAT,
+		ClampToEdge = GL_CLAMP_TO_EDGE,
+		ClampToBorder = GL_CLAMP_TO_BORDER,
 	};
 
 	class FORGE_API Texture
@@ -40,41 +60,53 @@ namespace Forge
 		Handle m_Handle;
 		uint32_t m_Width;
 		uint32_t m_Height;
+		TextureFormat m_Format;
+		InternalTextureFormat m_InternalFormat;
+		bool m_HasMipmaps;
+
+		mutable TextureFilter m_MinFilter;
+		mutable TextureFilter m_MagFilter;
+		mutable TextureWrap m_WrapMode;
+		GLenum m_Target;
 
 	public:
-		inline Texture(uint32_t width, uint32_t height)
-			: m_Handle(), m_Width(width), m_Height(height)
+		inline Texture(GLenum target, uint32_t width, uint32_t height, TextureFormat format, InternalTextureFormat internalFormat)
+			: m_Handle(), m_Width(width), m_Height(height), m_Target(target), m_Format(format), m_InternalFormat(internalFormat), m_HasMipmaps(false),
+			m_MinFilter(), m_MagFilter(), m_WrapMode()
 		{}
 		virtual ~Texture() = default;
 
+		inline GLenum GetTarget() const { return m_Target; }
 		inline uint32_t GetId() const { return m_Handle.Id; }
 		inline uint32_t GetWidth() const { return m_Width; }
 		inline uint32_t GetHeight() const { return m_Height; }
+		inline TextureFormat GetFormat() const { return m_Format; }
 
-		virtual void Bind(int slot) const = 0;
-		virtual void Unbind(int slot) const = 0;
+		void Bind() const;
+		void Unbind() const;
+		void Bind(int slot) const;
+		void Unbind(int slot) const;
+
+		void GenerateMipmaps();
+
+		void SetMinFilter(TextureFilter filter) const;
+		void SetMagFilter(TextureFilter filter) const;
+		void SetWrapMode(TextureWrap mode) const;
+
+	protected:
+		TextureFilter GetDefaultFilter() const;
+		GLenum GetComponentType() const;
 
 	};
 
 	class FORGE_API Texture2D : public Texture
 	{
-	private:
-		TextureFormat m_Format;
-		bool m_HasMipmaps;
+	public:
+		Texture2D(uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
+		Texture2D(const void* pixels, uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
 
 	public:
-		Texture2D(uint32_t width, uint32_t height);
-		Texture2D(const void* pixels, uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA);
-
-		inline TextureFormat GetFormat() const { return m_Format; }
-
-		virtual void Bind(int slot) const override;
-		virtual void Unbind(int slot) const override;
-
-		void GenerateMipmaps();
-
-	public:
-		static Ref<Texture2D> Create(uint32_t width, uint32_t height);
+		static Ref<Texture2D> Create(uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
 		static Ref<Texture2D> Create(const std::string& filename);
 
 	private:
@@ -84,18 +116,9 @@ namespace Forge
 
 	class FORGE_API TextureCube : public Texture
 	{
-	private:
-		TextureFormat m_Format;
-		bool m_HasMipmaps;
-
 	public:
-		TextureCube(uint32_t width, uint32_t height);
-		TextureCube(const void** pixels, uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA);
-
-		virtual void Bind(int slot) const override;
-		virtual void Unbind(int slot) const override;
-
-		void GenerateMipmaps();
+		TextureCube(uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
+		TextureCube(const void** pixels, uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
 
 	public:
 		static Ref<TextureCube> Create(
@@ -125,6 +148,7 @@ namespace Forge
 	public:
 		RenderTexture(uint32_t width, uint32_t height, TextureComponent component = TextureComponent::Color);
 
+		inline operator Ref<Framebuffer>() const { return m_Framebuffer; }
 		inline const Ref<Framebuffer>& GetFramebuffer() const { return m_Framebuffer; }
 
 	public:
