@@ -10,8 +10,8 @@ namespace Forge
 	private:
 		static Ref<Shader> s_DefaultColorShader;
 		static Ref<Shader> s_DefaultTextureShader;
-		static Ref<Shader> s_LitColorShader;
-		static Ref<Shader> s_LitTextureShader;
+		static Ref<Shader> s_LitColorShader[2];
+		static Ref<Shader> s_LitTextureShader[2];
 		static Ref<Shader> s_DefaultShadowShader;
 		static Ref<Shader> s_DefaultPointShadowShader;
 		static std::unordered_map<int, Ref<Shader>> s_DefaultColorAnimatedShaders;
@@ -38,8 +38,8 @@ namespace Forge
 		// Shaders
 		inline static Ref<Shader> DefaultColorShader() { return s_DefaultColorShader; }
 		inline static Ref<Shader> DefaultTextureShader() { return s_DefaultTextureShader; }
-		inline static Ref<Shader> LitColorShader() { return s_LitColorShader; }
-		inline static Ref<Shader> LitTextureShader() { return s_LitTextureShader; }
+		inline static Ref<Shader> LitColorShader(bool useShadows) { return s_LitColorShader[useShadows ? 1 : 0]; }
+		inline static Ref<Shader> LitTextureShader(bool useShadows) { return s_LitTextureShader[useShadows ? 1 : 0]; }
 		inline static Ref<Shader> AnimatedDefaultColorShader(int maxJoints) { return CreateDefaultColorAnimatedShader(maxJoints); }
 		inline static Ref<Shader> AnimatedLitTextureShader(int maxJoints) { return CreateLitTextureAnimatedShader(maxJoints); }
 

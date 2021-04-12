@@ -55,6 +55,7 @@ namespace Forge
 		requirements.ModelMatrix = shader->UniformExists(ModelMatrixUniformName);
 		requirements.CameraFarPlane = shader->UniformExists(CameraFarPlaneUniformName);
 		requirements.CameraNearPlane = shader->UniformExists(CameraNearPlaneUniformName);
+		requirements.CameraPosition = shader->UniformExists(CameraPositionUniformName);
 		requirements.LightSources = shader->UniformExists(LightSourceArrayUniformName) && shader->UniformExists(UsedLightSourcesUniformName);
 		requirements.Animation = shader->UniformExists(JointTransformsUniformName);
 		requirements.ClippingPlanes = shader->UniformExists(ClippingPlanesArrayUniformName) && shader->UniformExists(UsedClippingPlanesUniformName);
@@ -75,6 +76,8 @@ namespace Forge
 			shader->SetUniform(CameraFarPlaneUniformName, m_CameraFarPlane);
 		if (requirements.CameraNearPlane)
 			shader->SetUniform(CameraNearPlaneUniformName, m_CameraNearPlane);
+		if (requirements.CameraPosition)
+			shader->SetUniform(CameraPositionUniformName, m_CameraPosition);
 		if (requirements.LightSources)
 		{
 			shader->SetUniform(UsedLightSourcesUniformName, int(m_LightSources.size()));

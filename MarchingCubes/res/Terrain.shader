@@ -47,6 +47,7 @@ uniform int u_UsedLightSources;
 uniform samplerCube u_ShadowMap;
 uniform float u_FarPlane;
 uniform vec3 u_LightPosition;
+uniform vec3 u_CameraPosition;
 
 in vec3 f_Position;
 in vec3 f_Normal;
@@ -55,7 +56,7 @@ in vec4 f_LightSpacePosition;
 void main()
 {
 #ifdef SHADOW_MAP
-	float shadow = calculatePointShadow(f_Position, u_ShadowMap, u_FarPlane, u_LightPosition);
+	float shadow = calculatePointShadow(f_Position, u_ShadowMap, u_FarPlane, u_LightPosition, u_CameraPosition);
 #else
 	float shadow = 0.0;
 #endif

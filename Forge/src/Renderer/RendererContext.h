@@ -15,6 +15,7 @@ namespace Forge
 	constexpr const char ModelMatrixUniformName[] = "u_ModelMatrix";
 	constexpr const char CameraFarPlaneUniformName[] = "u_FarPlane";
 	constexpr const char CameraNearPlaneUniformName[] = "u_NearPlane";
+	constexpr const char CameraPositionUniformName[] = "u_CameraPosition";
 
 	constexpr const char LightSourceArrayBase[] = "u_LightSources";
 	constexpr const char LightSourceArrayUniformName[] = "u_LightSources[0].Position";
@@ -44,6 +45,7 @@ namespace Forge
 		bool ModelMatrix;
 		bool CameraFarPlane;
 		bool CameraNearPlane;
+		bool CameraPosition;
 
 		bool LightSources;
 		bool Animation;
@@ -61,7 +63,8 @@ namespace Forge
 		glm::mat4 m_ProjViewMatrix;
 		float m_CameraFarPlane;
 		float m_CameraNearPlane;
-		
+		glm::vec3 m_CameraPosition;
+
 		std::vector<LightSource> m_LightSources;
 		std::vector<glm::vec4> m_ClippingPlanes;
 		int m_NextTextureSlot;
@@ -75,6 +78,7 @@ namespace Forge
 
 		inline UniformContext& GetUniforms() const { return *m_PassUniforms; }
 
+		inline void SetCameraPosition(const glm::vec3& position) { m_CameraPosition = position; }
 		void SetCamera(const CameraData& camera);
 		void SetLightSources(const std::vector<LightSource>& lights);
 		void AddLightSource(const LightSource& light);

@@ -47,6 +47,7 @@ uniform LightSource u_LightSources[MAX_LIGHT_COUNT];
 uniform int u_UsedLightSources;
 uniform samplerCube u_ShadowMap;
 uniform vec3 u_LightPosition;
+uniform vec3 u_CameraPosition;
 
 uniform sampler2D u_RefractionTexture;
 uniform sampler2D u_ReflectionTexture;
@@ -103,11 +104,15 @@ void main()
 	vec4 refraction = texture(u_RefractionTexture, refractCoords);
 	vec4 reflection = texture(u_ReflectionTexture, reflectCoords);
 
-	float refractiveFactor = pow(dot(unitToCamera, unitNormal), 0.5);
+	float refractiveFactor = pow(abs(dot(unitToCamera, unitNormal)), 0.5);
 
 	vec4 color = mix(reflection, refraction, max(refractiveFactor, 0.0));
 
-	float shadow = calculatePointShadow(f_Position, u_ShadowMap, u_FarPlane, u_LightPosition);
+#ifdef SHADOW_MAP
+	float shadow = calculatePointShadow(f_Position, u_ShadowMap, u_FarPlane, u_LightPosition, u_CameraPosition);
+#else
+	float shadow = 0.0;
+#endif
 
 	out_FragColor = BLUE * color * (calculateLightDiffuse(f_Position, unitNormal, u_LightSources, u_UsedLightSources, shadow) + calculateLightSpecular(f_Position, unitNormal, 8.0, 10.0, unitToCamera, u_LightSources, u_UsedLightSources, shadow));
 	out_FragColor.a = clamp(waterDepth / 0.5, 0.0, 1.0);

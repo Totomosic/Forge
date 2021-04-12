@@ -9,8 +9,8 @@ namespace Forge
 
     Ref<Shader> GraphicsCache::s_DefaultColorShader;
     Ref<Shader> GraphicsCache::s_DefaultTextureShader;
-    Ref<Shader> GraphicsCache::s_LitColorShader;
-    Ref<Shader> GraphicsCache::s_LitTextureShader;
+    Ref<Shader> GraphicsCache::s_LitColorShader[2];
+    Ref<Shader> GraphicsCache::s_LitTextureShader[2];
     Ref<Shader> GraphicsCache::s_DefaultShadowShader;
     Ref<Shader> GraphicsCache::s_DefaultPointShadowShader;
     std::unordered_map<int, Ref<Shader>> GraphicsCache::s_DefaultColorAnimatedShaders;
@@ -48,14 +48,14 @@ namespace Forge
 
     Ref<Material> GraphicsCache::LitColorMaterial(const Color& color)
     {
-        Ref<Material> material = CreateRef<Material>(LitColorShader());
+        Ref<Material> material = CreateRef<Material>(std::array<Ref<Shader>, 3>{ DefaultPointShadowShader(), LitColorShader(true), LitColorShader(false) });
         material->GetUniforms().AddUniform("u_Color", color);
         return material;
     }
 
     Ref<Material> GraphicsCache::LitTextureMaterial(const Ref<Texture>& texture)
     {
-        Ref<Material> material = CreateRef<Material>(LitTextureShader());
+        Ref<Material> material = CreateRef<Material>(std::array<Ref<Shader>, 3>{ DefaultPointShadowShader(), LitTextureShader(true), LitTextureShader(false) });
         material->GetUniforms().AddUniform("u_Texture", texture);
         return material;
     }
@@ -153,11 +153,9 @@ namespace Forge
             "uniform mat4 u_ProjViewMatrix;\n"
             "uniform vec4 u_ClippingPlanes[MAX_CLIPPING_PLANES];\n"
             "uniform int u_UsedClippingPlanes;\n"
-            "uniform mat4 u_LightSpaceTransform;\n"
             "\n"
             "out vec3 f_Position;\n"
             "out vec3 f_Normal;\n"
-            "out vec4 f_LightSpacePosition;\n"
             "\n"
             "void main()\n"
             "{\n"
@@ -166,7 +164,6 @@ namespace Forge
             "    gl_Position = u_ProjViewMatrix * worldPosition;\n"
             "    f_Position = worldPosition.xyz;\n"
             "    f_Normal = vec3(transpose(inverse(u_ModelMatrix)) * vec4(v_Normal, 0.0));\n"
-            "    f_LightSpacePosition = u_LightSpaceTransform * worldPosition;\n"
             "}\n";
 
         std::string fragmentShaderSource =
@@ -179,17 +176,23 @@ namespace Forge
             "uniform vec4 u_Color;\n"
             "uniform LightSource u_LightSources[MAX_LIGHT_COUNT];\n"
             "uniform int u_UsedLightSources;\n"
-            "uniform sampler2D u_ShadowMap;\n"
+            "uniform samplerCube u_ShadowMap;\n"
+            "uniform float u_FarPlane;\n"
+            "uniform vec3 u_LightPosition;\n"
+            "uniform vec3 u_CameraPosition;\n"
             "\n"
             "in vec3 f_Position;\n"
             "in vec3 f_Normal;\n"
-            "in vec4 f_LightSpacePosition;\n"
             "\n"
             "void main()\n"
             "{\n"
             "    vec3 color = vec3(0.0);\n"
             "\n"
-            "    float shadow = calculateShadow(f_LightSpacePosition, u_ShadowMap, f_Normal, normalize(f_Position - u_LightSources[0].Position));\n"
+            "#ifdef SHADOW_MAP\n"
+            "    float shadow = calculatePointShadow(f_Position, u_ShadowMap, u_FarPlane, u_LightPosition, u_CameraPosition);\n"
+            "#else\n"
+            "    float shadow = 0.0;\n" 
+            "#endif\n"
             "    for (int i = 0; i < u_UsedLightSources; i++)\n"
             "    {\n"
             "        vec3 lightDirection = normalize(u_LightSources[i].Position - f_Position);\n"
@@ -202,7 +205,8 @@ namespace Forge
             "    f_FinalColor = vec4(color, 1.0) * u_Color;\n"
             "}\n";
 
-        s_LitColorShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+        s_LitColorShader[0] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+        s_LitColorShader[1] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "SHADOW_MAP" });
     }
 
     void GraphicsCache::CreateLitTextureShader()
@@ -237,6 +241,10 @@ namespace Forge
             "uniform sampler2D u_Texture;\n"
             "uniform LightSource u_LightSources[MAX_LIGHT_COUNT];\n"
             "uniform int u_UsedLightSources;\n"
+            "uniform samplerCube u_ShadowMap;\n"
+            "uniform float u_FarPlane;\n"
+            "uniform vec3 u_LightPosition;\n"
+            "uniform vec3 u_CameraPosition;\n"
             "\n"
             "in vec3 f_Position;\n"
             "in vec3 f_Normal;\n"
@@ -244,21 +252,27 @@ namespace Forge
             "\n"
             "void main()\n"
             "{\n"
-            "    vec3 color = vec3(0.0);\n"
+            "   vec3 color = vec3(0.0);\n"
+            "#ifdef SHADOW_MAP\n"
+            "   float shadow = calculatePointShadow(f_Position, u_ShadowMap, u_FarPlane, u_LightPosition, u_CameraPosition);\n"
+            "#else\n"
+            "   float shadow = 0.0;\n"
+            "#endif\n"
             "\n"
-            "    for (int i = 0; i < u_UsedLightSources; i++)\n"
-            "    {\n"
-            "        vec3 lightDirection = normalize(u_LightSources[i].Position - f_Position);\n"
-            "        vec3 normal = normalize(f_Normal);\n"
-            "        float diffusePower = max(dot(normal, lightDirection), 0.0);\n"
-            "        vec4 diffuseColor = diffusePower * u_LightSources[i].Color;\n"
-            "        color += diffuseColor.xyz + u_LightSources[i].Ambient * u_LightSources[i].Color.xyz;\n"
-            "    }\n"
+            "   for (int i = 0; i < u_UsedLightSources; i++)\n"
+            "   {\n"
+            "       vec3 lightDirection = normalize(u_LightSources[i].Position - f_Position);\n"
+            "       vec3 normal = normalize(f_Normal);\n"
+            "       float diffusePower = max(dot(normal, lightDirection), 0.0);\n"
+            "       vec4 diffuseColor = diffusePower * u_LightSources[i].Color * (1.0 - shadow);\n"
+            "       color += diffuseColor.xyz + u_LightSources[i].Ambient * u_LightSources[i].Color.xyz;\n"
+            "   }\n"
             "\n"
-            "    f_FinalColor = vec4(color, 1.0) * texture(u_Texture, f_TexCoord);\n"
+            "   f_FinalColor = vec4(color, 1.0) * texture(u_Texture, f_TexCoord);\n"
             "}\n";
 
-        s_LitTextureShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+        s_LitTextureShader[0] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+        s_LitTextureShader[1] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "SHADOW_MAP" });
     }
 
     Ref<Shader> GraphicsCache::CreateDefaultColorAnimatedShader(int maxJoints)

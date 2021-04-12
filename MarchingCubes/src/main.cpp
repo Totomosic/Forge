@@ -42,7 +42,7 @@ int main()
 	screenMaterial->GetUniforms().AddUniform("u_Texture", screen);
 
 	Scene& scene = app.CreateScene();
-	Entity camera = scene.CreateCamera(Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 100.0f));
+	Entity camera = scene.CreateCamera(Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 50.0f));
 	camera.GetComponent<TransformComponent>().SetPosition({ 0, 2, 10 });
 	camera.GetComponent<CameraComponent>().ClearColor = SKY_BLUE;
 	camera.GetComponent<CameraComponent>().CreateShadowPass(2048, 2048);
@@ -84,6 +84,12 @@ int main()
 	water.GetTransform().SetScale({ 20.0f, 20.0f, 1.0f });
 	water.GetTransform().Rotate(-PI / 2.0f, glm::vec3{ 1, 0, 0 });
 	water.GetTransform().SetPosition({ 0, 0, 0 });
+
+	Entity plane = scene.CreateEntity(DEFAULT_LAYER);
+	plane.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::SquareMesh(), GraphicsCache::LitColorMaterial()));
+	plane.GetTransform().SetScale({ 5.0f, 5.0f, 1.0f });
+	plane.GetTransform().Rotate(-PI / 2.0f, glm::vec3{ 1, 0, 0 });
+	plane.GetTransform().SetPosition({ 0, 0.3f, 0 });
 
 	Entity terrainEntity = scene.CreateEntity(DEFAULT_LAYER);
 	terrainEntity.AddComponent<ModelRendererComponent>(model);
@@ -144,8 +150,6 @@ int main()
 	{
 		Timestep ts = app.GetTimestep();
 		time += ts.Seconds() * 0.08f;
-
-		sun.GetTransform().SetPosition({ 40 * cosf(time / 5.0f), abs(40 * sinf(time / 5.0f)), 0 });
 
 		TransformComponent& transform = camera.GetTransform();
 		float speed = 5 * ts.Seconds();
