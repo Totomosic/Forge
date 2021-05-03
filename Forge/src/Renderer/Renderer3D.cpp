@@ -129,6 +129,8 @@ namespace Forge
 			Ref<Material> material = submodel.Material;
 			glm::mat4 overallTransform = transform * submodel.Transform;
 
+			m_Context.ApplyRenderSettings(submodel.Material->GetSettings());
+
 			ShaderRequirements requirements = m_Context.GetShaderRequirements(material->GetShader(m_CurrentRenderPass));
 			m_Context.BindShader(material->GetShader(m_CurrentRenderPass), requirements);
 			if (requirements.ModelMatrix)

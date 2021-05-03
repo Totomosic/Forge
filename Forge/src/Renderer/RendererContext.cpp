@@ -63,6 +63,15 @@ namespace Forge
 		return requirements;
 	}
 
+	void RendererContext::ApplyRenderSettings(const RenderSettings& settings)
+	{
+		if (settings.Mode != m_RenderSettings.Mode)
+		{
+			glPolygonMode(GL_FRONT_AND_BACK, (GLenum)settings.Mode);
+			m_RenderSettings.Mode = settings.Mode;
+		}
+	}
+
 	void RendererContext::BindShader(const Ref<Shader>& shader, const ShaderRequirements& requirements)
 	{
 		shader->Bind();

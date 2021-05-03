@@ -115,5 +115,5 @@ void main()
 #endif
 
 	out_FragColor = BLUE * color * (calculateLightDiffuse(f_Position, unitNormal, u_LightSources, u_UsedLightSources, shadow) + calculateLightSpecular(f_Position, unitNormal, 8.0, 10.0, unitToCamera, u_LightSources, u_UsedLightSources, shadow));
-	out_FragColor.a = clamp(waterDepth / 0.5, 0.0, 1.0);
+	out_FragColor.a = clamp(waterDepth / 0.5, 0.1, 1.0);
 }

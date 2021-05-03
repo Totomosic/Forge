@@ -3,11 +3,10 @@
 #include "Shader.h"
 #include "Lighting.h"
 #include "Texture.h"
+#include "MaterialUniforms.h"
 
 namespace Forge
 {
-
-	class UniformContext;
 
 	constexpr const char ProjectionMatrixUniformName[] = "u_ProjectionMatrix";
 	constexpr const char ViewMatrixUniformName[] = "u_ViewMatrix";
@@ -28,13 +27,14 @@ namespace Forge
 	constexpr const char ClippingPlanesArrayUniformName[] = "u_ClippingPlanes[0]";
 	constexpr const char UsedClippingPlanesUniformName[] = "u_UsedClippingPlanes";
 
-	enum class RenderPass
+	constexpr int RENDER_PASS_COUNT = 3;
+
+	FORGE_API enum class RenderPass
 	{
 		ShadowFormation,
 		WithShadow,
 		WithoutShadow,
 	};
-	constexpr int RENDER_PASS_COUNT = 3;
 
 	struct FORGE_API ShaderRequirements
 	{
@@ -70,6 +70,7 @@ namespace Forge
 		int m_NextTextureSlot;
 
 		Scope<UniformContext> m_PassUniforms;
+		RenderSettings m_RenderSettings;
 
 		std::unordered_map<const Shader*, ShaderRequirements> m_RequirementsMap;
 
@@ -79,6 +80,7 @@ namespace Forge
 		inline UniformContext& GetUniforms() const { return *m_PassUniforms; }
 
 		inline void SetCameraPosition(const glm::vec3& position) { m_CameraPosition = position; }
+		void ApplyRenderSettings(const RenderSettings& settings);
 		void SetCamera(const CameraData& camera);
 		void SetLightSources(const std::vector<LightSource>& lights);
 		void AddLightSource(const LightSource& light);

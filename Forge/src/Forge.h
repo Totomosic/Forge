@@ -24,6 +24,7 @@
 #include "Scene/AnimatorComponent.h"
 
 #include "Utils/Readers/GltfReader.h"
+#include "Utils/Readers/ObjReader.h"
 
 namespace Forge
 {

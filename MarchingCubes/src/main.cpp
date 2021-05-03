@@ -6,6 +6,7 @@
 using namespace Forge;
 
 #include "Terrain.h"
+#include "Ocean.h"
 
 int DEFAULT_LAYER = 0;
 int WATER_LAYER = 1;
@@ -19,7 +20,10 @@ int main()
 	ForgeInstance::Init();
 
 	WindowProps props;
+	props.Title = "Marching Cubes";
 	Application app(props);
+
+	// ObjReader reader("res/Cruiser.obj");
 
 	Ref<Material> waterMaterial = Material::CreateFromShaderFile("res/Water.shader");
 	Ref<Material> shadowMaterial = Material::CreateFromShaderFile("res/Shadow.shader");
@@ -42,10 +46,10 @@ int main()
 	screenMaterial->GetUniforms().AddUniform("u_Texture", screen);
 
 	Scene& scene = app.CreateScene();
-	Entity camera = scene.CreateCamera(Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 50.0f));
+	Entity camera = scene.CreateCamera(Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.01f, 50.0f));
 	camera.GetComponent<TransformComponent>().SetPosition({ 0, 2, 10 });
 	camera.GetComponent<CameraComponent>().ClearColor = SKY_BLUE;
-	camera.GetComponent<CameraComponent>().CreateShadowPass(2048, 2048);
+	camera.GetComponent<CameraComponent>().CreateShadowPass(4096, 4096);
 	camera.GetComponent<CameraComponent>().Shadows.LayerMask = FORGE_LAYERS(DEFAULT_LAYER);
 	camera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(DEFAULT_LAYER, WATER_LAYER, SKYBOX_LAYER);
 	camera.GetComponent<CameraComponent>().RenderTarget = *screen;
@@ -67,13 +71,13 @@ int main()
 	});
 
 	Entity sun = scene.CreateEntity();
-	sun.GetTransform().SetPosition({ 30, 10, 0 });
+	sun.GetTransform().SetPosition({ 30, 20, 0 });
 	sun.AddComponent<LightSourceComponent>();
 	sun.GetComponent<LightSourceComponent>().Ambient = 0.3f;
 	scene.AddToAllLayers(sun);
 
 	Terrain terrain({ -100, -1450, 300 }, -10.0f);
-	Ref<Mesh> mesh = terrain.GenerateMesh({ 10, 20, 10 }, { 100, 200, 100 }, 2.0f);
+	Ref<Mesh> mesh = terrain.GenerateMesh({ 20, 20, 20 }, { 200, 200, 200 }, 2.0f);
 	Ref<Material> material = Material::CreateFromShaderFile("res/Terrain.shader");
 	material->GetUniforms().AddUniform("u_Color", Color{ 112, 72, 60 });
 	Ref<Model> model = Model::Create(mesh, material);
@@ -85,12 +89,6 @@ int main()
 	water.GetTransform().Rotate(-PI / 2.0f, glm::vec3{ 1, 0, 0 });
 	water.GetTransform().SetPosition({ 0, 0, 0 });
 
-	Entity plane = scene.CreateEntity(DEFAULT_LAYER);
-	plane.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::SquareMesh(), GraphicsCache::LitColorMaterial()));
-	plane.GetTransform().SetScale({ 5.0f, 5.0f, 1.0f });
-	plane.GetTransform().Rotate(-PI / 2.0f, glm::vec3{ 1, 0, 0 });
-	plane.GetTransform().SetPosition({ 0, 0.3f, 0 });
-
 	Entity terrainEntity = scene.CreateEntity(DEFAULT_LAYER);
 	terrainEntity.AddComponent<ModelRendererComponent>(model);
 	terrainEntity.GetTransform().SetPosition({ 0, -10, 0 });
@@ -100,12 +98,18 @@ int main()
 	skybox.GetTransform().SetPosition({ 0, 0, 0 });
 	skybox.GetTransform().SetScale({ 50, 50, 50 });
 
+	/*Entity cube = scene.CreateEntity(DEFAULT_LAYER);
+	cube.AddComponent<ModelRendererComponent>(Model::Create(reader.GetMesh(), GraphicsCache::LitColorMaterial(COLOR_WHITE)));
+	cube.GetTransform().SetPosition({ -2.3f, 0.1f, 1.8f });
+	cube.GetTransform().SetScale({ 0.003, 0.003, 0.003 });
+	cube.GetTransform().Rotate(PI / 2.0, glm::vec3{ 0, 1, 0 });*/
+
 	Ref<RenderTexture> refractionTexture = RenderTexture::Create(1024, 1024);
 	Entity refractionCamera = scene.CreateCamera(camera.GetComponent<CameraComponent>().Frustum);
 	refractionCamera.GetComponent<CameraComponent>().ClearColor = SKY_BLUE;
 	refractionCamera.GetComponent<CameraComponent>().RenderTarget = *refractionTexture;
 	refractionCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(DEFAULT_LAYER, SKYBOX_LAYER);
-	refractionCamera.GetComponent<CameraComponent>().ClippingPlanes.push_back(glm::vec4{ 0.0f, -1.0f, 0.0f, 0.0f });
+	refractionCamera.GetComponent<CameraComponent>().ClippingPlanes.push_back(glm::vec4{ 0.0f, -1.0f, 0.0f, 0.01f });
 	refractionCamera.GetComponent<CameraComponent>().Viewport = { 0, 0, refractionTexture->GetWidth(), refractionTexture->GetHeight() };
 	glm::vec4& refractionPlane = refractionCamera.GetComponent<CameraComponent>().ClippingPlanes[0];
 
@@ -114,7 +118,7 @@ int main()
 	reflectionCamera.GetComponent<CameraComponent>().ClearColor = SKY_BLUE;
 	reflectionCamera.GetComponent<CameraComponent>().RenderTarget = *reflectionTexture;
 	reflectionCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(DEFAULT_LAYER, SKYBOX_LAYER);
-	reflectionCamera.GetComponent<CameraComponent>().ClippingPlanes.push_back(glm::vec4{ 0.0f, 1.0f, 0.0f, 0.0f });
+	reflectionCamera.GetComponent<CameraComponent>().ClippingPlanes.push_back(glm::vec4{ 0.0f, 1.0f, 0.0f, -0.01f });
 	reflectionCamera.GetComponent<CameraComponent>().Viewport = { 0, 0, reflectionTexture->GetWidth(), reflectionTexture->GetHeight() };
 	glm::vec4& reflectionPlane = reflectionCamera.GetComponent<CameraComponent>().ClippingPlanes[0];
 
@@ -134,7 +138,7 @@ int main()
 	uiCamera.GetComponent<CameraComponent>().Mode = CameraMode::Overlay;
 
 	int index = 0;
-	Ref<Texture2D> textures[] = { refractionTexture, reflectionTexture };
+	std::vector<Ref<Texture2D>> textures = {};// { refractionTexture, reflectionTexture };
 	for (const Ref<Texture2D>& tex : textures)
 	{
 		Entity e = scene.CreateEntity(TEXTURE_LAYER);
@@ -145,6 +149,16 @@ int main()
 	}
 
 	float time = 0.0f;
+
+	Input::OnKeyPressed.AddEventListener([camera](const KeyCode& key) mutable
+	{
+		if (key == KeyCode::I)
+		{
+			glm::vec3 position = camera.GetTransform().GetPosition();
+			std::cout << position.x << " " << position.y << " " << position.z << std::endl;
+		}
+		return false;
+	});
 
 	while (!app.ShouldExit())
 	{

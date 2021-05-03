@@ -186,23 +186,12 @@ namespace Forge
             "\n"
             "void main()\n"
             "{\n"
-            "    vec3 color = vec3(0.0);\n"
-            "\n"
             "#ifdef SHADOW_MAP\n"
             "    float shadow = calculatePointShadow(f_Position, u_ShadowMap, u_FarPlane, u_LightPosition, u_CameraPosition);\n"
             "#else\n"
             "    float shadow = 0.0;\n" 
             "#endif\n"
-            "    for (int i = 0; i < u_UsedLightSources; i++)\n"
-            "    {\n"
-            "        vec3 lightDirection = normalize(u_LightSources[i].Position - f_Position);\n"
-            "        vec3 normal = normalize(f_Normal);\n"
-            "        float diffusePower = max(dot(normal, lightDirection), 0.0);\n"
-            "        vec4 diffuseColor = diffusePower * u_LightSources[i].Color * (1.0 - shadow);\n"
-            "        color += diffuseColor.xyz + u_LightSources[i].Ambient * u_LightSources[i].Color.xyz;\n"
-            "    }\n"
-            "\n"
-            "    f_FinalColor = vec4(color, 1.0) * u_Color;\n"
+            "    f_FinalColor = u_Color * calculateLightDiffuse(f_Position, normalize(f_Normal), u_LightSources, u_UsedLightSources, shadow);\n"
             "}\n";
 
         s_LitColorShader[0] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
@@ -235,6 +224,7 @@ namespace Forge
         std::string fragmentShaderSource =
             SHADER_VERSION_STRING + '\n' +
             "#include <Lighting.h>\n"
+            "#include <Shadows.h>\n"
             "\n"
             "layout (location = 0) out vec4 f_FinalColor;\n"
             "\n"
@@ -252,23 +242,12 @@ namespace Forge
             "\n"
             "void main()\n"
             "{\n"
-            "   vec3 color = vec3(0.0);\n"
             "#ifdef SHADOW_MAP\n"
             "   float shadow = calculatePointShadow(f_Position, u_ShadowMap, u_FarPlane, u_LightPosition, u_CameraPosition);\n"
             "#else\n"
             "   float shadow = 0.0;\n"
             "#endif\n"
-            "\n"
-            "   for (int i = 0; i < u_UsedLightSources; i++)\n"
-            "   {\n"
-            "       vec3 lightDirection = normalize(u_LightSources[i].Position - f_Position);\n"
-            "       vec3 normal = normalize(f_Normal);\n"
-            "       float diffusePower = max(dot(normal, lightDirection), 0.0);\n"
-            "       vec4 diffuseColor = diffusePower * u_LightSources[i].Color * (1.0 - shadow);\n"
-            "       color += diffuseColor.xyz + u_LightSources[i].Ambient * u_LightSources[i].Color.xyz;\n"
-            "   }\n"
-            "\n"
-            "   f_FinalColor = vec4(color, 1.0) * texture(u_Texture, f_TexCoord);\n"
+            "   f_FinalColor = texture(u_Texture, f_TexCoord) * calculateLightDiffuse(f_Position, normalize(f_Normal), u_LightSources, u_UsedLightSources, shadow);\n"
             "}\n";
 
         s_LitTextureShader[0] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
@@ -380,18 +359,8 @@ namespace Forge
             "\n"
             "void main()\n"
             "{\n"
-            "    vec3 color = vec3(0.0);\n"
-            "\n"
-            "    for (int i = 0; i < u_UsedLightSources; i++)\n"
-            "    {\n"
-            "        vec3 lightDirection = normalize(u_LightSources[i].Position - f_Position);\n"
-            "        vec3 normal = normalize(f_Normal);\n"
-            "        float diffusePower = max(dot(normal, lightDirection), 0.0);\n"
-            "        vec4 diffuseColor = diffusePower * u_LightSources[i].Color;\n"
-            "        color += diffuseColor.xyz + u_LightSources[i].Ambient * u_LightSources[i].Color.xyz;\n"
-            "    }\n"
-            "\n"
-            "    f_FinalColor = vec4(color, 1.0) * texture(u_Texture, f_TexCoord);\n"
+            "    float shadow = 0.0;\n"
+            "    f_FinalColor = texture(u_Texture, f_TexCoord) * calculateLightDiffuse(f_Position, normalize(f_Normal), u_LightSources, u_UsedLightSources, shadow);\n"
             "}\n";
 
         Ref<Shader> shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, { { "JOINT_COUNT", std::to_string(maxJoints) } });

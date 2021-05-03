@@ -71,6 +71,8 @@ namespace Forge
 		void Bind() const;
 		void Unbind() const;
 
+		void SetData(const void* data, size_t sizeBytes);
+
 	public:
 		static Ref<VertexBuffer> Create(size_t sizeBytes, const BufferLayout& layout);
 		static Ref<VertexBuffer> Create(const void* data, size_t sizeBytes, const BufferLayout& layout);

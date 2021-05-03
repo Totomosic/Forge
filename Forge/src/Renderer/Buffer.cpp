@@ -28,6 +28,12 @@ namespace Forge
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
+    void VertexBuffer::SetData(const void* data, size_t sizeBytes)
+    {
+        Bind();
+        glBufferData(GL_ARRAY_BUFFER, sizeBytes, data, GL_STATIC_DRAW);
+    }
+
     Ref<VertexBuffer> VertexBuffer::Create(size_t sizeBytes, const BufferLayout& layout)
     {
         return CreateRef<VertexBuffer>(nullptr, sizeBytes, layout);
