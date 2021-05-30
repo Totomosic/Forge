@@ -150,12 +150,12 @@ namespace Forge
         jointCount++;
         const auto& jointData = model.nodes[nodeIndex];
         Scope<Joint> joint = CreateScope<Joint>();
-        joint->Transform = parentTransform * CreateMatrix(jointData.matrix, jointData.translation, jointData.rotation, jointData.scale);
+        // joint->Transform = parentTransform * CreateMatrix(jointData.matrix, jointData.translation, jointData.rotation, jointData.scale);
         auto it = std::find(jointOrder.begin(), jointOrder.end(), nodeIndex);
         FORGE_ASSERT(it != jointOrder.end(), "Invalid joint");
         joint->Id = int(it - jointOrder.begin());
         jointsById[joint->Id] = joint.get();
-        joint->InverseBindTransform = parentTransform;// *CreateMatrix(jointData.matrix, jointData.translation, jointData.rotation, jointData.scale);
+        // joint->InverseBindTransform = parentTransform;// *CreateMatrix(jointData.matrix, jointData.translation, jointData.rotation, jointData.scale);
 
         for (int index : jointData.children)
         {
@@ -176,6 +176,13 @@ namespace Forge
         joint->Transform = parentTransform * joint->Transform;
         for (const auto& child : joint->Children)
             UpdateJointTransforms(child.get(), joint->Transform);
+    }
+
+    void UpdateJointInverseTransform(Joint* joint, const glm::mat4& parentTransform)
+    {
+        joint->InverseBindTransform = joint->InverseBindTransform * parentTransform;
+        for (const auto& child : joint->Children)
+            UpdateJointInverseTransform(child.get(), joint->InverseBindTransform);
     }
 
     float GetFloatValue(const tinygltf::Model& model, const tinygltf::Accessor& accessor, int index)
@@ -357,15 +364,16 @@ namespace Forge
                             if (skin.inverseBindMatrices >= 0)
                             {
                                 const auto& accessor = model.accessors[skin.inverseBindMatrices];
-                                FORGE_ASSERT(accessor.count == jointCount, "Invalid");
-                                for (int i = 0; i < accessor.count; i++)
+                                FORGE_ASSERT(accessor.count == jointCount && accessor.type == TINYGLTF_TYPE_MAT4, "Invalid");
+                                for (int i = 0; i < skin.joints.size(); i++)
                                 {
                                     Joint* target = jointsById.at(i);
-                                    target->InverseBindTransform = glm::inverse(target->Transform) * CreateMatrix(model, accessor, i);
+                                    target->InverseBindTransform = CreateMatrix(model, accessor, i);
                                 }
                             }
 
                             // UpdateJointTransforms(joint.get(), glm::mat4(1.0f));
+                            // UpdateJointInverseTransform(joint.get(), glm::mat4(1.0f));
 
                             m_Meshes.push_back(CreateRef<AnimatedMesh>(vao, CreateRef<Skeleton>(std::move(joint), jointCount)));
                             continue;
@@ -393,6 +401,7 @@ namespace Forge
             {
                 anim->KeyFrames.push_back(frame.second);
             }
+            anim->KeyFrames.resize(2);
             std::sort(anim->KeyFrames.begin(), anim->KeyFrames.end(), [](const AnimationKeyFrame& a, const AnimationKeyFrame& b)
             {
                 return a.TimeStamp < b.TimeStamp;

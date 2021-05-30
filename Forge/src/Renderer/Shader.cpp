@@ -291,6 +291,22 @@ namespace Forge
         }
         PreprocessIfDefs(result, "#ifdef ", [&defines](const std::string& define) { return std::find(defines.begin(), defines.end(), define) != defines.end(); });
         PreprocessIfDefs(result, "#ifndef ", [&defines](const std::string& define) { return std::find(defines.begin(), defines.end(), define) == defines.end(); });
+        for (const std::string& def : defines)
+        {
+            size_t equal = def.find('=');
+            if (equal != std::string::npos)
+            {
+                std::string_view key = def.substr(0, equal);
+                std::string_view value = def.substr(equal + 1);
+                size_t position = result.find(key);
+                while (position != std::string::npos)
+                {
+                    result.erase(position, key.size());
+                    result.insert(position, value);
+                    position = result.find(key, position + value.size());
+                }
+            }
+        }
         PreprocessIfDefs(result, "#if ", [](const std::string& value) { return value == "1" || value == "true"; });
         return result;
     }

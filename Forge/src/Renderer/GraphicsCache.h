@@ -26,6 +26,7 @@ namespace Forge
 		// Models
 		inline static Ref<Mesh> SquareMesh() { return s_SquareMesh; }
 		inline static Ref<Mesh> CubeMesh() { return s_CubeMesh; }
+		static Ref<Mesh> GridMesh(int xVertices, int zVertices);
 		
 		// Materials
 		static Ref<Material> DefaultColorMaterial(const Color& color = COLOR_WHITE);

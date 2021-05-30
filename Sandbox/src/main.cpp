@@ -24,7 +24,7 @@ void UpdateJointEntities(std::vector<Entity>& jointEntities, const Joint* joint,
 {
 	glm::mat4 transform = parentTransform * jointTransforms[joint->Id];
 	glm::vec4 position = (transform)[3];
-	jointEntities[joint->Id].GetTransform().SetPosition(glm::vec3(position));
+	// jointEntities[joint->Id].GetTransform().SetPosition(glm::vec3(position));
 
 	for (const auto& child : joint->Children)
 		UpdateJointEntities(jointEntities, child.get(), transform, jointTransforms);
@@ -38,8 +38,7 @@ int main()
 	Application app(props);
 
 	Scene& scene = app.CreateScene();
-	Entity camera = scene.CreateEntity();
-	camera.AddComponent<CameraComponent>(glm::perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 1000.0f));
+	Entity camera = scene.CreateCamera(Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 1000.0f));
 	camera.GetComponent<TransformComponent>().SetPosition({ 0, 0, 10 });
 
 	GltfReader reader("res/Dragon/scene.gltf");
@@ -59,21 +58,11 @@ int main()
 		Ref<Model> model = Model::Create(mesh, material);
 		Entity entity = scene.CreateEntity();
 		entity.AddComponent<ModelRendererComponent>(model);
-		// entity.AddComponent<ModelRendererComponent>(Model::Create(mesh, GraphicsCache::LitTextureMaterial(texture)));
-
-		//Entity stat = scene.CreateEntity();
-		//stat.AddComponent<ModelRendererComponent>(model);
-
 		if (mesh->IsAnimated())
 		{
-			animatedMesh = (const Ref<AnimatedMesh>&)mesh;
-			// entity.AddComponent<AnimatorComponent>().SetCurrentAnimation(reader.GetAnimation("idle"));
-
-			auto jointTransforms = entity.GetComponent<AnimatorComponent>().CalculateCurrentPose();
+			entity.AddComponent<AnimatorComponent>().SetCurrentAnimation(reader.GetAnimation("idle"));
 			animatedEntity = entity;
-
-			jointEntities.resize(animatedMesh->GetJointCount());
-			AddJointEntity(scene, jointEntities, &animatedMesh->GetRootJoint(), glm::mat4(1.0f), jointTransforms);
+			animatedMesh = std::static_pointer_cast<AnimatedMesh>(mesh);
 		}
 	}
 
@@ -102,6 +91,11 @@ int main()
 			glm::vec2 delta = Input::GetRelMousePosition();
 			transform.Rotate(-delta.x * sensitivity, glm::vec3{ 0, 1, 0 }, Space::World);
 			transform.Rotate(delta.y * sensitivity, glm::vec3{ 1, 0, 0 }, Space::Local);
+		}
+
+		if (animatedEntity)
+		{
+			// animatedEntity.GetComponent<AnimatorComponent>().OnUpdate(ts);
 		}
 
 		// UpdateJointEntities(jointEntities, &animatedMesh->GetRootJoint(), glm::mat4(1.0f), animatedEntity.GetComponent<AnimatorComponent>().CalculateCurrentPose());

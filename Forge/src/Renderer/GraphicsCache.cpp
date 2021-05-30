@@ -32,6 +32,72 @@ namespace Forge
         CreateCubeMesh();
     }
 
+    Ref<Mesh> GraphicsCache::GridMesh(int xVertices, int zVertices)
+    {
+        FORGE_ASSERT(xVertices >= 2, "Invalid x vertex count");
+        FORGE_ASSERT(zVertices >= 2, "Invalid z vertex count");
+        float xSpacing = 1.0f / (xVertices - 1.0f);
+        float zSpacing = 1.0f / (zVertices - 1.0f);
+
+        uint32_t vertexCount = xVertices * zVertices;
+        uint32_t indexCount = (xVertices - 1) * (zVertices - 1) * 6;
+
+        BufferLayout layout({
+            { ShaderDataType::Float3 },
+            { ShaderDataType::Float3 },
+            { ShaderDataType::Float2 },
+        });
+
+        float* vertexData = new float[size_t(vertexCount) * 8];
+        uint32_t* indexData = new uint32_t[indexCount];
+
+        uint32_t index = 0;
+        for (int z = 0; z < zVertices; z++)
+        {
+            for (int x = 0; x < xVertices; x++)
+            {
+                vertexData[index + 0] = x * xSpacing - 0.5f;
+                vertexData[index + 1] = 0;
+                vertexData[index + 2] = z * zSpacing - 0.5f;
+
+                vertexData[index + 3] = 0;
+                vertexData[index + 4] = 1;
+                vertexData[index + 5] = 0;
+
+                vertexData[index + 6] = x * xSpacing;
+                vertexData[index + 7] = z * zSpacing;
+                index += 8;
+            }
+        }
+
+        index = 0;
+        for (int z = 0; z < zVertices - 1; z++)
+        {
+            for (int x = 0; x < xVertices - 1; x++)
+            {
+                indexData[index + 0] = (x + 0) + (z + 0) * xVertices;
+                indexData[index + 1] = (x + 0) + (z + 1) * xVertices;
+                indexData[index + 2] = (x + 1) + (z + 1) * xVertices;
+
+                indexData[index + 3] = (x + 0) + (z + 0) * xVertices;
+                indexData[index + 4] = (x + 1) + (z + 1) * xVertices;
+                indexData[index + 5] = (x + 1) + (z + 0) * xVertices;
+                index += 6;
+            }
+        }
+
+        Ref<VertexBuffer> vbo = VertexBuffer::Create(vertexData, vertexCount * layout.GetStride(), layout);
+        Ref<IndexBuffer> ibo = IndexBuffer::Create(indexData, indexCount * sizeof(uint32_t));
+        Ref<VertexArray> vao = VertexArray::Create();
+        vao->AddVertexBuffer(vbo);
+        vao->SetIndexBuffer(ibo);
+
+        delete[] vertexData;
+        delete[] indexData;
+
+        return CreateRef<Mesh>(vao);
+    }
+
     Ref<Material> GraphicsCache::DefaultColorMaterial(const Color& color)
     {
         Ref<Material> material = CreateRef<Material>(DefaultColorShader());
@@ -295,7 +361,7 @@ namespace Forge
             "    f_FinalColor = u_Color;\n"
             "}\n";
 
-        Ref<Shader> shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, { { "JOINT_COUNT", std::to_string(maxJoints) } });
+        Ref<Shader> shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "JOINT_COUNT=" + std::to_string(maxJoints) });
         s_DefaultColorAnimatedShaders[maxJoints] = shader;
         return shader;
     }
@@ -363,7 +429,7 @@ namespace Forge
             "    f_FinalColor = texture(u_Texture, f_TexCoord) * calculateLightDiffuse(f_Position, normalize(f_Normal), u_LightSources, u_UsedLightSources, shadow);\n"
             "}\n";
 
-        Ref<Shader> shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, { { "JOINT_COUNT", std::to_string(maxJoints) } });
+        Ref<Shader> shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "JOINT_COUNT=" + std::to_string(maxJoints) });
         s_LitTextureAnimatedShaders[maxJoints] = shader;
         return shader;
     }

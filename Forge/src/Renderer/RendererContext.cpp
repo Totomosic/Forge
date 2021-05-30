@@ -7,7 +7,7 @@ namespace Forge
 
 	RendererContext::RendererContext()
 		: m_ViewMatrix(), m_ProjectionMatrix(), m_ProjViewMatrix(), m_CameraFarPlane(0.0f), m_CameraNearPlane(0.0f), m_LightSources(), m_ClippingPlanes(),
-		m_NextTextureSlot(0), m_PassUniforms(CreateScope<UniformContext>()), m_RequirementsMap()
+		m_NextTextureSlot(0), m_PassUniforms(CreateScope<UniformContext>()), m_CullingEnabled(false), m_RenderSettings(), m_RequirementsMap()
 	{
 	}
 
@@ -69,6 +69,21 @@ namespace Forge
 		{
 			glPolygonMode(GL_FRONT_AND_BACK, (GLenum)settings.Mode);
 			m_RenderSettings.Mode = settings.Mode;
+		}
+		if (settings.Culling != m_RenderSettings.Culling && settings.Culling != CullFace::None)
+		{
+			if (!m_CullingEnabled)
+			{
+				RenderCommand::EnableCullFace(true);
+				m_CullingEnabled = true;
+			}
+			RenderCommand::SetCullFace(settings.Culling);
+			m_RenderSettings.Culling = settings.Culling;
+		}
+		else if (settings.Culling == CullFace::None && m_CullingEnabled)
+		{
+			RenderCommand::EnableCullFace(false);
+			m_CullingEnabled = false;
 		}
 	}
 

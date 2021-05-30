@@ -30,9 +30,9 @@ namespace Forge
             "    for (int i = 0; i < usedLights; i++)\n"
             "    {\n"
             "        vec3 lightDirection = normalize(lightSources[i].Position - position);\n"
-            "        float diffusePower = max(dot(normal, lightDirection), abs(dot(normal, lightDirection)) * 0.2);\n"
-            "        vec4 diffuseColor = diffusePower * lightSources[i].Color * (1.0 - shadow * 0.95);\n"
-            "        color += diffuseColor.xyz + lightSources[i].Ambient * (1.0 - shadow * 0.25) * lightSources[i].Color.xyz;\n"
+            "        float diffusePower = max(dot(normal, lightDirection), 0.0);\n"
+            "        vec4 diffuseColor = diffusePower * lightSources[i].Color * (1.0 - shadow);\n"
+            "        color += diffuseColor.xyz + lightSources[i].Ambient * lightSources[i].Color.xyz;\n"
             "    }\n"
             "    return vec4(color, 1.0);\n"
             "}\n\n"
@@ -92,7 +92,7 @@ namespace Forge
             ");\n"
             "float calculatePointShadow(vec3 position, samplerCube shadowMap, float farPlane, vec3 lightPosition, vec3 cameraPosition)\n"
             "{\n"
-            "   float bias = 0.2;\n"
+            "   float bias = 0.01;\n"
             "   float viewDistance = length(cameraPosition - position);\n"
             "   float diskRadius = (0.1 + (4.0 * viewDistance / farPlane)) / 25.0;\n"
             "   vec3 lightToFrag = position - lightPosition;\n"
@@ -123,7 +123,7 @@ namespace Forge
             "       gl_ClipDistance[i] = clipPlane(worldPosition, plane[i]);\n"
             "   }\n"
             "}\n"
-        }
+        },
     };
 
     bool ShaderLibrary::HasShaderSource(const std::string& filename)

@@ -139,6 +139,11 @@ std::vector<Triangle> Terrain::MarchingCubes(const glm::vec3& size, const glm::i
 	float heightPerPoint = float(size.y) / float(resolution.y - 1);
 	float scale = 50.0f;
 
+	auto getPosition = [&](const glm::ivec3& pos)
+	{
+		return glm::vec4{ float(pos.x) / float(resolution.x) * size.x - size.x / 2, float(pos.y) / float(resolution.y) * size.y, float(pos.z) / float(resolution.z) * size.z - size.z / 2, marchingCubes[getIndex(pos.x, pos.y, pos.z)] };
+	};
+
 	for (int i = 0; i < xPoints; i++)
 	{
 		for (int j = 0; j < yPoints; j++)
@@ -146,7 +151,8 @@ std::vector<Triangle> Terrain::MarchingCubes(const glm::vec3& size, const glm::i
 			for (int k = 0; k < zPoints; k++)
 			{
 				float noise = simplex.fractal(4, float(i) / scale + m_Position.x, float(j) / scale + m_Position.y, float(k) / scale + m_Position.z);
-				marchingCubes[getIndex(i, j, k)] = float(j) * -heightPerPoint + noise * heightScale;
+				float value = float(j) * -heightPerPoint + noise * heightScale;
+				marchingCubes[getIndex(i, j, k)] = value;
 			}
 		}
 	}
@@ -162,11 +168,6 @@ std::vector<Triangle> Terrain::MarchingCubes(const glm::vec3& size, const glm::i
 			}
 		}
 		return index;
-	};
-
-	auto getPosition = [&](const glm::ivec3& pos)
-	{
-		return glm::vec4{ float(pos.x) / float(resolution.x) * size.x - size.x / 2, float(pos.y) / float(resolution.y) * size.y, float(pos.z) / float(resolution.z) * size.z - size.z / 2, marchingCubes[getIndex(pos.x, pos.y, pos.z)] };
 	};
 
 	auto interpolate = [this](const glm::vec4& a, const glm::vec4& b)

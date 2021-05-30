@@ -70,6 +70,7 @@ namespace Forge
 		int m_NextTextureSlot;
 
 		Scope<UniformContext> m_PassUniforms;
+		bool m_CullingEnabled;
 		RenderSettings m_RenderSettings;
 
 		std::unordered_map<const Shader*, ShaderRequirements> m_RequirementsMap;

@@ -14,6 +14,14 @@ namespace Forge
 
 	}
 
+	FORGE_API enum class CullFace
+	{
+		None,
+		Front = GL_FRONT,
+		Back = GL_BACK,
+		FrontAndBack = GL_FRONT_AND_BACK,
+	};
+
 	class FORGE_API RenderCommand
 	{
 	private:
@@ -25,6 +33,8 @@ namespace Forge
 		static void SetClearColor(const Color& color);
 		static void Clear();
 		static void ClearDepth();
+		static void EnableCullFace(bool enabled);
+		static void SetCullFace(CullFace face);
 		inline static void SetViewport(const Viewport& viewport) { SetViewport(viewport.Left, viewport.Bottom, viewport.Width, viewport.Height); }
 		static void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 		static void EnableWireframe(bool enable);

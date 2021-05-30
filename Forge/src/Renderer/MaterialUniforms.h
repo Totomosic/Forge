@@ -1,6 +1,7 @@
 #pragma once
 #include "Shader.h"
 #include "Texture.h"
+#include "RenderCommand.h"
 
 namespace Forge
 {
@@ -17,6 +18,7 @@ namespace Forge
 	{
 	public:
 		PolygonMode Mode = PolygonMode::Fill;
+		CullFace Culling = CullFace::Back;
 	};
 
 	class FORGE_API UniformContainerBase

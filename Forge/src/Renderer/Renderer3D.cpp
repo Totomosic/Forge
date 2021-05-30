@@ -129,7 +129,14 @@ namespace Forge
 			Ref<Material> material = submodel.Material;
 			glm::mat4 overallTransform = transform * submodel.Transform;
 
-			m_Context.ApplyRenderSettings(submodel.Material->GetSettings());
+			if (m_ShadowRenderTarget)
+			{
+				RenderSettings settings = submodel.Material->GetSettings();
+				settings.Culling = CullFace::Front;
+				m_Context.ApplyRenderSettings(settings);
+			}
+			else
+				m_Context.ApplyRenderSettings(submodel.Material->GetSettings());
 
 			ShaderRequirements requirements = m_Context.GetShaderRequirements(material->GetShader(m_CurrentRenderPass));
 			m_Context.BindShader(material->GetShader(m_CurrentRenderPass), requirements);

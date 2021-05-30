@@ -55,6 +55,22 @@ namespace Forge
 		glClear(GL_DEPTH_BUFFER_BIT);
 	}
 
+	void RenderCommand::EnableCullFace(bool enabled)
+	{
+		if (enabled)
+			glEnable(GL_CULL_FACE);
+		else
+			glDisable(GL_CULL_FACE);
+	}
+
+	void RenderCommand::SetCullFace(CullFace face)
+	{
+		if (face != CullFace::None)
+		{
+			glCullFace((GLenum)face);
+		}
+	}
+
 	void RenderCommand::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 	{
 		glViewport(x, y, width, height);

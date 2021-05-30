@@ -13,7 +13,7 @@ namespace Forge
 	{
 		if (m_CurrentAnimation)
 		{
-			m_CurrentTime += ts.Seconds() * 0.5f;
+			// m_CurrentTime += ts.Seconds() * 0.5f;
 			if (m_CurrentTime >= m_CurrentAnimation->GetLength())
 				m_CurrentTime -= m_CurrentAnimation->GetLength();
 		}
