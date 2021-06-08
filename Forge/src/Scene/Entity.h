@@ -2,6 +2,7 @@
 #include "ForgePch.h"
 #include "Scene.h"
 #include "Transform.h"
+#include "Components.h"
 
 #include <glm/glm.hpp>
 #include <entt/entt.hpp>
@@ -24,6 +25,22 @@ namespace Forge
 		inline operator bool() const { return m_Handle != entt::null && m_Scene != nullptr; }
 		inline operator entt::entity() const { return m_Handle; }
 		inline operator uint32_t() const { return uint32_t(m_Handle); }
+
+		inline bool Enabled() const
+		{
+			return m_Scene->m_Registry.has<Forge::Enabled>(m_Handle);
+		}
+
+		inline void SetEnabled(bool enabled)
+		{
+			if (enabled != Enabled())
+			{
+				if (enabled)
+					AddComponent<Forge::Enabled>();
+				else
+					RemoveComponent<Forge::Enabled>();
+			}
+		}
 
 		template<typename T>
 		bool HasComponent() const

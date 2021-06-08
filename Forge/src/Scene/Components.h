@@ -4,6 +4,9 @@
 namespace Forge
 {
 
+	struct FORGE_API Enabled
+	{};
+
 	struct FORGE_API LayerId
 	{
 	public:
