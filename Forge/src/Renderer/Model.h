@@ -29,6 +29,7 @@ namespace Forge
 		{}
 
 		inline const std::vector<SubModel>& GetSubModels() const { return m_SubModels; }
+		inline std::vector<SubModel>& GetSubModels() { return m_SubModels; }
 
 	public:
 		inline static Ref<Model> Create(const Ref<Mesh>& mesh, const Ref<Material>& material)

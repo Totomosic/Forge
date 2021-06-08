@@ -23,7 +23,7 @@ namespace Forge
 	public:
 		static void Init();
 
-		// Models
+		// Meshes
 		inline static Ref<Mesh> SquareMesh() { return s_SquareMesh; }
 		inline static Ref<Mesh> CubeMesh() { return s_CubeMesh; }
 		static Ref<Mesh> GridMesh(int xVertices, int zVertices);
@@ -46,6 +46,14 @@ namespace Forge
 
 		inline static Ref<Shader> DefaultShadowShader() { return s_DefaultShadowShader; }
 		inline static Ref<Shader> DefaultPointShadowShader() { return s_DefaultPointShadowShader; }
+
+		// Models
+		inline static Ref<Model> SquareModel(float width, float height, const Ref<Material>& material)
+		{
+			Ref<Model> model = Model::Create(SquareMesh(), material);
+			model->GetSubModels()[0].Transform = glm::scale(glm::mat4(1.0f), { width, height, 1.0f });
+			return model;
+		}
 
 	private:
 		static void CreateDefaultColorShader();

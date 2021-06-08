@@ -161,12 +161,12 @@ namespace Forge
 	void Renderer3D::GetCameraTransformsFromLightSource(const LightSource& light, float aspect, const Frustum& frustum, glm::mat4 transforms[6])
 	{
 		glm::mat4 projection = glm::perspective(glm::radians(90.0f), aspect, frustum.NearPlane, frustum.FarPlane);
-		transforms[0] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 1.0, 0.0, 0.0 }, glm::vec3{ 0, -1, 0 });
-		transforms[1] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{-1.0, 0.0, 0.0 }, glm::vec3{ 0, -1, 0 });
-		transforms[2] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0, 1.0, 0.0 }, glm::vec3{ 0, 0, 1 });
-		transforms[3] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0,-1.0, 0.0 }, glm::vec3{ 0, 0,-1 });
-		transforms[4] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0, 0.0, 1.0 }, glm::vec3{ 0, -1, 0 });
-		transforms[5] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0, 0.0,-1.0 }, glm::vec3{ 0, -1, 0 });
+		transforms[0] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 1.0, 0.0, 0.0 }, glm::vec3{ 0, -1,  0 });
+		transforms[1] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{-1.0, 0.0, 0.0 }, glm::vec3{ 0, -1,  0 });
+		transforms[2] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0, 1.0, 0.0 }, glm::vec3{ 0,  0,  1 });
+		transforms[3] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0,-1.0, 0.0 }, glm::vec3{ 0,  0, -1 });
+		transforms[4] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0, 0.0, 1.0 }, glm::vec3{ 0, -1,  0 });
+		transforms[5] = projection * glm::lookAt(light.Position, light.Position + glm::vec3{ 0.0, 0.0,-1.0 }, glm::vec3{ 0, -1,  0 });
 	}
 
 }
