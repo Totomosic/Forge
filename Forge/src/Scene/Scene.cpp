@@ -71,7 +71,7 @@ namespace Forge
     void Scene::OnUpdate(Timestep ts, Renderer3D& renderer)
     {
         static std::vector<LightSource> s_LightSources;
-        auto cameraView = m_Registry.view<TransformComponent, CameraComponent>();
+        auto cameraView = m_Registry.view<TransformComponent, CameraComponent, Enabled>();
         std::vector<entt::entity> cameras = { cameraView.begin(), cameraView.end() };
         std::sort(cameras.begin(), cameras.end(), [this](entt::entity a, entt::entity b)
         {
@@ -90,7 +90,7 @@ namespace Forge
         for (entt::entity camera : cameras)
         {
             CameraData data;
-            auto [transform, cameraComponent] = m_Registry.get<TransformComponent, CameraComponent>(camera);
+            auto [transform, cameraComponent] = m_Registry.get<TransformComponent, CameraComponent, Enabled>(camera);
             data.Frustum = cameraComponent.Frustum;
             data.ViewMatrix = transform.GetInverseMatrix();
             data.Viewport = cameraComponent.Viewport;
@@ -98,7 +98,7 @@ namespace Forge
             data.ClearColor = cameraComponent.ClearColor;
             data.Mode = cameraComponent.Mode;
 
-            for (auto entity : m_Registry.view<AnimatorComponent>())
+            for (auto entity : m_Registry.view<AnimatorComponent, Enabled>())
             {
                 auto& animation = m_Registry.get<AnimatorComponent>(entity);
                 animation.OnUpdate(ts);
@@ -120,7 +120,7 @@ namespace Forge
             }
 
             s_LightSources.clear();
-            for (auto entity : m_Registry.view<TransformComponent, LightSourceComponent>())
+            for (auto entity : m_Registry.view<TransformComponent, LightSourceComponent, Enabled>())
             {
                 if (CheckLayerMask(entity, cameraComponent.LayerMask))
                 {
@@ -139,7 +139,7 @@ namespace Forge
             Ref<Framebuffer> framebuffer = cameraComponent.RenderTarget ? cameraComponent.RenderTarget : m_DefaultFramebuffer;
 
             renderer.BeginScene(framebuffer, data, s_LightSources, cameraComponent.Shadows.Enabled ? cameraComponent.Shadows.RenderTarget : nullptr);
-            for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent>())
+            for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent, Enabled>())
             {
                 if (CheckLayerMask(entity, cameraComponent.LayerMask))
                 {
