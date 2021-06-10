@@ -28,7 +28,7 @@ namespace Forge
 
 		inline bool Enabled() const
 		{
-			return m_Scene->m_Registry.has<Forge::Enabled>(m_Handle);
+			return m_Scene->m_Registry.has<EnabledFlag>(m_Handle);
 		}
 
 		inline void SetEnabled(bool enabled)
@@ -36,9 +36,9 @@ namespace Forge
 			if (enabled != Enabled())
 			{
 				if (enabled)
-					AddComponent<Forge::Enabled>();
+					AddComponent<EnabledFlag>();
 				else
-					RemoveComponent<Forge::Enabled>();
+					RemoveComponent<EnabledFlag>();
 			}
 		}
 

@@ -4,8 +4,12 @@
 namespace Forge
 {
 
-	struct FORGE_API Enabled
-	{};
+	struct FORGE_API EnabledFlag
+	{
+	public:
+		// Not used, just here so it is not a void type
+		bool Storage;
+	};
 
 	struct FORGE_API LayerId
 	{

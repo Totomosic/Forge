@@ -27,6 +27,7 @@ namespace Forge
         Entity entity(m_Registry.create(), this);
         entity.AddComponent<TransformComponent>();
         entity.AddComponent<LayerId>(1ULL << layer);
+        entity.SetEnabled(true);
         return entity;
     }
 
@@ -71,7 +72,7 @@ namespace Forge
     void Scene::OnUpdate(Timestep ts, Renderer3D& renderer)
     {
         static std::vector<LightSource> s_LightSources;
-        auto cameraView = m_Registry.view<TransformComponent, CameraComponent, Enabled>();
+        auto cameraView = m_Registry.view<TransformComponent, CameraComponent, EnabledFlag>();
         std::vector<entt::entity> cameras = { cameraView.begin(), cameraView.end() };
         std::sort(cameras.begin(), cameras.end(), [this](entt::entity a, entt::entity b)
         {
@@ -90,7 +91,7 @@ namespace Forge
         for (entt::entity camera : cameras)
         {
             CameraData data;
-            auto [transform, cameraComponent] = m_Registry.get<TransformComponent, CameraComponent, Enabled>(camera);
+            auto [transform, cameraComponent, enabled] = m_Registry.get<TransformComponent, CameraComponent, EnabledFlag>(camera);
             data.Frustum = cameraComponent.Frustum;
             data.ViewMatrix = transform.GetInverseMatrix();
             data.Viewport = cameraComponent.Viewport;
@@ -98,7 +99,7 @@ namespace Forge
             data.ClearColor = cameraComponent.ClearColor;
             data.Mode = cameraComponent.Mode;
 
-            for (auto entity : m_Registry.view<AnimatorComponent, Enabled>())
+            for (auto entity : m_Registry.view<AnimatorComponent, EnabledFlag>())
             {
                 auto& animation = m_Registry.get<AnimatorComponent>(entity);
                 animation.OnUpdate(ts);
@@ -120,7 +121,7 @@ namespace Forge
             }
 
             s_LightSources.clear();
-            for (auto entity : m_Registry.view<TransformComponent, LightSourceComponent, Enabled>())
+            for (auto entity : m_Registry.view<TransformComponent, LightSourceComponent, EnabledFlag>())
             {
                 if (CheckLayerMask(entity, cameraComponent.LayerMask))
                 {
@@ -139,7 +140,7 @@ namespace Forge
             Ref<Framebuffer> framebuffer = cameraComponent.RenderTarget ? cameraComponent.RenderTarget : m_DefaultFramebuffer;
 
             renderer.BeginScene(framebuffer, data, s_LightSources, cameraComponent.Shadows.Enabled ? cameraComponent.Shadows.RenderTarget : nullptr);
-            for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent, Enabled>())
+            for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent, EnabledFlag>())
             {
                 if (CheckLayerMask(entity, cameraComponent.LayerMask))
                 {
