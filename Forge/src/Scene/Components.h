@@ -23,6 +23,17 @@ namespace Forge
 		{}
 	};
 
+	struct FORGE_API TagComponent
+	{
+	public:
+		std::string Tag;
+
+	public:
+		TagComponent(const std::string& name)
+			: Tag(name)
+		{}
+	};
+
 	struct FORGE_API LightSourceComponent
 	{
 	public:

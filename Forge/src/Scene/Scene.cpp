@@ -24,9 +24,15 @@ namespace Forge
 
     Entity Scene::CreateEntity(uint8_t layer)
     {
+        return CreateEntity("<Unnamed>", layer);
+    }
+
+    Entity Scene::CreateEntity(const std::string& name, uint8_t layer)
+    {
         Entity entity(m_Registry.create(), this);
         entity.AddComponent<TransformComponent>();
         entity.AddComponent<LayerId>(1ULL << layer);
+        entity.AddComponent<TagComponent>(name);
         entity.SetEnabled(true);
         return entity;
     }
@@ -64,7 +70,7 @@ namespace Forge
 
     Entity Scene::CreateCamera(const Frustum& frustum)
     {
-        Entity camera = CreateEntity();
+        Entity camera = CreateEntity("Camera");
         camera.AddComponent<CameraComponent>(frustum).Viewport = { 0, 0, m_DefaultFramebuffer->GetWidth(), m_DefaultFramebuffer->GetHeight() };
         return camera;
     }

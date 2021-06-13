@@ -41,11 +41,14 @@ namespace Forge
 		inline bool HasPrimaryCamera() { FindPrimaryCamera(); return m_PrimaryCamera != entt::null; }
 		Entity GetPrimaryCamera();
 		Entity CreateEntity(uint8_t layer = DEFAULT_LAYER);
+		Entity CreateEntity(const std::string& name, uint8_t layer = DEFAULT_LAYER);
 		void DestroyEntity(const Entity& entity);
 		void SetLayer(Entity entity, uint8_t layer);
 		void AddLayer(Entity entity, uint8_t layer);
 		void RemoveLayer(Entity entity, uint8_t layer);
 		void AddToAllLayers(Entity entity);
+
+		inline entt::registry& GetRegistry() { return m_Registry; }
 
 		void SetPrimaryCamera(const Entity& entity);
 		Entity CreateCamera(const Frustum& frustum);

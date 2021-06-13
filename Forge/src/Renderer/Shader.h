@@ -21,6 +21,15 @@ namespace Forge
 
 	}
 
+	struct FORGE_API UniformDescriptor
+	{
+	public:
+		std::string Name;
+		std::string VariableName;
+		ShaderDataType Type;
+		int Count;
+	};
+
 	using ShaderDefines = std::vector<std::string>;
 
 	class FORGE_API Shader
@@ -30,9 +39,12 @@ namespace Forge
 
 		Handle m_Handle;
 		std::unordered_map<std::string, int> m_UniformLocations;
+		std::vector<UniformDescriptor> m_UniformDescriptors;
 
 	public:
 		Shader(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource, const ShaderDefines& defines = {});
+
+		inline const std::vector<UniformDescriptor>& GetUniformDescriptors() const { return m_UniformDescriptors; }
 
 		void Bind() const;
 		void Unbind() const;
@@ -61,7 +73,7 @@ namespace Forge
 		void Init(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource);
 		int GetUniformLocation(const std::string& name);
 		
-		static std::string PreprocessShaderSource(const std::string& source, const ShaderDefines& defines);
+		std::string PreprocessShaderSource(const std::string& source, const ShaderDefines& defines);
 
 	};
 

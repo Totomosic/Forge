@@ -10,6 +10,7 @@ namespace Forge
 	{
 	private:
 		Application* m_Application;
+		bool m_BlockEvents;
 
 	public:
 		ImGuiLayer();
@@ -19,6 +20,7 @@ namespace Forge
 		
 		void Begin();
 		void End();
+		inline void BlockEvents(bool block) { m_BlockEvents = block; }
 	};
 
 }

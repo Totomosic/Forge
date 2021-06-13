@@ -50,6 +50,14 @@ namespace Forge
 	public:
 		UniformContext();
 
+		inline bool HasUniform(const std::string& name) const { return m_Uniforms.find(name) != m_Uniforms.end(); }
+		
+		template<typename T>
+		T& GetUniformValue(const std::string& name)
+		{
+			return ((UniformContainer<T>&)*m_Uniforms[name]).Value;
+		}
+
 		template<typename T>
 		void AddUniform(const std::string& name, const T& value)
 		{
@@ -61,6 +69,17 @@ namespace Forge
 		{
 			((UniformContainer<T>*)m_Uniforms[name].get())->Value = value;
 		}
+
+		template<typename T>
+		void UpdateOrAddUniform(const std::string& name, const T& value)
+		{
+			if (m_Uniforms.find(name) != m_Uniforms.end())
+				((UniformContainer<T>*)m_Uniforms[name].get())->Value = value;
+			else
+				AddUniform(name, value);
+		}
+
+		void AddFromDescriptor(const UniformDescriptor& descriptor);
 
 		void Clear();
 		void Apply(const Ref<Shader>& shader, RendererContext& context) const;

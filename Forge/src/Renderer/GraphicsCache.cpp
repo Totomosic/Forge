@@ -163,6 +163,7 @@ namespace Forge
             SHADER_VERSION_STRING + '\n' +
             "layout (location = 0) out vec4 f_FinalColor;\n"
             "\n"
+            "[\"Color\"]\n"
             "uniform vec4 u_Color;\n"
             "\n"
             "void main()\n"
@@ -239,6 +240,7 @@ namespace Forge
             "\n"
             "layout (location = 0) out vec4 f_FinalColor;\n"
             "\n"
+            "[\"Color\"]\n"
             "uniform vec4 u_Color;\n"
             "uniform LightSource u_LightSources[MAX_LIGHT_COUNT];\n"
             "uniform int u_UsedLightSources;\n"
@@ -354,6 +356,7 @@ namespace Forge
             SHADER_VERSION_STRING + '\n' +
             "layout (location = 0) out vec4 f_FinalColor;\n"
             "\n"
+            "[\"Color\"]\n"
             "uniform vec4 u_Color;\n"
             "\n"
             "void main()\n"

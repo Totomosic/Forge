@@ -11,6 +11,22 @@
 namespace Forge
 {
 
+    ShaderDataType GetTypeFromGlslString(const std::string& str)
+    {
+        if (str == "int")
+            return ShaderDataType::Int;
+        if (str == "float")
+            return ShaderDataType::Float;
+        if (str == "vec2")
+            return ShaderDataType::Float2;
+        if (str == "vec3")
+            return ShaderDataType::Float3;
+        if (str == "vec4")
+            return ShaderDataType::Float4;
+        FORGE_ASSERT(false, "Unknown GLSL type");
+        return ShaderDataType::Float;
+    }
+
     void PreprocessIfDefs(std::string& result, const std::string& identifier, const std::function<bool(const std::string&)>& fn)
     {
         size_t directiveStart = result.find(identifier);
@@ -51,7 +67,7 @@ namespace Forge
     }
 
     Shader::Shader(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource, const ShaderDefines& defines)
-        : m_Handle()
+        : m_Handle(), m_UniformLocations(), m_UniformDescriptors()
     {
         Init(PreprocessShaderSource(vertexSource, defines), PreprocessShaderSource(geometrySource, defines), PreprocessShaderSource(fragmentSource, defines));
     }
@@ -308,6 +324,28 @@ namespace Forge
             }
         }
         PreprocessIfDefs(result, "#if ", [](const std::string& value) { return value == "1" || value == "true"; });
+
+        // Parse uniform descriptors
+        size_t index = result.find("[\"");
+        while (index != std::string::npos)
+        {
+            size_t end = result.find("\"]", index);
+            FORGE_ASSERT(end != std::string::npos, "Invalid uniform descriptor");
+            std::string name = result.substr(index + 2, end - index - 2);
+            size_t uniform = result.find("uniform ", end);
+            FORGE_ASSERT(uniform != std::string::npos, "No uniform found for uniform descriptor");
+            size_t space = result.find_first_of(' ', uniform + 8);
+            FORGE_ASSERT(space != std::string::npos, "Invalid uniform syntax");
+            std::string type = result.substr(uniform + 8, space - uniform - 8);
+            size_t semicolon = result.find_first_of(';', space + 1);
+            FORGE_ASSERT(semicolon != std::string::npos, "Invalid uniform syntax");
+            std::string varname = result.substr(space + 1, semicolon - space - 1);
+
+            m_UniformDescriptors.push_back({ name, varname, GetTypeFromGlslString(type), 1 });
+            result.erase(index, end - index + 2);
+            index = result.find("[\"", index);
+        }
+
         return result;
     }
 

@@ -14,14 +14,17 @@ project "Forge"
     files
     {
         "src/**.h",
-        "src/**.cpp"
+        "src/**.cpp",
+        "vendor/ImGuizmo/ImGuizmo.h",
+        "vendor/ImGuizmo/ImGuizmo.cpp",
     }
-    
+
     includedirs
     {
         "../%{IncludeDirs.GLFW}",
         "../%{IncludeDirs.Glad}",
-		"../%{IncludeDirs.ImGui}",
+        "../%{IncludeDirs.ImGui}",
+        "../%{IncludeDirs.ImGuizmo}",
         "../%{IncludeDirs.spdlog}",
         "../%{IncludeDirs.glm}",
         "../%{IncludeDirs.entt}",
@@ -36,6 +39,9 @@ project "Forge"
         "Glad",
         "ImGui",
     }
+
+    filter "files:vendor/ImGuizmo/**.cpp"
+	flags { "NoPCH" }
 
     filter "system:windows"
         systemversion "latest"

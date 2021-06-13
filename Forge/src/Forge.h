@@ -14,6 +14,7 @@
 #include "Core/Application.h"
 
 #include "Math/Constants.h"
+#include "Math/Math.h"
 
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"

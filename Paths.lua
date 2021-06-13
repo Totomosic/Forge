@@ -13,6 +13,7 @@ IncludeDirs["spdlog"] =         ForgeCoreDir .. "vendor/spdlog/include"
 IncludeDirs["glm"] =            ForgeCoreDir .. "vendor/glm"
 IncludeDirs["entt"] =           ForgeCoreDir .. "vendor/entt/src"
 IncludeDirs["tinygltf"] =       ForgeCoreDir .. "vendor/tinygltf"
+IncludeDirs["ImGuizmo"] =       ForgeCoreDir .. "vendor/ImGuizmo"
 
 -- Library directories relative to solution directory
 LibraryDirs = {}

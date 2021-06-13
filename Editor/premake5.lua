@@ -24,6 +24,7 @@ project "ForgeEditor"
         "../%{IncludeDirs.entt}",
         "../%{IncludeDirs.tinygltf}",
         "../%{IncludeDirs.Forge}",
+        "../%{IncludeDirs.ImGuizmo}",
     }
 
     links

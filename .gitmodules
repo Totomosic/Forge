@@ -16,3 +16,6 @@
 [submodule "Forge/vendor/tinygltf"]
 	path = Forge/vendor/tinygltf
 	url = https://github.com/syoyo/tinygltf.git
+[submodule "Forge/vendor/ImGuizmo"]
+	path = Forge/vendor/ImGuizmo
+	url = https://github.com/Totomosic/ImGuizmo

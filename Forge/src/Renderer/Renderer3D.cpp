@@ -31,9 +31,8 @@ namespace Forge
 
 	void Renderer3D::EndScene()
 	{
-		if (m_ShadowRenderTarget)
+		if (m_ShadowRenderTarget && m_CurrentScene.LightSources.size() > 0)
 		{
-			FORGE_ASSERT(m_CurrentScene.LightSources.size() > 0, "Cannot run shadow pass without light sources");
 			CameraData camera = m_CurrentScene.Camera;
 			camera.Viewport = { 0, 0, m_ShadowRenderTarget->GetWidth(), m_ShadowRenderTarget->GetHeight() };
 			SceneData shadowScene = {

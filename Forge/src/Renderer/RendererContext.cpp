@@ -70,7 +70,7 @@ namespace Forge
 			glPolygonMode(GL_FRONT_AND_BACK, (GLenum)settings.Mode);
 			m_RenderSettings.Mode = settings.Mode;
 		}
-		if (settings.Culling != m_RenderSettings.Culling && settings.Culling != CullFace::None)
+		if ((settings.Culling != m_RenderSettings.Culling && settings.Culling != CullFace::None) || (settings.Culling != CullFace::None && !m_CullingEnabled))
 		{
 			if (!m_CullingEnabled)
 			{
@@ -131,7 +131,14 @@ namespace Forge
 	int RendererContext::BindTexture(const Ref<Texture>& texture)
 	{
 		FORGE_ASSERT(m_NextTextureSlot < 32, "Too many textures bound");
-		texture->Bind(m_NextTextureSlot);
+		if (texture)
+			texture->Bind(m_NextTextureSlot);
+		else
+		{
+			// TODO: rework
+			glActiveTexture(GL_TEXTURE0 + m_NextTextureSlot);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
 		return m_NextTextureSlot++;
 	}
 
