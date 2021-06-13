@@ -29,6 +29,7 @@ namespace Forge
 	private:
 		SceneData m_CurrentScene;
 		std::vector<RenderData> m_Renderables;
+		bool m_RenderImGui;
 		RenderPass m_CurrentRenderPass;
 
 		RendererContext m_Context;
@@ -45,6 +46,7 @@ namespace Forge
 		void Flush();
 
 		void RenderModel(const Ref<Model>& model, const glm::mat4& transform, bool createsShadow = true);
+		inline void RenderImGui() { m_RenderImGui = true; }
 
 	private:
 		void SetupScene(const SceneData& data);

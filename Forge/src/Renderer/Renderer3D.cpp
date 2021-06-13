@@ -7,10 +7,13 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 
+#include <imgui.h>
+#include <backends/imgui_impl_opengl3.h>
+
 namespace Forge
 {
 	Renderer3D::Renderer3D()
-		: m_CurrentScene(), m_CurrentRenderPass(), m_Context(), m_ClearedFramebuffers(), m_ShadowRenderTarget(nullptr)
+		: m_CurrentScene(), m_CurrentRenderPass(), m_RenderImGui(false), m_Context(), m_ClearedFramebuffers(), m_ShadowRenderTarget(nullptr)
 	{
 	}
 
@@ -23,6 +26,7 @@ namespace Forge
 		};
 		m_Renderables.clear();
 		m_ShadowRenderTarget = shadowRenderTarget;
+		m_RenderImGui = false;
 	}
 
 	void Renderer3D::EndScene()
@@ -115,6 +119,11 @@ namespace Forge
 	{
 		for (const RenderData& data : m_Renderables)
 			RenderModelInternal(data);
+		if (m_RenderImGui)
+		{
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		}
 	}
 
 	void Renderer3D::RenderModelInternal(const RenderData& data)

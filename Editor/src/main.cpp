@@ -3,6 +3,8 @@
 #include "Forge.h"
 using namespace Forge;
 
+#include "EditorLayer.h"
+
 int main()
 {
 	ForgeInstance::Init();
@@ -11,7 +13,8 @@ int main()
 	props.Title = "Editor";
 	Application app(props);
 
-	Scene& scene = app.CreateScene();
+	app.EnableImGui();
+	app.PushLayer<Editor::EditorLayer>();
 
 	while (!app.ShouldExit())
 	{

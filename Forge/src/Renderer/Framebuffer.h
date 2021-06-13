@@ -63,6 +63,7 @@ namespace Forge
 		inline bool IsMultisampled() const { return GetSamples() > 0; }
 		inline bool HasTexture(ColorBuffer buffer) const { return m_TextureBuffers.find(buffer) != m_TextureBuffers.end(); }
 		inline Ref<Texture> GetTexture(ColorBuffer buffer) const { return m_TextureBuffers.at(buffer); }
+		inline Viewport GetViewport() const { return { 0, 0, GetWidth(), GetHeight() }; }
 
 		void Bind() const;
 		void Unbind() const;
