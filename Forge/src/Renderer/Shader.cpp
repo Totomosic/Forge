@@ -11,6 +11,52 @@
 namespace Forge
 {
 
+    namespace Utils
+    {
+        
+        ShaderDataType GetTypeFromUniformType(GLenum type)
+        {
+            switch (type)
+            {
+            case GL_FLOAT:
+                return ShaderDataType::Float;
+            case GL_FLOAT_VEC2:
+                return ShaderDataType::Float2;
+            case GL_FLOAT_VEC3:
+                return ShaderDataType::Float3;
+            case GL_FLOAT_VEC4:
+                return ShaderDataType::Float4;
+            case GL_INT:
+                return ShaderDataType::Int;
+            case GL_INT_VEC2:
+                return ShaderDataType::Int2;
+            case GL_INT_VEC3:
+                return ShaderDataType::Int3;
+            case GL_INT_VEC4:
+                return ShaderDataType::Int4;
+            case GL_BOOL:
+                return ShaderDataType::Bool;
+            case GL_FLOAT_MAT2:
+                return ShaderDataType::Mat2;
+            case GL_FLOAT_MAT3:
+                return ShaderDataType::Mat3;
+            case GL_FLOAT_MAT4:
+                return ShaderDataType::Mat4;
+            case GL_SAMPLER_1D:
+                return ShaderDataType::Sampler1D;
+            case GL_SAMPLER_2D:
+                return ShaderDataType::Sampler2D;
+            case GL_SAMPLER_3D:
+                return ShaderDataType::Sampler3D;
+            case GL_SAMPLER_CUBE:
+                return ShaderDataType::SamplerCube;
+            }
+            FORGE_ASSERT(false, "Invalid uniform type");
+            return ShaderDataType::Float;
+        }
+
+    }
+
     ShaderDataType GetTypeFromGlslString(const std::string& str)
     {
         if (str == "int")
@@ -69,7 +115,9 @@ namespace Forge
     Shader::Shader(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource, const ShaderDefines& defines)
         : m_Handle(), m_UniformLocations(), m_UniformDescriptors()
     {
-        Init(PreprocessShaderSource(vertexSource, defines), PreprocessShaderSource(geometrySource, defines), PreprocessShaderSource(fragmentSource, defines));
+        std::unordered_map<std::string, std::string> nameMap;
+        Init(PreprocessShaderSource(vertexSource, defines, nameMap), PreprocessShaderSource(geometrySource, defines, nameMap), PreprocessShaderSource(fragmentSource, defines, nameMap));
+        ReflectShader(nameMap);
     }
 
     void Shader::Bind() const
@@ -114,7 +162,7 @@ namespace Forge
 
     void Shader::SetUniform(const std::string& name, const Color& value)
     {
-        glUniform4f(GetUniformLocation(name), float(value.r) / 255.0f, float(value.g) / 255.0f, float(value.b) / 255.0f, float(value.a) / 255.0f);
+        glUniform4f(GetUniformLocation(name), float(value.r), float(value.g), float(value.b), float(value.a));
     }
 
     void Shader::SetUniform(const std::string& name, const glm::mat2& value)
@@ -269,6 +317,32 @@ namespace Forge
             glDeleteShader(geometryShader);
     }
 
+    void Shader::ReflectShader(const std::unordered_map<std::string, std::string>& nameMap)
+    {
+        int count;
+        glGetProgramiv(m_Handle.Id, GL_ACTIVE_UNIFORMS, &count);
+        char nameBuffer[128];
+        for (int i = 0; i < count; i++)
+        {
+            GLenum type;
+            UniformDescriptor descriptor;
+            glGetActiveUniform(m_Handle.Id, GLuint(i), sizeof(nameBuffer), nullptr, &descriptor.Count, &type, nameBuffer);
+            descriptor.VariableName = nameBuffer;
+            descriptor.Type = Utils::GetTypeFromUniformType(type);
+            descriptor.Automatic = descriptor.VariableName.substr(0, 4) == "frg_";
+            if (nameMap.find(descriptor.VariableName) != nameMap.end())
+            {
+                descriptor.Name = nameMap.at(descriptor.VariableName);
+            }
+            else
+            {
+                descriptor.Name = descriptor.VariableName;
+            }
+            FORGE_WARN("{} {}", descriptor.VariableName, descriptor.Count);
+            m_UniformDescriptors.push_back(descriptor);
+        }
+    }
+
     int Shader::GetUniformLocation(const std::string& name)
     {
         auto it = m_UniformLocations.find(name);
@@ -283,7 +357,7 @@ namespace Forge
         return location;
     }
 
-    std::string Shader::PreprocessShaderSource(const std::string& source, const ShaderDefines& defines)
+    std::string Shader::PreprocessShaderSource(const std::string& source, const ShaderDefines& defines, std::unordered_map<std::string, std::string>& nameMap)
     {
         std::string result = source;
         size_t directiveStart = result.find("#include ");
@@ -336,12 +410,12 @@ namespace Forge
             FORGE_ASSERT(uniform != std::string::npos, "No uniform found for uniform descriptor");
             size_t space = result.find_first_of(' ', uniform + 8);
             FORGE_ASSERT(space != std::string::npos, "Invalid uniform syntax");
-            std::string type = result.substr(uniform + 8, space - uniform - 8);
             size_t semicolon = result.find_first_of(';', space + 1);
             FORGE_ASSERT(semicolon != std::string::npos, "Invalid uniform syntax");
             std::string varname = result.substr(space + 1, semicolon - space - 1);
 
-            m_UniformDescriptors.push_back({ name, varname, GetTypeFromGlslString(type), 1 });
+            nameMap[varname] = name;
+
             result.erase(index, end - index + 2);
             index = result.find("[\"", index);
         }

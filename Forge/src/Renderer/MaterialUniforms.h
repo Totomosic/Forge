@@ -21,88 +21,50 @@ namespace Forge
 		CullFace Culling = CullFace::Back;
 	};
 
-	class FORGE_API UniformContainerBase
+	struct FORGE_API UniformSpecification
 	{
 	public:
-		virtual ~UniformContainerBase() = default;
-		virtual void Apply(const std::string& name, const Ref<Shader>& shader, RendererContext& context) const = 0;
-	};
-
-	template<typename T>
-	class FORGE_API UniformContainer : public UniformContainerBase
-	{
-	public:
-		T Value;
-
-	public:
-		UniformContainer(const T& value) : UniformContainerBase(),
-			Value(value)
-		{}
-
-		virtual void Apply(const std::string& name, const Ref<Shader>& shader, RendererContext& context) const override;
+		std::string Varname;
+		ShaderDataType Type;
+		int Offset;
 	};
 
 	class FORGE_API UniformContext
 	{
 	private:
-		std::unordered_map<std::string, std::unique_ptr<UniformContainerBase>> m_Uniforms;
+		int m_Size;
+		int m_TextureSize;
+		std::unordered_map<std::string, int> m_UniformSpecificationIndices;
+		std::vector<UniformSpecification> m_UniformSpecifications;
+		std::unique_ptr<std::byte[]> m_Buffer;
+		std::unique_ptr<Ref<Texture>[]> m_Textures;
 
 	public:
 		UniformContext();
 
-		inline bool HasUniform(const std::string& name) const { return m_Uniforms.find(name) != m_Uniforms.end(); }
-		
+		inline bool HasUniform(const std::string& varname) const { return m_UniformSpecificationIndices.find(varname) != m_UniformSpecificationIndices.end(); }
+
 		template<typename T>
-		T& GetUniformValue(const std::string& name)
+		T& GetUniform(const std::string& varname) const
 		{
-			return ((UniformContainer<T>&)*m_Uniforms[name]).Value;
+			FORGE_ASSERT(HasUniform(varname), "Invalid uniform name");
+			if constexpr (std::is_same_v<T, Ref<Texture2D>> || std::is_same_v<T, Ref<TextureCube>> || std::is_same_v<T, Ref<RenderTexture>> || std::is_same_v<T, Ref<Texture>>)
+			{
+				int index = *(int*)(m_Buffer.get() + m_UniformSpecifications[m_UniformSpecificationIndices.at(varname)].Offset);
+				return (T&)m_Textures[index];
+			}
+			return *(T*)(m_Buffer.get() + m_UniformSpecifications[m_UniformSpecificationIndices.at(varname)].Offset);
 		}
 
 		template<typename T>
-		void AddUniform(const std::string& name, const T& value)
+		void SetUniform(const std::string& varname, const T& value) const
 		{
-			m_Uniforms[name] = std::make_unique<UniformContainer<T>>(value);
+			GetUniform<T>(varname) = value;
 		}
 
-		template<typename T>
-		void UpdateUniform(const std::string& name, const T& value)
-		{
-			((UniformContainer<T>*)m_Uniforms[name].get())->Value = value;
-		}
-
-		template<typename T>
-		void UpdateOrAddUniform(const std::string& name, const T& value)
-		{
-			if (m_Uniforms.find(name) != m_Uniforms.end())
-				((UniformContainer<T>*)m_Uniforms[name].get())->Value = value;
-			else
-				AddUniform(name, value);
-		}
-
-		void AddFromDescriptor(const UniformDescriptor& descriptor);
-
-		void Clear();
+		void CreateFromDescriptors(const std::vector<UniformDescriptor>& descriptors);
 		void Apply(const Ref<Shader>& shader, RendererContext& context) const;
 
 	};
-
-}
-
-#include "RendererContext.h"
-
-namespace Forge
-{
-
-	template<typename T>
-	void UniformContainer<T>::Apply(const std::string& name, const Ref<Shader>& shader, RendererContext& context) const
-	{
-		if constexpr (std::is_same_v<T, Ref<Texture2D>> || std::is_same_v<T, Ref<Texture>> || std::is_same_v<T, Ref<RenderTexture>> || std::is_same_v<T, Ref<TextureCube>>)
-		{
-			int slot = context.BindTexture(Value);
-			shader->SetUniform(name, slot);
-		}
-		else
-			shader->SetUniform(name, Value);
-	}
 
 }

@@ -12,6 +12,7 @@
 
 namespace Forge
 {
+
 	Renderer3D::Renderer3D()
 		: m_CurrentScene(), m_CurrentRenderPass(), m_RenderImGui(false), m_Context(), m_ClearedFramebuffers(), m_ShadowRenderTarget(nullptr)
 	{
@@ -45,23 +46,17 @@ namespace Forge
 			glm::mat4 projections[6];
 			GetCameraTransformsFromLightSource(m_CurrentScene.LightSources[0], m_ShadowRenderTarget->GetAspect(), camera.Frustum, projections);
 			SetupScene(shadowScene);
-			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[0]", projections[0]);
-			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[1]", projections[1]);
-			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[2]", projections[2]);
-			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[3]", projections[3]);
-			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[4]", projections[4]);
-			m_Context.GetUniforms().AddUniform("u_PointShadowMatrices[5]", projections[5]);
-			m_Context.GetUniforms().AddUniform("u_LightPosition", m_CurrentScene.LightSources[0].Position);
+			m_Context.SetPointShadowMatrices(projections);
+			m_Context.SetShadowLightPosition(m_CurrentScene.LightSources[0].Position);
 			RenderAll();
 
 			m_CurrentRenderPass = RenderPass::WithShadow;
-			Ref<Texture> shadowMap = m_ShadowRenderTarget->GetTexture(ColorBuffer::Depth);
+			Ref<Texture> shadowMap = m_ShadowRenderTarget->GetDepthAttachment();
 			m_ShadowRenderTarget = nullptr;
 
 			SetupScene(m_CurrentScene);
-			m_Context.GetUniforms().AddUniform("u_ShadowMap", shadowMap);
-			m_Context.GetUniforms().AddUniform("u_LightPosition", m_CurrentScene.LightSources[0].Position);
-			//m_Context.GetUniforms().AddUniform("u_LightSpaceTransform", shadowScene.Camera.Frustum.ProjectionMatrix * shadowScene.Camera.ViewMatrix);
+			m_Context.SetShadowMap(shadowMap);
+			m_Context.SetShadowLightPosition(m_CurrentScene.LightSources[0].Position);
 			RenderAll();
 		}
 		else

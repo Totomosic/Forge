@@ -42,18 +42,12 @@ namespace Editor
 
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
 
-		float buffer[3] = { values.r / 255.0f, values.g / 255.0f, values.b / 255.0f };
-
-		ImGui::ColorEdit3("##Value", buffer);
+		ImGui::ColorEdit3("##Value", (float*)&values);
 
 		ImGui::PopStyleVar();
 
 		ImGui::Columns(1);
 		ImGui::PopID();
-
-		values.r = buffer[0] * 255.0f;
-		values.g = buffer[1] * 255.0f;
-		values.b = buffer[2] * 255.0f;
 	}
 
 	static void DrawColorControl(const std::string& name, glm::vec4& values, float columnWidth = 100.0f)
@@ -301,7 +295,20 @@ namespace Editor
 			{
 				if (ImGui::MenuItem("Create Empty"))
 				{
-					m_Scene->CreateEntity();
+					Entity entity = m_Scene->CreateEntity();
+					m_SelectedEntity = entity;
+				}
+				if (ImGui::MenuItem("Create Cube"))
+				{
+					Entity entity = m_Scene->CreateEntity();
+					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::CubeMesh(), GraphicsCache::LitColorMaterial(COLOR_WHITE)));
+					m_SelectedEntity = entity;
+				}
+				if (ImGui::MenuItem("Create Plane"))
+				{
+					Entity entity = m_Scene->CreateEntity();
+					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::GridMesh(2, 2), GraphicsCache::LitColorMaterial(COLOR_WHITE)));
+					m_SelectedEntity = entity;
 				}
 				ImGui::EndPopup();
 			}
@@ -344,16 +351,13 @@ namespace Editor
 
 		if (opened)
 		{
-			ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-			if (ImGui::TreeNodeEx((void*)0, flags, tag.c_str()))
-			{
-				ImGui::TreePop();
-			}
 			ImGui::TreePop();
 		}
 
 		if (deleted)
 		{
+			if (m_SelectedEntity == entity)
+				m_SelectedEntity = {};
 			m_Scene->DestroyEntity(entity);
 		}
 	}
@@ -452,13 +456,12 @@ namespace Editor
 					settings.Mode = wireframe ? PolygonMode::Line : PolygonMode::Fill;
 
 					glm::mat4& transform = submodel.Transform;
-					glm::vec3 position = transform[3];
-					glm::vec3 scale = { glm::length(transform[0]), glm::length(transform[1]), glm::length(transform[2]) };
-					float xDivisor = scale.x != 0.0f ? scale.x : 1.0f;
-					float yDivisor = scale.y != 0.0f ? scale.y : 1.0f;
-					float zDivisor = scale.z != 0.0f ? scale.z : 1.0f;
-					glm::mat4 rotMatrix(transform[0] / xDivisor, transform[1] / yDivisor, transform[2] / zDivisor, { 0, 0, 0, 1 });
-					glm::quat rot = glm::quat(rotMatrix);
+					glm::vec3 position;
+					glm::vec3 scale;
+					glm::quat rot;
+
+					Math::DecomposeTransform(transform, position, rot, scale);
+
 					glm::vec3 rotation = glm::degrees(glm::eulerAngles(rot));
 
 					DrawVec3Control("Position", position);
@@ -475,26 +478,25 @@ namespace Editor
 						UniformContext& uniforms = submodel.Material->GetUniforms();
 						for (const UniformDescriptor& descriptor : shader.GetUniformDescriptors())
 						{
-							if (!uniforms.HasUniform(descriptor.VariableName))
+							if (!descriptor.Automatic)
 							{
-								uniforms.AddFromDescriptor(descriptor);
-							}
-							switch (descriptor.Type)
-							{
-							case ShaderDataType::Int:
-								break;
-							case ShaderDataType::Float:
-								DrawFloatControl(descriptor.Name, uniforms.GetUniformValue<float>(descriptor.VariableName));
-								break;
-							case ShaderDataType::Float2:
-								DrawVec2Control(descriptor.Name, uniforms.GetUniformValue<glm::vec2>(descriptor.VariableName));
-								break;
-							case ShaderDataType::Float3:
-								DrawVec3Control(descriptor.Name, uniforms.GetUniformValue<glm::vec3>(descriptor.VariableName));
-								break;
-							case ShaderDataType::Float4:
-								DrawColorControl(descriptor.Name, uniforms.GetUniformValue<Color>(descriptor.VariableName));
-								break;
+								switch (descriptor.Type)
+								{
+								case ShaderDataType::Int:
+									break;
+								case ShaderDataType::Float:
+									DrawFloatControl(descriptor.Name, uniforms.GetUniform<float>(descriptor.VariableName));
+									break;
+								case ShaderDataType::Float2:
+									DrawVec2Control(descriptor.Name, uniforms.GetUniform<glm::vec2>(descriptor.VariableName));
+									break;
+								case ShaderDataType::Float3:
+									DrawVec3Control(descriptor.Name, uniforms.GetUniform<glm::vec3>(descriptor.VariableName));
+									break;
+								case ShaderDataType::Float4:
+									DrawColorControl(descriptor.Name, uniforms.GetUniform<Color>(descriptor.VariableName));
+									break;
+								}
 							}
 						}
 					};
@@ -514,7 +516,7 @@ namespace Editor
 			if (shadows != camera.Shadows.Enabled)
 			{
 				if (shadows)
-					camera.CreateShadowPass();
+					camera.CreateShadowPass(4096, 4096);
 				else
 					camera.Shadows.Enabled = false;
 			}

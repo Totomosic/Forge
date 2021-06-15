@@ -28,6 +28,7 @@ namespace Forge
 		std::string VariableName;
 		ShaderDataType Type;
 		int Count;
+		bool Automatic;
 	};
 
 	using ShaderDefines = std::vector<std::string>;
@@ -71,9 +72,10 @@ namespace Forge
 
 	private:
 		void Init(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource);
+		void ReflectShader(const std::unordered_map<std::string, std::string>& nameMap);
 		int GetUniformLocation(const std::string& name);
 		
-		std::string PreprocessShaderSource(const std::string& source, const ShaderDefines& defines);
+		std::string PreprocessShaderSource(const std::string& source, const ShaderDefines& defines, std::unordered_map<std::string, std::string>& nameMap);
 
 	};
 

@@ -8,6 +8,15 @@ namespace Forge
 
 	constexpr const char ShadowMapShaderDefine[] = "SHADOW_MAP";
 
+	struct FORGE_API MaterialShaderSet
+	{
+	public:
+		Ref<Shader> ShadowFormationShader = nullptr;
+		Ref<Shader> WithShadowShader = nullptr;
+		Ref<Shader> WithoutShadowShader = nullptr;
+		Ref<Shader> PickShader = nullptr;
+	};
+
 	class FORGE_API Material
 	{
 	private:
@@ -18,7 +27,7 @@ namespace Forge
 	public:
 		Material();
 		Material(const Ref<Shader>& shader);
-		Material(std::array<Ref<Shader>, RENDER_PASS_COUNT> shaders);
+		Material(const MaterialShaderSet& shaders);
 		virtual ~Material() = default;
 
 		inline const RenderSettings& GetSettings() const { return m_Settings; }

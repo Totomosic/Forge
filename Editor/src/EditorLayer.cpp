@@ -17,6 +17,7 @@ namespace Editor
 		m_Camera.GetComponent<CameraComponent>().RenderTarget = *m_SceneTexture;
 		m_Camera.GetComponent<CameraComponent>().LayerMask &= ~FORGE_LAYERS(UI_LAYER);
 		m_Camera.GetComponent<CameraComponent>().Viewport = m_SceneTexture->GetFramebuffer()->GetViewport();
+		// m_Camera.GetComponent<CameraComponent>().ClearColor = COLOR_RED;
 
 		m_Camera.GetTransform().SetPosition({ 0, 5, 5 });
 		m_Camera.GetTransform().Rotate(-PI / 4.0f, { 1, 0, 0 });

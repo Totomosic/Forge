@@ -38,12 +38,13 @@ int main()
 	);
 
 	Ref<Material> skyboxMaterial = Material::CreateFromShaderFile("res/Skybox.shader");
-	skyboxMaterial->GetUniforms().AddUniform("u_Texture", skyboxTexture);
+	skyboxMaterial->GetUniforms().SetUniform("u_Texture", skyboxTexture);
+	skyboxMaterial->GetSettings().Culling = CullFace::None;
 
 	Ref<RenderTexture> screen = RenderTexture::Create(app.GetWindow().GetWidth(), app.GetWindow().GetHeight());
 	Ref<Material> screenMaterial = Material::CreateFromShaderFile("res/postprocessing/PostProcess.shader");
-	screenMaterial->GetUniforms().AddUniform("u_Depth", 1.0f);
-	screenMaterial->GetUniforms().AddUniform("u_Texture", screen);
+	screenMaterial->GetUniforms().SetUniform("u_Depth", 1.0f);
+	screenMaterial->GetUniforms().SetUniform("u_Texture", screen);
 
 	Scene& scene = app.CreateScene();
 	Entity camera = scene.CreateCamera(Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.01f, 50.0f));
@@ -79,7 +80,7 @@ int main()
 	Terrain terrain({ -100, -1450, 300 }, -10.0f);
 	Ref<Mesh> mesh = terrain.GenerateMesh({ 20, 20, 20 }, { 200, 200, 200 }, 2.0f);
 	Ref<Material> material = Material::CreateFromShaderFile("res/Terrain.shader");
-	material->GetUniforms().AddUniform("u_Color", Color{ 112, 72, 60 });
+	material->GetUniforms().SetUniform("u_Color", Color{ 112, 72, 60 });
 	Ref<Model> model = Model::Create(mesh, material);
 
 	Entity water = scene.CreateEntity(WATER_LAYER);
@@ -125,13 +126,13 @@ int main()
 	Ref<Texture2D> dudv = Texture2D::Create("res/waterDUDV.png");
 	Ref<Texture2D> foam = Texture2D::Create("res/water_foam.png");
 
-	waterMaterial->GetUniforms().AddUniform("u_RefractionTexture", refractionTexture);
-	waterMaterial->GetUniforms().AddUniform("u_ReflectionTexture", reflectionTexture);
-	waterMaterial->GetUniforms().AddUniform("u_DepthTexture", refractionTexture->GetFramebuffer()->GetTexture(ColorBuffer::Depth));
-	waterMaterial->GetUniforms().AddUniform("u_NormalMap", normal);
-	waterMaterial->GetUniforms().AddUniform("u_DUDVMap", dudv);
-	waterMaterial->GetUniforms().AddUniform("u_FoamTexture", foam);
-	waterMaterial->GetUniforms().AddUniform("u_Time", 0.0f);
+	waterMaterial->GetUniforms().SetUniform("u_RefractionTexture", refractionTexture);
+	waterMaterial->GetUniforms().SetUniform("u_ReflectionTexture", reflectionTexture);
+	waterMaterial->GetUniforms().SetUniform("u_DepthTexture", refractionTexture->GetFramebuffer()->GetDepthAttachment());
+	waterMaterial->GetUniforms().SetUniform("u_NormalMap", normal);
+	waterMaterial->GetUniforms().SetUniform("u_DUDVMap", dudv);
+	// waterMaterial->GetUniforms().SetUniform("u_FoamTexture", foam);
+	waterMaterial->GetUniforms().SetUniform("u_Time", 0.0f);
 	// waterMaterial->GetSettings().Mode = PolygonMode::Line;
 
 	Entity uiCamera = scene.CreateCamera(Frustum::Orthographic(0.0f, app.GetWindow().GetWidth(), 0.0f, app.GetWindow().GetHeight()));
@@ -191,9 +192,9 @@ int main()
 		reflectionCamera.GetTransform().SetPosition({ transform.GetPosition().x, 0.0f - transform.GetPosition().y, transform.GetPosition().z });
 		reflectionCamera.GetTransform().FlipX();
 
-		waterMaterial->GetUniforms().UpdateUniform("u_Time", time);
+		waterMaterial->GetUniforms().SetUniform("u_Time", time);
 
-		screenMaterial->GetUniforms().UpdateUniform("u_Depth", -transform.GetPosition().y);
+		screenMaterial->GetUniforms().SetUniform("u_Depth", -transform.GetPosition().y);
 		refractionPlane.y = transform.GetPosition().y < 0 ? 1.0 : -1.0;
 		reflectionPlane.y = transform.GetPosition().y < 0 ? -1.0 : 1.0;
 

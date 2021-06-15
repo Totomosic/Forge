@@ -23,22 +23,42 @@ namespace Forge
 
 	}
 
-	enum class ColorBuffer
+	enum class FramebufferTextureFormat
 	{
-		Color0 = GL_COLOR_ATTACHMENT0,
-		Color1 = GL_COLOR_ATTACHMENT1,
-		Color2 = GL_COLOR_ATTACHMENT2,
-		Color3 = GL_COLOR_ATTACHMENT3,
-		Color4 = GL_COLOR_ATTACHMENT4,
-		Color5 = GL_COLOR_ATTACHMENT5,
-		Depth = GL_DEPTH_ATTACHMENT,
+		None = 0,
+
+		RGBA8,
+		RED_INTEGER,
+
+		DEPTH32,
+		Depth = DEPTH32,
 	};
 
-	struct FORGE_API FramebufferTextures
+	enum class FramebufferTextureType
+	{
+		Texture2D,
+		TextureCube,
+	};
+
+	struct FORGE_API FramebufferTextureSpecification
 	{
 	public:
-		Ref<Texture2D> Color;
-		Ref<Texture2D> Depth;
+		FramebufferTextureFormat TextureFormat = FramebufferTextureFormat::None;
+		FramebufferTextureType TextureType = FramebufferTextureType::Texture2D;
+
+		FramebufferTextureSpecification() = default;
+		inline FramebufferTextureSpecification(FramebufferTextureFormat format, FramebufferTextureType type = FramebufferTextureType::Texture2D)
+			: TextureFormat(format), TextureType(type)
+		{}
+	};
+
+	struct FORGE_API FramebufferProps
+	{
+	public:
+		uint32_t Width = 1280;
+		uint32_t Height = 720;
+		int Samples = 0;
+		std::vector<FramebufferTextureSpecification> Attachments;
 	};
 
 	class FORGE_API Framebuffer
@@ -47,57 +67,42 @@ namespace Forge
 		using Handle = Detail::ScopedId<Detail::FramebufferDestructor>;
 
 		Handle m_Handle;
-		uint32_t m_Width;
-		uint32_t m_Height;
-		int m_Samples;
-		Viewport m_Viewport;
-		std::unordered_map<ColorBuffer, Ref<Texture>> m_TextureBuffers;
+		FramebufferProps m_Props;
+
+		std::vector<FramebufferTextureSpecification> m_ColorAttachmentSpecifications;
+		FramebufferTextureSpecification m_DepthAttachmentSpecification = FramebufferTextureFormat::None;
+
+		std::vector<Ref<Texture>> m_ColorAttachments;
+		Ref<Texture> m_DepthAttachment;
 
 	public:
-		Framebuffer(uint32_t width, uint32_t height, int samples = 0);
+		Framebuffer(const FramebufferProps& props);
 
-		inline uint32_t GetWidth() const { return m_Width; }
-		inline uint32_t GetHeight() const { return m_Height; }
-		inline int GetSamples() const { return m_Samples; }
+		inline uint32_t GetWidth() const { return m_Props.Width; }
+		inline uint32_t GetHeight() const { return m_Props.Height; }
+		inline int GetSamples() const { return m_Props.Samples; }
 		inline float GetAspect() const { return float(GetWidth()) / float(GetHeight()); }
 		inline bool IsMultisampled() const { return GetSamples() > 0; }
-		inline bool HasTexture(ColorBuffer buffer) const { return m_TextureBuffers.find(buffer) != m_TextureBuffers.end(); }
-		inline Ref<Texture> GetTexture(ColorBuffer buffer) const { return m_TextureBuffers.at(buffer); }
 		inline Viewport GetViewport() const { return { 0, 0, GetWidth(), GetHeight() }; }
+
+		inline Ref<Texture> GetColorAttachment(int index) const { FORGE_ASSERT(index >= 0 && index < m_ColorAttachments.size(), "Invalid index"); return m_ColorAttachments[index]; }
+		inline Ref<Texture> GetDepthAttachment() const { return m_DepthAttachment; }
 
 		void Bind() const;
 		void Unbind() const;
 		void SetSize(uint32_t width, uint32_t height);
 
-		template<typename T = Texture2D>
-		Ref<T> CreateTextureBuffer(ColorBuffer buffer = ColorBuffer::Color0, Ref<T> texture = nullptr)
-		{
-			if (!texture)
-			{
-				if (buffer == ColorBuffer::Depth)
-					texture = T::Create(GetWidth(), GetHeight(), TextureFormat::DEPTH, InternalTextureFormat::DEPTH);
-				else
-					texture = T::Create(GetWidth(), GetHeight());
-			}
-			if (buffer == ColorBuffer::Depth)
-				CreateDepthTextureBuffer(texture.get());
-			else
-				CreateColorTextureBuffer(buffer, texture.get());
-			m_TextureBuffers[buffer] = texture;
-			return texture;
-		}
-		FramebufferTextures CreateDefaultBuffers();
-
 		friend class RenderTexture;
 
 	public:
-		static Ref<Framebuffer> Create(uint32_t width, uint32_t height, int samples = 0);
+		static Ref<Framebuffer> Create(const FramebufferProps& props);
 		static Ref<Framebuffer> CreateWindowFramebuffer(uint32_t width, uint32_t height);
 
 	private:
-		void CreateColorTextureBuffer(ColorBuffer buffer, const Texture* texture);
-		void CreateDepthTextureBuffer(const Texture* texture);
+		void AttachColorTexture(const Ref<Texture>& texture, int index);
+		void AttachDepthTexture(const Ref<Texture>& texture);
 		void Init();
+		void Invalidate();
 
 	};
 

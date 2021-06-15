@@ -6,12 +6,12 @@ in layout(location = 0) vec3 in_Position;
 in layout(location = 1) vec3 in_Normal;
 in layout(location = 2) vec2 in_TexCoord;
 
-uniform mat4 u_ModelMatrix;
-uniform mat4 u_ViewMatrix;
-uniform mat4 u_ProjViewMatrix;
-uniform vec4 u_ClippingPlanes[MAX_CLIPPING_PLANES];
-uniform int u_UsedClippingPlanes;
-uniform mat4 u_LightSpaceTransform;
+uniform mat4 frg_ModelMatrix;
+uniform mat4 frg_ViewMatrix;
+uniform mat4 frg_ProjViewMatrix;
+uniform vec4 frg_ClippingPlanes[MAX_CLIPPING_PLANES];
+uniform int frg_UsedClippingPlanes;
+uniform mat4 frg_LightSpaceTransform;
 uniform float u_Time;
 
 out vec3 g_Position;
@@ -51,7 +51,7 @@ vec3 gerstnerWave(vec3 position, float time, float steepness, float wavelength, 
 
 void main()
 {
-	vec4 worldPosition = u_ModelMatrix * vec4(in_Position, 1.0);
+	vec4 worldPosition = frg_ModelMatrix * vec4(in_Position, 1.0);
 
 	//float height = wave(worldPosition, 2.5, 2.5, 8.0, 0.05);
 	//worldPosition.y += height;
@@ -60,15 +60,15 @@ void main()
 	worldPosition.xyz += gerstnerWave(position, u_Time, 0.25, 1.52, vec2( 1.0, 0.6 ));
 	worldPosition.xyz += gerstnerWave(position, u_Time, 0.25, 0.90, vec2( 1.0, 1.3 ));
 
-	clipPlanes(worldPosition.xyz, u_ClippingPlanes, u_UsedClippingPlanes);
-	gl_Position = u_ProjViewMatrix * worldPosition;
+	clipPlanes(worldPosition.xyz, frg_ClippingPlanes, frg_UsedClippingPlanes);
+	gl_Position = frg_ProjViewMatrix * worldPosition;
 	OutData.Position = worldPosition.xyz;
 	OutData.ClipSpace = gl_Position;
 
-	vec3 cameraPosition = (inverse(u_ViewMatrix)[3]).xyz;
+	vec3 cameraPosition = (inverse(frg_ViewMatrix)[3]).xyz;
 	OutData.ToCameraVector = cameraPosition - OutData.Position;
 	OutData.TexCoord = in_TexCoord * 80.0;
-	OutData.LightSpacePosition = u_LightSpaceTransform * worldPosition;
+	OutData.LightSpacePosition = frg_LightSpaceTransform * worldPosition;
 }
 
 #shader GEOMETRY
@@ -136,11 +136,11 @@ void main()
 out layout(location = 0) vec4 out_FragColor;
 
 uniform vec4 u_Color;
-uniform LightSource u_LightSources[MAX_LIGHT_COUNT];
-uniform int u_UsedLightSources;
-uniform samplerCube u_ShadowMap;
-uniform vec3 u_LightPosition;
-uniform vec3 u_CameraPosition;
+uniform LightSource frg_LightSources[MAX_LIGHT_COUNT];
+uniform int frg_UsedLightSources;
+uniform samplerCube frg_ShadowMap;
+uniform vec3 frg_LightPosition;
+uniform vec3 frg_CameraPosition;
 
 uniform sampler2D u_RefractionTexture;
 uniform sampler2D u_ReflectionTexture;
@@ -148,8 +148,8 @@ uniform sampler2D u_DepthTexture;
 uniform sampler2D u_NormalMap;
 uniform sampler2D u_DUDVMap;
 uniform sampler2D u_FoamTexture;
-uniform float u_FarPlane;
-uniform float u_NearPlane;
+uniform float frg_FarPlane;
+uniform float frg_NearPlane;
 uniform float u_Time;
 
 const float waveStrength = 0.05;
@@ -170,7 +170,7 @@ const vec4 BLUE = vec4(0.1, 0.5, 0.8, 1.0);
 
 float unprojectDepth(float depth)
 {
-	return 2.0 * u_NearPlane * u_FarPlane / (u_FarPlane + u_NearPlane - (2.0 * depth - 1.0) * (u_FarPlane - u_NearPlane));
+	return 2.0 * frg_NearPlane * frg_FarPlane / (frg_FarPlane + frg_NearPlane - (2.0 * depth - 1.0) * (frg_FarPlane - frg_NearPlane));
 }
 
 void main()
@@ -207,13 +207,13 @@ void main()
 	vec4 color = BLUE * mix(reflection, refraction, max(refractiveFactor, 0.0));
 
 #ifdef SHADOW_MAP
-	float shadow = calculatePointShadow(InData.Position, u_ShadowMap, u_FarPlane, u_LightPosition, u_CameraPosition);
+	float shadow = calculatePointShadow(InData.Position, frg_ShadowMap, frg_FarPlane, frg_LightPosition, frg_CameraPosition);
 #else
 	float shadow = 0.0;
 #endif
 
-	vec4 lighting = calculateLightDiffuse(InData.Position, unitNormal, u_LightSources, u_UsedLightSources, shadow);
-	lighting += calculateLightSpecular(InData.Position, unitNormal, 8.0, 10.0, unitToCamera, u_LightSources, u_UsedLightSources, shadow);
+	vec4 lighting = calculateLightDiffuse(InData.Position, unitNormal, frg_LightSources, frg_UsedLightSources, shadow);
+	lighting += calculateLightSpecular(InData.Position, unitNormal, 8.0, 10.0, unitToCamera, frg_LightSources, frg_UsedLightSources, shadow);
 	out_FragColor = color * lighting;
 	out_FragColor.a = clamp(waterDepth / 0.5, 0.1, 1.0);
 }

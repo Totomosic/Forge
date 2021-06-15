@@ -30,12 +30,14 @@ namespace Forge
 		RGBA = GL_RGBA,
 		BGRA = GL_BGRA,
 		BGR = GL_BGR,
+		RED_INTEGER = GL_RED_INTEGER,
 		DEPTH = GL_DEPTH_COMPONENT,
 	};
 
 	FORGE_API enum class InternalTextureFormat
 	{
 		RGBA = GL_RGBA,
+		RED_INTEGER = GL_R32I,
 		DEPTH = GL_DEPTH_COMPONENT32,
 	};
 
@@ -103,14 +105,13 @@ namespace Forge
 	{
 	public:
 		Texture2D(uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
-		Texture2D(const void* pixels, uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
 
 	public:
 		static Ref<Texture2D> Create(uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
 		static Ref<Texture2D> Create(const std::string& filename);
 
 	private:
-		void Init(const void* data, uint32_t width, uint32_t height, uint32_t format);
+		void Init(const void* data);
 
 	};
 
@@ -118,7 +119,6 @@ namespace Forge
 	{
 	public:
 		TextureCube(uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
-		TextureCube(const void** pixels, uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
 
 	public:
 		static Ref<TextureCube> Create(uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
@@ -133,7 +133,7 @@ namespace Forge
 		);
 
 	private:
-		void Init(const void** data, uint32_t width, uint32_t height, uint32_t format);
+		void Init(const void** data);
 	};
 
 	enum class TextureComponent
@@ -149,6 +149,7 @@ namespace Forge
 
 	public:
 		RenderTexture(uint32_t width, uint32_t height, TextureComponent component = TextureComponent::Color);
+		~RenderTexture() override;
 
 		inline operator Ref<Framebuffer>() const { return m_Framebuffer; }
 		inline const Ref<Framebuffer>& GetFramebuffer() const { return m_Framebuffer; }

@@ -14,6 +14,7 @@ namespace Forge
 		static Ref<Shader> s_LitTextureShader[2];
 		static Ref<Shader> s_DefaultShadowShader;
 		static Ref<Shader> s_DefaultPointShadowShader;
+		static Ref<Shader> s_DefaultPickShader;
 		static std::unordered_map<int, Ref<Shader>> s_DefaultColorAnimatedShaders;
 		static std::unordered_map<int, Ref<Shader>> s_LitTextureAnimatedShaders;
 
@@ -37,15 +38,16 @@ namespace Forge
 		static Ref<Material> AnimatedLitTextureMaterial(int maxJoints, const Ref<Texture>& texture);
 
 		// Shaders
-		inline static Ref<Shader> DefaultColorShader() { return s_DefaultColorShader; }
-		inline static Ref<Shader> DefaultTextureShader() { return s_DefaultTextureShader; }
-		inline static Ref<Shader> LitColorShader(bool useShadows) { return s_LitColorShader[useShadows ? 1 : 0]; }
-		inline static Ref<Shader> LitTextureShader(bool useShadows) { return s_LitTextureShader[useShadows ? 1 : 0]; }
+		inline static Ref<Shader> DefaultColorShader() { CreateDefaultColorShader(); return s_DefaultColorShader; }
+		inline static Ref<Shader> DefaultTextureShader() { CreateDefaultTextureShader(); return s_DefaultTextureShader; }
+		inline static Ref<Shader> LitColorShader(bool useShadows) { CreateLitColorShader(); return s_LitColorShader[useShadows ? 1 : 0]; }
+		inline static Ref<Shader> LitTextureShader(bool useShadows) { CreateLitTextureShader(); return s_LitTextureShader[useShadows ? 1 : 0]; }
 		inline static Ref<Shader> AnimatedDefaultColorShader(int maxJoints) { return CreateDefaultColorAnimatedShader(maxJoints); }
 		inline static Ref<Shader> AnimatedLitTextureShader(int maxJoints) { return CreateLitTextureAnimatedShader(maxJoints); }
 
-		inline static Ref<Shader> DefaultShadowShader() { return s_DefaultShadowShader; }
-		inline static Ref<Shader> DefaultPointShadowShader() { return s_DefaultPointShadowShader; }
+		inline static Ref<Shader> DefaultShadowShader() { CreateDefaultShadowShader(); return s_DefaultShadowShader; }
+		inline static Ref<Shader> DefaultPointShadowShader() { CreateDefaultPointShadowShader(); return s_DefaultPointShadowShader; }
+		inline static Ref<Shader> DefaultPickShader() { CreateDefaultPickShader(); return s_DefaultPickShader; }
 
 		// Models
 		inline static Ref<Model> SquareModel(float width, float height, const Ref<Material>& material)
@@ -64,6 +66,7 @@ namespace Forge
 		static Ref<Shader> CreateLitTextureAnimatedShader(int maxJoints);
 		static void CreateDefaultShadowShader();
 		static void CreateDefaultPointShadowShader();
+		static void CreateDefaultPickShader();
 
 		static void CreateSquareMesh();
 		static void CreateCubeMesh();

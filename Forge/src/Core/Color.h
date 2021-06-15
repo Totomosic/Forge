@@ -7,13 +7,23 @@ namespace Forge
 	struct FORGE_API Color
 	{
 	public:
-		uint8_t r = 0;
-		uint8_t g = 0;
-		uint8_t b = 0;
-		uint8_t a = 255;
+		float r = 0.0f;
+		float g = 0.0f;
+		float b = 0.0f;
+		float a = 1.0f;
 
 	public:
-		inline Color WithAlpha(uint8_t alpha) const { return Color{ r, g, b, alpha }; }
+		Color() = default;
+		inline constexpr Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255)
+			: r(r / 255.0f), g(g / 255.0f), b(b / 255.0f), a(a / 255.0f)
+		{}
+
+		inline Color WithAlpha(uint8_t alpha) const
+		{
+			Color result = *this;
+			result.a = alpha / 255.0f;
+			return result;
+		}
 	};
 
 	constexpr Color COLOR_RED = { 255, 0, 0, 255 };

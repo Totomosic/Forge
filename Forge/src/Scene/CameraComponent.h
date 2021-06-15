@@ -41,8 +41,11 @@ namespace Forge
 		void CreateShadowPass(uint32_t width = DEFAULT_SHADOW_WIDTH, uint32_t height = DEFAULT_SHADOW_HEIGHT)
 		{
 			Shadows.Enabled = true;
-			Shadows.RenderTarget = Framebuffer::Create(width, height);
-			Shadows.RenderTarget->CreateTextureBuffer<TextureCube>(ColorBuffer::Depth);
+			FramebufferProps props;
+			props.Width = width;
+			props.Height = height;
+			props.Attachments = { { FramebufferTextureFormat::Depth, FramebufferTextureType::TextureCube } };
+			Shadows.RenderTarget = Framebuffer::Create(props);
 		}
 
 	};

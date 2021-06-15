@@ -6,8 +6,9 @@ namespace Forge
 {
 
 	RendererContext::RendererContext()
-		: m_ViewMatrix(), m_ProjectionMatrix(), m_ProjViewMatrix(), m_CameraFarPlane(0.0f), m_CameraNearPlane(0.0f), m_LightSources(), m_ClippingPlanes(),
-		m_NextTextureSlot(0), m_PassUniforms(CreateScope<UniformContext>()), m_CullingEnabled(false), m_RenderSettings(), m_RequirementsMap()
+		: m_ViewMatrix(), m_ProjectionMatrix(), m_ProjViewMatrix(), m_CameraFarPlane(0.0f), m_CameraNearPlane(0.0f), m_CameraPosition(), m_LightSources(), m_ClippingPlanes(),
+		m_PointShadowMatrices(), m_ShadowLightSourcePosition(), m_ShadowMap(),
+		m_NextTextureSlot(0), m_CullingEnabled(false), m_RenderSettings(), m_RequirementsMap()
 	{
 	}
 
@@ -36,11 +37,26 @@ namespace Forge
 		m_ClippingPlanes = planes;
 	}
 
+	void RendererContext::SetPointShadowMatrices(const glm::mat4* matrices)
+	{
+		std::memcpy(m_PointShadowMatrices, matrices, sizeof(m_PointShadowMatrices));
+	}
+
+	void RendererContext::SetShadowLightPosition(const glm::vec3& position)
+	{
+		m_ShadowLightSourcePosition = position;
+	}
+
+	void RendererContext::SetShadowMap(const Ref<Texture>& shadowMap)
+	{
+		m_ShadowMap = shadowMap;
+		m_ShadowMap->Bind(SHADOW_MAP_TEXTURE_SLOT);
+	}
+
 	void RendererContext::Reset()
 	{
 		m_LightSources.clear();
 		m_NextTextureSlot = SHADOW_MAP_TEXTURE_SLOT + 1;
-		m_PassUniforms->Clear();
 	}
 
 	ShaderRequirements RendererContext::GetShaderRequirements(const Ref<Shader>& shader)
@@ -59,6 +75,9 @@ namespace Forge
 		requirements.LightSources = shader->UniformExists(LightSourceArrayUniformName) && shader->UniformExists(UsedLightSourcesUniformName);
 		requirements.Animation = shader->UniformExists(JointTransformsUniformName);
 		requirements.ClippingPlanes = shader->UniformExists(ClippingPlanesArrayUniformName) && shader->UniformExists(UsedClippingPlanesUniformName);
+		requirements.PointShadowMatrices = shader->UniformExists(PointShadowMatricesArrayUniformName0);
+		requirements.ShadowMap = shader->UniformExists(ShadowMapUniformName);
+		requirements.ShadowLightPosition = shader->UniformExists(ShadowLightPositionUniformName);
 		m_RequirementsMap[shader.get()] = requirements;
 		return requirements;
 	}
@@ -125,7 +144,23 @@ namespace Forge
 				shader->SetUniform(uniformBase, m_ClippingPlanes[i]);
 			}
 		}
-		m_PassUniforms->Apply(shader, *this);
+		if (requirements.PointShadowMatrices)
+		{
+			shader->SetUniform(PointShadowMatricesArrayUniformName0, m_PointShadowMatrices[0]);
+			shader->SetUniform(PointShadowMatricesArrayUniformName1, m_PointShadowMatrices[1]);
+			shader->SetUniform(PointShadowMatricesArrayUniformName2, m_PointShadowMatrices[2]);
+			shader->SetUniform(PointShadowMatricesArrayUniformName3, m_PointShadowMatrices[3]);
+			shader->SetUniform(PointShadowMatricesArrayUniformName4, m_PointShadowMatrices[4]);
+			shader->SetUniform(PointShadowMatricesArrayUniformName5, m_PointShadowMatrices[5]);
+		}
+		if (requirements.ShadowMap)
+		{
+			shader->SetUniform(ShadowMapUniformName, SHADOW_MAP_TEXTURE_SLOT);
+		}
+		if (requirements.ShadowLightPosition)
+		{
+			shader->SetUniform(ShadowLightPositionUniformName, m_ShadowLightSourcePosition);
+		}
 	}
 
 	int RendererContext::BindTexture(const Ref<Texture>& texture)

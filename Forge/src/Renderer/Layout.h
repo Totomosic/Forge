@@ -27,6 +27,11 @@ namespace Forge
 		Mat2,
 		Mat3,
 		Mat4,
+
+		Sampler1D,
+		Sampler2D,
+		Sampler3D,
+		SamplerCube,
 	};
 
 	constexpr uint32_t GetComponentCount(ShaderDataType type)
@@ -43,19 +48,16 @@ namespace Forge
 		case ShaderDataType::Uint2:
 		case ShaderDataType::Ushort2:
 		case ShaderDataType::Float2:
-		case ShaderDataType::Mat2:
 			return 2;
 		case ShaderDataType::Int3:
 		case ShaderDataType::Uint3:
 		case ShaderDataType::Ushort3:
 		case ShaderDataType::Float3:
-		case ShaderDataType::Mat3:
 			return 3;
 		case ShaderDataType::Int4:
 		case ShaderDataType::Uint4:
 		case ShaderDataType::Ushort4:
 		case ShaderDataType::Float4:
-		case ShaderDataType::Mat4:
 			return 4;
 		default:
 			break;
@@ -77,23 +79,31 @@ namespace Forge
 		case ShaderDataType::Int2:
 		case ShaderDataType::Uint2:
 		case ShaderDataType::Float2:
-		case ShaderDataType::Mat2:
 			return 2 * sizeof(GLfloat);
 		case ShaderDataType::Int3:
 		case ShaderDataType::Uint3:
 		case ShaderDataType::Float3:
-		case ShaderDataType::Mat3:
 			return 3 * sizeof(GLfloat);
 		case ShaderDataType::Int4:
 		case ShaderDataType::Uint4:
 		case ShaderDataType::Float4:
-		case ShaderDataType::Mat4:
 			return 4 * sizeof(GLfloat);
 		case ShaderDataType::Ushort:
 		case ShaderDataType::Ushort2:
 		case ShaderDataType::Ushort3:
 		case ShaderDataType::Ushort4:
 			return GetComponentCount(type) * sizeof(GLushort);
+		case ShaderDataType::Mat2:
+			return 4 * sizeof(GLfloat);
+		case ShaderDataType::Mat3:
+			return 9 * sizeof(GLfloat);
+		case ShaderDataType::Mat4:
+			return 16 * sizeof(GLfloat);
+		case ShaderDataType::Sampler1D:
+		case ShaderDataType::Sampler2D:
+		case ShaderDataType::Sampler3D:
+		case ShaderDataType::SamplerCube:
+			return 1 * sizeof(int);
 		default:
 			break;
 		}

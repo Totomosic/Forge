@@ -4,9 +4,47 @@
 namespace Forge
 {
 
-    Framebuffer::Framebuffer(uint32_t width, uint32_t height, int samples)
-        : m_Handle(), m_Width(width), m_Height(height), m_Samples(samples), m_Viewport(Viewport{ 0, 0, width, height }), m_TextureBuffers()
+    Ref<Texture2D> CreateTexture2D(FramebufferTextureFormat format, uint32_t width, uint32_t height)
     {
+        switch (format)
+        {
+        case FramebufferTextureFormat::RGBA8:
+            return Texture2D::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA);
+        case FramebufferTextureFormat::RED_INTEGER:
+            return Texture2D::Create(width, height, TextureFormat::RED_INTEGER, InternalTextureFormat::RED_INTEGER);
+        case FramebufferTextureFormat::DEPTH32:
+            return Texture2D::Create(width, height, TextureFormat::DEPTH, InternalTextureFormat::DEPTH);
+        }
+        FORGE_ASSERT(false, "Invalid texture format");
+        return nullptr;
+    }
+
+    Ref<TextureCube> CreateTextureCube(FramebufferTextureFormat format, uint32_t width, uint32_t height)
+    {
+        switch (format)
+        {
+        case FramebufferTextureFormat::RGBA8:
+            return TextureCube::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA);
+        case FramebufferTextureFormat::RED_INTEGER:
+            return TextureCube::Create(width, height, TextureFormat::RED_INTEGER, InternalTextureFormat::RED_INTEGER);
+        case FramebufferTextureFormat::DEPTH32:
+            return TextureCube::Create(width, height, TextureFormat::DEPTH, InternalTextureFormat::DEPTH);
+        }
+        FORGE_ASSERT(false, "Invalid texture format");
+        return nullptr;
+    }
+
+    Framebuffer::Framebuffer(const FramebufferProps& props)
+        : m_Handle(), m_Props(props)
+    {
+        FORGE_ASSERT(props.Width > 0 && props.Height > 0, "Invalid framebuffer dimensions");
+        for (const FramebufferTextureSpecification& format : props.Attachments)
+        {
+            if (format.TextureFormat == FramebufferTextureFormat::Depth)
+                m_DepthAttachmentSpecification = format;
+            else
+                m_ColorAttachmentSpecifications.push_back(format);
+        }
     }
 
     void Framebuffer::Bind() const
@@ -22,48 +60,40 @@ namespace Forge
     void Framebuffer::SetSize(uint32_t width, uint32_t height)
     {
         FORGE_ASSERT(m_Handle.Id == 0, "Not implemented");
-        m_Width = width;
-        m_Height = height;
+        m_Props.Width = width;
+        m_Props.Height = height;
     }
 
-    FramebufferTextures Framebuffer::CreateDefaultBuffers()
+    Ref<Framebuffer> Framebuffer::Create(const FramebufferProps& props)
     {
-        return { CreateTextureBuffer(ColorBuffer::Color0), CreateTextureBuffer(ColorBuffer::Depth) };
-    }
-
-    Ref<Framebuffer> Framebuffer::Create(uint32_t width, uint32_t height, int samples)
-    {
-        Ref<Framebuffer> framebuffer = CreateRef<Framebuffer>(width, height, samples);
-        framebuffer->Init();
+        Ref<Framebuffer> framebuffer = CreateRef<Framebuffer>(props);
+        framebuffer->Invalidate();
         return framebuffer;
     }
 
     Ref<Framebuffer> Framebuffer::CreateWindowFramebuffer(uint32_t width, uint32_t height)
     {
-        Ref<Framebuffer> framebuffer = CreateRef<Framebuffer>(width, height);
+        FramebufferProps props;
+        props.Width = width;
+        props.Height = height;
+        Ref<Framebuffer> framebuffer = CreateRef<Framebuffer>(props);
         framebuffer->m_Handle.Id = 0;
         return framebuffer;
     }
 
-    void Framebuffer::CreateColorTextureBuffer(ColorBuffer buffer, const Texture* texture)
+    void Framebuffer::AttachColorTexture(const Ref<Texture>& texture, int index)
     {
         FORGE_ASSERT(m_Handle.Id != 0, "Invalid framebuffer");
-        FORGE_ASSERT(!HasTexture(buffer), "Buffer already exists");
         FORGE_ASSERT(!IsMultisampled(), "Multisampled framebuffer cannot have texture attachments");
-        Bind();
         texture->Bind();
         texture->SetWrapMode(TextureWrap::ClampToEdge);
-        glFramebufferTexture(GL_FRAMEBUFFER, (GLenum)buffer, texture->GetId(), 0);
-        glDrawBuffer((GLenum)buffer);
-        glReadBuffer((GLenum)buffer);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, texture->GetId(), 0);
     }
 
-    void Framebuffer::CreateDepthTextureBuffer(const Texture* texture)
+    void Framebuffer::AttachDepthTexture(const Ref<Texture>& texture)
     {
         FORGE_ASSERT(m_Handle.Id != 0, "Invalid framebuffer");
-        FORGE_ASSERT(!HasTexture(ColorBuffer::Depth), "Buffer already exists");
         FORGE_ASSERT(!IsMultisampled(), "Multisampled framebuffer cannot have texture attachments");
-        Bind();
         texture->Bind();
         texture->SetWrapMode(TextureWrap::ClampToEdge);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture->GetId(), 0);
@@ -75,6 +105,69 @@ namespace Forge
         Bind();
         glDrawBuffer(GL_NONE);
         glReadBuffer(GL_NONE);
+    }
+
+    void Framebuffer::Invalidate()
+    {
+        if (m_Handle.Id != 0)
+        {
+            glDeleteFramebuffers(1, &m_Handle.Id);
+            m_ColorAttachments = {};
+            m_DepthAttachment = nullptr;
+        }
+
+        glCreateFramebuffers(1, &m_Handle.Id);
+        Bind();
+
+        bool multisample = IsMultisampled();
+
+        if (m_ColorAttachmentSpecifications.size() > 0)
+        {
+            m_ColorAttachments.resize(m_ColorAttachmentSpecifications.size());
+
+            for (size_t i = 0; i < m_ColorAttachments.size(); i++)
+            {
+                switch (m_ColorAttachmentSpecifications[i].TextureType)
+                {
+                case FramebufferTextureType::Texture2D:
+                    m_ColorAttachments[i] = CreateTexture2D(m_ColorAttachmentSpecifications[i].TextureFormat, GetWidth(), GetHeight());
+                    break;
+                case FramebufferTextureType::TextureCube:
+                    m_ColorAttachments[i] = CreateTextureCube(m_ColorAttachmentSpecifications[i].TextureFormat, GetWidth(), GetHeight());
+                    break;
+                }
+                m_ColorAttachments[i]->Bind();
+                AttachColorTexture(m_ColorAttachments[i], i);
+            }
+        }
+
+        if (m_DepthAttachmentSpecification.TextureFormat != FramebufferTextureFormat::None)
+        {
+            switch (m_DepthAttachmentSpecification.TextureType)
+            {
+            case FramebufferTextureType::Texture2D:
+                m_DepthAttachment = CreateTexture2D(m_DepthAttachmentSpecification.TextureFormat, GetWidth(), GetHeight());
+                break;
+            case FramebufferTextureType::TextureCube:
+                m_DepthAttachment = CreateTextureCube(m_DepthAttachmentSpecification.TextureFormat, GetWidth(), GetHeight());
+                break;
+            }
+            m_DepthAttachment->Bind();
+            AttachDepthTexture(m_DepthAttachment);
+        }
+
+        if (m_ColorAttachments.size() > 1)
+        {
+            FORGE_ASSERT(m_ColorAttachments.size() <= 4, "Too many color attachments");
+            GLenum buffers[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+            glDrawBuffers(m_ColorAttachments.size(), buffers);
+        }
+        else if (m_ColorAttachments.empty())
+        {
+            glDrawBuffer(GL_NONE);
+        }
+
+        FORGE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, "Framebuffer is incomplete");
     }
 
 }
