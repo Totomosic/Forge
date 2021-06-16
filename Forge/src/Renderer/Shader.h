@@ -15,6 +15,7 @@ namespace Forge
 		public:
 			inline void operator()(uint32_t id)
 			{
+				glUseProgram(0);
 				glDeleteProgram(id);
 			}
 		};

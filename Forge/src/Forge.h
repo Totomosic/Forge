@@ -5,7 +5,7 @@
 #include "Renderer/Shader.h"
 #include "Renderer/RenderCommand.h"
 #include "Renderer/Renderer3D.h"
-#include "Renderer/GraphicsCache.h"
+#include "Assets/GraphicsCache.h"
 
 #include "Core/Color.h"
 #include "Core/EventEmitter.h"

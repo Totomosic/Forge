@@ -2,7 +2,7 @@
 #include "Material.h"
 #include "MaterialUniforms.h"
 
-#include "GraphicsCache.h"
+#include "Assets/GraphicsCache.h"
 
 namespace Forge
 {
@@ -65,6 +65,11 @@ namespace Forge
 		defines.push_back(ShadowMapShaderDefine);
 		Ref<Shader> shadowShader = Shader::CreateFromFile(shaderFilePath, defines);
 		return CreateRef<Material>(MaterialShaderSet{ shadowFormationShader, shadowShader, withoutShadowShader, GraphicsCache::DefaultPickShader() });
+	}
+
+	Ref<Material> Material::Create(const Ref<Shader>& shader)
+	{
+		return CreateRef<Material>(MaterialShaderSet{ GraphicsCache::DefaultPointShadowShader(), shader, shader, GraphicsCache::DefaultPickShader() });
 	}
 
 }

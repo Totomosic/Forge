@@ -37,6 +37,7 @@ namespace Editor
 		LightSourceComponent& lightSource = sun.AddComponent<LightSourceComponent>();
 
 		m_SceneHierarchy.SetScene(&scene);
+		m_AssetBrowser.SetRootDirectory("assets");
 		m_ViewportSize = { width, height };
 
 		Input::OnKeyPressed.AddEventListener([&](const KeyCode& key)
@@ -166,6 +167,7 @@ namespace Editor
 		}
 
 		m_SceneHierarchy.OnImGuiRender();
+		m_AssetBrowser.OnImGuiRender();
 
 		ImGui::Begin("Scene");
 

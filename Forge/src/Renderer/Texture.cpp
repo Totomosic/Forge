@@ -86,10 +86,13 @@ namespace Forge
 
 		unsigned char* pixels = stbi_load(filename.c_str(), &width, &height, &channels, 4);
 
-		Ref<Texture2D> texture = CreateRef<Texture2D>(uint32_t(width), uint32_t(height), TextureFormat::RGBA);
-		texture->Init(pixels);
-		stbi_image_free(pixels);
-		return texture;
+		if (pixels)
+		{
+			Ref<Texture2D> texture = CreateRef<Texture2D>(uint32_t(width), uint32_t(height), TextureFormat::RGBA);
+			texture->Init(pixels);
+			return texture;
+		}
+		return nullptr;
 	}
 
 	void Texture2D::Init(const void* data)

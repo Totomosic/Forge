@@ -24,7 +24,8 @@ namespace Forge
 	struct FORGE_API UniformSpecification
 	{
 	public:
-		std::string Varname;
+		std::string Name;
+		std::string VariableName;
 		ShaderDataType Type;
 		int Offset;
 	};
@@ -42,6 +43,7 @@ namespace Forge
 	public:
 		UniformContext();
 
+		inline const std::vector<UniformSpecification>& GetUniforms() const { return m_UniformSpecifications; }
 		inline bool HasUniform(const std::string& varname) const { return m_UniformSpecificationIndices.find(varname) != m_UniformSpecificationIndices.end(); }
 
 		template<typename T>

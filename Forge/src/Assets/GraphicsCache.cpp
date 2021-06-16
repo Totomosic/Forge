@@ -1,6 +1,11 @@
+#pragma warning(disable : 26444)
+
 #include "ForgePch.h"
 #include "GraphicsCache.h"
-#include "Layout.h"
+#include "Renderer/Layout.h"
+#include "Utils/Readers/ObjReader.h"
+
+#include "Math/Constants.h"
 
 namespace Forge
 {
@@ -19,11 +24,79 @@ namespace Forge
 
     Ref<Mesh> GraphicsCache::s_SquareMesh;
     Ref<Mesh> GraphicsCache::s_CubeMesh;
+    Ref<Mesh> GraphicsCache::s_SphereMesh;
+
+    std::unordered_map<AssetLocation, std::weak_ptr<Shader>> GraphicsCache::s_Shaders;
+    std::unordered_map<AssetLocation, std::weak_ptr<Mesh>> GraphicsCache::s_Meshes;
+    std::unordered_map<AssetLocation, std::weak_ptr<Texture2D>> GraphicsCache::s_Texture2Ds;
+    std::unordered_map<AssetLocation, std::weak_ptr<TextureCube>> GraphicsCache::s_TextureCubes;
+    std::unordered_map<void*, AssetLocation> GraphicsCache::s_AssetLocations;
 
     void GraphicsCache::Init()
     {
-        CreateSquareMesh();
-        CreateCubeMesh();
+    }
+
+    Ref<Texture2D> GraphicsCache::LoadTexture2D(const std::string& filename)
+    {
+        auto it = s_Texture2Ds.find({ filename, AssetLocationSource::File, AssetLocationType::Texture2D });
+        if (it != s_Texture2Ds.end() && !it->second.expired())
+            return it->second.lock();
+        Ref<Texture2D> texture = Texture2D::Create(filename);
+        if (texture)
+        {
+            RegisterNewAsset({ filename, AssetLocationSource::File }, texture, s_Texture2Ds);
+        }
+        FORGE_INFO("Loaded Asset: {}", filename);
+        return texture;
+    }
+
+    Ref<TextureCube> GraphicsCache::LoadTextureCube(const std::string& front, const std::string& back, const std::string& left, const std::string& right, const std::string& bottom, const std::string& top)
+    {
+        auto it = s_TextureCubes.find({ front, AssetLocationSource::File, AssetLocationType::TextureCube });
+        if (it != s_TextureCubes.end() && !it->second.expired())
+            return it->second.lock();
+        Ref<TextureCube> texture = TextureCube::Create(
+            front,
+            back,
+            left,
+            right,
+            bottom,
+            top
+        );
+        if (texture)
+        {
+            RegisterNewAsset({ front, AssetLocationSource::File }, texture, s_TextureCubes);
+        }
+        FORGE_INFO("Loaded Asset: {}", front);
+        return texture;
+    }
+
+    Ref<Mesh> GraphicsCache::LoadMesh(const std::string& filename)
+    {
+        auto it = s_Meshes.find({ filename, AssetLocationSource::File, AssetLocationType::Mesh });
+        if (it != s_Meshes.end() && !it->second.expired())
+            return it->second.lock();
+        ObjReader reader(filename);
+        if (reader.GetMesh())
+        {
+            RegisterNewAsset({ filename, AssetLocationSource::File }, reader.GetMesh(), s_Meshes);
+        }
+        FORGE_INFO("Loaded Asset: {}", filename);
+        return reader.GetMesh();
+    }
+
+    Ref<Shader> GraphicsCache::LoadShader(const std::string& filename)
+    {
+        auto it = s_Shaders.find({ filename, AssetLocationSource::File, AssetLocationType::Shader });
+        if (it != s_Shaders.end() && !it->second.expired())
+            return it->second.lock();
+        Ref<Shader> shader = Shader::CreateFromFile(filename);
+        if (shader)
+        {
+            RegisterNewAsset({ filename, AssetLocationSource::File }, shader, s_Shaders);
+        }
+        FORGE_INFO("Loaded Asset: {}", filename);
+        return shader;
     }
 
     Ref<Mesh> GraphicsCache::GridMesh(int xVertices, int zVertices)
@@ -89,7 +162,9 @@ namespace Forge
         delete[] vertexData;
         delete[] indexData;
 
-        return CreateRef<Mesh>(vao);
+        Ref<Mesh> mesh = CreateRef<Mesh>(vao);
+        RegisterNewAsset({ "Grid" + std::to_string(xVertices) + "x" + std::to_string(zVertices), AssetLocationSource::Generated }, mesh, s_Meshes);
+        return mesh;
     }
 
     Ref<Material> GraphicsCache::DefaultColorMaterial(const Color& color)
@@ -168,6 +243,7 @@ namespace Forge
                 "}\n";
 
             s_DefaultColorShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+            RegisterNewAsset({ "DefaultColor", AssetLocationSource::Generated }, s_DefaultColorShader, s_Shaders);
         }
     }
 
@@ -195,6 +271,7 @@ namespace Forge
                 SHADER_VERSION_STRING + '\n' +
                 "layout (location = 0) out vec4 f_FinalColor;\n"
                 "\n"
+                "[\"Texture\"]\n"
                 "uniform sampler2D u_Texture;\n"
                 "\n"
                 "in vec2 f_TexCoord;\n"
@@ -205,6 +282,7 @@ namespace Forge
                 "}\n";
 
             s_DefaultTextureShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+            RegisterNewAsset({ "DefaultTexture", AssetLocationSource::Generated }, s_DefaultTextureShader, s_Shaders);
         }
     }
 
@@ -265,7 +343,9 @@ namespace Forge
                 "}\n";
 
             s_LitColorShader[0] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
-            s_LitColorShader[1] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "SHADOW_MAP" });
+            s_LitColorShader[1] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ ShadowMapShaderDefine });
+            RegisterNewAsset({ "LitColorNoShadow", AssetLocationSource::Generated }, s_LitColorShader[0], s_Shaders);
+            RegisterNewAsset({ "LitColor", AssetLocationSource::Generated }, s_LitColorShader[1], s_Shaders);
         }
     }
 
@@ -301,6 +381,7 @@ namespace Forge
                 "\n"
                 "layout (location = 0) out vec4 f_FinalColor;\n"
                 "\n"
+                "[\"Texture\"]\n"
                 "uniform sampler2D u_Texture;\n"
                 "uniform LightSource frg_LightSources[MAX_LIGHT_COUNT];\n"
                 "uniform int frg_UsedLightSources;\n"
@@ -324,7 +405,9 @@ namespace Forge
                 "}\n";
 
             s_LitTextureShader[0] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
-            s_LitTextureShader[1] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "SHADOW_MAP" });
+            s_LitTextureShader[1] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ ShadowMapShaderDefine });
+            RegisterNewAsset({ "LitTextureNoShadow", AssetLocationSource::Generated }, s_LitTextureShader[0], s_Shaders);
+            RegisterNewAsset({ "LitTexture", AssetLocationSource::Generated }, s_LitTextureShader[1], s_Shaders);
         }
     }
 
@@ -372,6 +455,7 @@ namespace Forge
 
         Ref<Shader> shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "JOINT_COUNT=" + std::to_string(maxJoints) });
         s_DefaultColorAnimatedShaders[maxJoints] = shader;
+        RegisterNewAsset({ "ColorAnimated" + std::to_string(maxJoints), AssetLocationSource::Generated }, shader, s_Shaders);
         return shader;
     }
 
@@ -424,6 +508,7 @@ namespace Forge
             "\n"
             "layout (location = 0) out vec4 f_FinalColor;\n"
             "\n"
+            "[\"Texture\"]\n"
             "uniform sampler2D u_Texture;\n"
             "uniform LightSource frg_LightSources[MAX_LIGHT_COUNT];\n"
             "uniform int frg_UsedLightSources;\n"
@@ -440,6 +525,7 @@ namespace Forge
 
         Ref<Shader> shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "JOINT_COUNT=" + std::to_string(maxJoints) });
         s_LitTextureAnimatedShaders[maxJoints] = shader;
+        RegisterNewAsset({ "LitTextureAnimated" + std::to_string(maxJoints), AssetLocationSource::Generated }, shader, s_Shaders);
         return shader;
     }
 
@@ -466,6 +552,7 @@ namespace Forge
                 "}\n";
 
             s_DefaultShadowShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+            RegisterNewAsset({ "Shadow", AssetLocationSource::Generated }, s_DefaultShadowShader, s_Shaders);
         }
     }
 
@@ -519,6 +606,7 @@ namespace Forge
                 "}\n";
 
             s_DefaultPointShadowShader = Shader::CreateFromSource(vertexShaderSource, geometryShaderSource, fragmentShaderSource);
+            RegisterNewAsset({ "PointShadow", AssetLocationSource::Generated }, s_DefaultPointShadowShader, s_Shaders);
         }
     }
 
@@ -547,81 +635,209 @@ namespace Forge
                 "}\n";
 
             s_DefaultPickShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+            RegisterNewAsset({ "Picking", AssetLocationSource::Generated }, s_DefaultPickShader, s_Shaders);
         }
     }
 
     void GraphicsCache::CreateSquareMesh()
     {
-        float vertices[] = {
-            -0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-            -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-            0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
-            0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-        };
+        if (!s_SquareMesh)
+        {
+            float vertices[] = {
+                -0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+                -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+                0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+                0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+            };
 
-        uint32_t indices[] = { 0, 1, 2, 0, 2, 3 };
+            uint32_t indices[] = { 0, 1, 2, 0, 2, 3 };
 
-        BufferLayout layout({
-            { ShaderDataType::Float3 },
-            { ShaderDataType::Float3 },
-            { ShaderDataType::Float2 },
-        });
+            BufferLayout layout({
+                { ShaderDataType::Float3 },
+                { ShaderDataType::Float3 },
+                { ShaderDataType::Float2 },
+            });
 
-        Ref<VertexBuffer> vbo = VertexBuffer::Create(vertices, sizeof(vertices), layout);
-        Ref<IndexBuffer> ibo = IndexBuffer::Create(indices, sizeof(indices));
-        Ref<VertexArray> vao = VertexArray::Create();
-        vao->AddVertexBuffer(vbo);
-        vao->SetIndexBuffer(ibo);
+            Ref<VertexBuffer> vbo = VertexBuffer::Create(vertices, sizeof(vertices), layout);
+            Ref<IndexBuffer> ibo = IndexBuffer::Create(indices, sizeof(indices));
+            Ref<VertexArray> vao = VertexArray::Create();
+            vao->AddVertexBuffer(vbo);
+            vao->SetIndexBuffer(ibo);
 
-        s_SquareMesh = CreateRef<Mesh>(vao);
+            s_SquareMesh = CreateRef<Mesh>(vao);
+            RegisterNewAsset({ "Square", AssetLocationSource::Generated }, s_SquareMesh, s_Meshes);
+        }
     }
 
     void GraphicsCache::CreateCubeMesh()
     {
-        uint32_t indices[] = { 0, 1, 2, 0, 2, 3,  11, 10, 13, 11, 13, 12,  4, 5, 6, 4, 6, 7,  15, 14, 9, 15, 9, 8,  23, 16, 19, 23, 19, 20,  17, 22, 21, 17, 21, 18 };
+        if (!s_SphereMesh)
+        {
+            uint32_t indices[] = { 0, 1, 2, 0, 2, 3,  11, 10, 13, 11, 13, 12,  4, 5, 6, 4, 6, 7,  15, 14, 9, 15, 9, 8,  23, 16, 19, 23, 19, 20,  17, 22, 21, 17, 21, 18 };
 
-        float vertices[] = {
-            -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-            -0.5, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-            0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
-            0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-            0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
-            -0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+            float vertices[] = {
+                -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+                -0.5, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+                0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+                0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+                0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
+                0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+                -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+                -0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
 
-            -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-            -0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-            0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-            0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-            0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-            -0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+                -0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+                0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+                0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+                -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                -0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
 
-            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-            -0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
-            0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f,
-            0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-            0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-            0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-        };
+                -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+                -0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
+                0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f,
+                0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+                0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+                0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+                -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+                -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+            };
 
-        BufferLayout layout({
-            { ShaderDataType::Float3 },
-            { ShaderDataType::Float3 },
-            { ShaderDataType::Float2 },
-        });
+            BufferLayout layout({
+                { ShaderDataType::Float3 },
+                { ShaderDataType::Float3 },
+                { ShaderDataType::Float2 },
+            });
 
-        Ref<VertexBuffer> vbo = VertexBuffer::Create(vertices, sizeof(vertices), layout);
-        Ref<IndexBuffer> ibo = IndexBuffer::Create(indices, sizeof(indices));
-        Ref<VertexArray> vao = VertexArray::Create();
-        vao->AddVertexBuffer(vbo);
-        vao->SetIndexBuffer(ibo);
+            Ref<VertexBuffer> vbo = VertexBuffer::Create(vertices, sizeof(vertices), layout);
+            Ref<IndexBuffer> ibo = IndexBuffer::Create(indices, sizeof(indices));
+            Ref<VertexArray> vao = VertexArray::Create();
+            vao->AddVertexBuffer(vbo);
+            vao->SetIndexBuffer(ibo);
 
-        s_CubeMesh = CreateRef<Mesh>(vao);
+            s_CubeMesh = CreateRef<Mesh>(vao);
+            RegisterNewAsset({ "Cube", AssetLocationSource::Generated }, s_CubeMesh, s_Meshes);
+        }
+    }
+
+    void GraphicsCache::CreateSphereMesh()
+    {
+        if (!s_SphereMesh)
+        {
+            float radius = 1.0f;
+            size_t sectorCount = 90;
+
+            size_t indexCount = 6 * sectorCount * (sectorCount - 1);
+            size_t vertexCount = (sectorCount + 1) * (sectorCount + 1);
+
+            BufferLayout layout({
+                { ShaderDataType::Float3 },
+                { ShaderDataType::Float3 },
+                { ShaderDataType::Float2 },
+            });
+
+            float* vertices = new float[vertexCount * 8];
+            uint32_t* indices = new uint32_t[indexCount];
+
+            float x, y, z, xy;                              // vertex position
+            float nx, ny, nz, lengthInv = 1.0f / radius;    // vertex normal
+            float s, t;                                     // vertex texCoord
+
+            float sectorStep = 2 * PI / sectorCount;
+            float stackStep = PI / sectorCount;
+            float sectorAngle, stackAngle;
+
+            size_t index = 0;
+            for (int i = 0; i <= sectorCount; i++)
+            {
+                stackAngle = PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
+                xy = radius * cosf(stackAngle);             // r * cos(u)
+                z = radius * sinf(stackAngle);              // r * sin(u)
+
+                // add (sectorCount+1) vertices per stack
+                // the first and last vertices have same position and normal, but different tex coords
+                for (int j = 0; j <= sectorCount; j++)
+                {
+                    sectorAngle = j * sectorStep;           // starting from 0 to 2pi
+
+                    // vertex position (x, y, z)
+                    x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
+                    y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
+                    vertices[index++] = x;
+                    vertices[index++] = y;
+                    vertices[index++] = z;
+
+                    // normalized vertex normal (nx, ny, nz)
+                    nx = x * lengthInv;
+                    ny = y * lengthInv;
+                    nz = z * lengthInv;
+                    vertices[index++] = nx;
+                    vertices[index++] = ny;
+                    vertices[index++] = nz;
+
+                    // vertex tex coord (s, t) range between [0, 1]
+                    s = (float)j / sectorCount;
+                    t = (float)i / sectorCount;
+                    vertices[index++] = s;
+                    vertices[index++] = t;
+                }
+            }
+
+            index = 0;
+            int k1, k2;
+            for (int i = 0; i < sectorCount; ++i)
+            {
+                k1 = i * (sectorCount + 1);     // beginning of current stack
+                k2 = k1 + sectorCount + 1;      // beginning of next stack
+
+                for (int j = 0; j < sectorCount; ++j, ++k1, ++k2)
+                {
+                    // 2 triangles per sector excluding first and last stacks
+                    // k1 => k2 => k1+1
+                    if (i != 0)
+                    {
+                        indices[index++] = (k1);
+                        indices[index++] = (k2);
+                        indices[index++] = (k1 + 1);
+                    }
+
+                    // k1+1 => k2 => k2+1
+                    if (i != (sectorCount - 1))
+                    {
+                        indices[index++] = (k1 + 1);
+                        indices[index++] = (k2);
+                        indices[index++] = (k2 + 1);
+                    }
+                }
+            }
+            
+            Ref<VertexBuffer> vbo = VertexBuffer::Create(vertices, vertexCount * layout.GetStride(), layout);
+            Ref<IndexBuffer> ibo = IndexBuffer::Create(indices, indexCount * sizeof(uint32_t));
+            Ref<VertexArray> vao = VertexArray::Create();
+            vao->AddVertexBuffer(vbo);
+            vao->SetIndexBuffer(ibo);
+
+            delete[] vertices;
+            delete[] indices;
+
+            s_SphereMesh = CreateRef<Mesh>(vao);
+            RegisterNewAsset({ "Sphere", AssetLocationSource::Generated }, s_SphereMesh, s_Meshes);
+        }
+    }
+
+    void GraphicsCache::HandleGeneratedShader(const AssetLocation& location)
+    {
+        if (s_Shaders.find(location) == s_Shaders.end())
+        {
+        }
+    }
+
+    void GraphicsCache::HandleGeneratedMesh(const AssetLocation& location)
+    {
+        if (s_Meshes.find(location) == s_Meshes.end())
+        {
+        }
     }
 
 }

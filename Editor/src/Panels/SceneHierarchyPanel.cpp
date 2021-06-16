@@ -13,6 +13,7 @@ namespace Editor
 		bool IncludeSeparator = true;
 		std::function<void()> Callback = {};
 		std::function<void()> OptionsCallback = {};
+		std::function<void()> DragDropCallback = {};
 	};
 
 	static void DrawBooleanControl(const std::string& name, bool& value, float columnWidth = 100.0f)
@@ -23,7 +24,7 @@ namespace Editor
 		ImGui::Text(name.c_str());
 		ImGui::NextColumn();
 
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 2 });
 		ImGui::Checkbox("##Value", &value);
 
 		ImGui::PopStyleVar();
@@ -40,9 +41,9 @@ namespace Editor
 		ImGui::Text(name.c_str());
 		ImGui::NextColumn();
 
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 2 });
 
-		ImGui::ColorEdit3("##Value", (float*)&values);
+		ImGui::ColorEdit4("##Value", (float*)&values);
 
 		ImGui::PopStyleVar();
 
@@ -58,7 +59,7 @@ namespace Editor
 		ImGui::Text(name.c_str());
 		ImGui::NextColumn();
 
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 2 });
 
 		ImGui::ColorEdit4("##Value", (float*)&values);
 
@@ -94,7 +95,7 @@ namespace Editor
 		ImGui::NextColumn();
 
 		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 2 });
 
 		float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
 		ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
@@ -145,7 +146,7 @@ namespace Editor
 		ImGui::NextColumn();
 
 		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 2 });
 
 		float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
 		ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
@@ -198,6 +199,72 @@ namespace Editor
 		ImGui::PopID();
 	}
 
+	static void DrawTextureControl(const std::string& name, Ref<Texture>& texture, float resetValue = 0.0f, float columnWidth = 100.0f)
+	{
+		ImGui::PushID(name.c_str());
+		ImGui::Columns(2);
+		ImGui::SetColumnWidth(0, columnWidth);
+		ImGui::Text(name.c_str());
+		ImGui::NextColumn();
+
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 2 });
+		char buffer[255]{};
+		if (texture)
+		{
+			std::string name = GraphicsCache::GetAssetLocation(texture).Path;
+			std::memcpy(buffer, name.c_str(), name.size() + 1);
+		}
+		ImGui::InputText("##Value", buffer, sizeof(buffer));
+		if (ImGui::BeginDragDropTarget())
+		{
+			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PATH");
+			if (payload)
+			{
+				std::string filename = (char*)payload->Data;
+				texture = GraphicsCache::LoadTexture2D(filename);
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		ImGui::PopStyleVar();
+
+		ImGui::Columns(1);
+		ImGui::PopID();
+	}
+
+	static void DrawModelControl(const std::string& name, Ref<Model>& model, float resetValue = 0.0f, float columnWidth = 100.0f)
+	{
+		ImGui::PushID(name.c_str());
+		ImGui::Columns(2);
+		ImGui::SetColumnWidth(0, columnWidth);
+		ImGui::Text(name.c_str());
+		ImGui::NextColumn();
+
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 2 });
+		char buffer[255]{};
+		if (model && model->GetSubModels().size() > 0 && model->GetSubModels()[0].Mesh)
+		{
+			std::string name = GraphicsCache::GetAssetLocation(model->GetSubModels()[0].Mesh).Path;
+			std::memcpy(buffer, name.c_str(), name.size() + 1);
+		}
+		ImGui::InputText("##Value", buffer, sizeof(buffer));
+		if (ImGui::BeginDragDropTarget())
+		{
+			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PATH");
+			if (payload)
+			{
+				std::string filename = (char*)payload->Data;
+				model = Model::Create(GraphicsCache::LoadMesh(filename), GraphicsCache::LitColorMaterial(COLOR_WHITE));
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		ImGui::PopStyleVar();
+
+		ImGui::Columns(1);
+		ImGui::PopID();
+	}
+
 	static void DrawTreeNode(const std::string& name, const TreeNodeOptions& options)
 	{
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
@@ -208,8 +275,18 @@ namespace Editor
 		if (options.IncludeSeparator)
 			ImGui::Separator();
 
-		bool isOpen = ImGui::TreeNodeEx((void*)name.c_str(), flags, name.c_str());
+		bool isOpen = ImGui::TreeNodeEx((void*)std::hash<std::string>{}(name), flags, name.c_str());
 		ImGui::PopStyleVar();
+
+		if (options.DragDropCallback)
+		{
+			if (ImGui::BeginDragDropTarget())
+			{
+				options.DragDropCallback();
+				ImGui::EndDragDropTarget();
+			}
+		}
+
 		if (options.OptionsCallback)
 		{
 			ImGui::SameLine(contentRegion.x - lineHeight * 0.5f);
@@ -302,6 +379,24 @@ namespace Editor
 				{
 					Entity entity = m_Scene->CreateEntity();
 					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::CubeMesh(), GraphicsCache::LitColorMaterial(COLOR_WHITE)));
+					m_SelectedEntity = entity;
+				}
+				if (ImGui::MenuItem("Create Textured Cube"))
+				{
+					Entity entity = m_Scene->CreateEntity();
+					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::CubeMesh(), GraphicsCache::LitTextureMaterial(nullptr)));
+					m_SelectedEntity = entity;
+				}
+				if (ImGui::MenuItem("Create Sphere"))
+				{
+					Entity entity = m_Scene->CreateEntity();
+					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::SphereMesh(), GraphicsCache::LitColorMaterial(COLOR_WHITE)));
+					m_SelectedEntity = entity;
+				}
+				if (ImGui::MenuItem("Create Textured Sphere"))
+				{
+					Entity entity = m_Scene->CreateEntity();
+					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::SphereMesh(), GraphicsCache::LitTextureMaterial(nullptr)));
 					m_SelectedEntity = entity;
 				}
 				if (ImGui::MenuItem("Create Plane"))
@@ -422,7 +517,7 @@ namespace Editor
 
 			DrawVec3Control("Position", position);
 			DrawVec3Control("Rotation", rotation);
-			DrawVec3Control("Scale", scale);
+			DrawVec3Control("Scale", scale, 1.0f);
 
 			if (position != transform.GetPosition())
 				transform.SetPosition(position);
@@ -440,11 +535,12 @@ namespace Editor
 
 		DrawComponent<ModelRendererComponent>("Model renderer", entity, true, [](ModelRendererComponent& modelRenderer)
 		{
+			DrawModelControl("Model", modelRenderer.Model);
 			int index = 0;
 			for (Model::SubModel& submodel : modelRenderer.Model->GetSubModels())
 			{
 				TreeNodeOptions options;
-				options.IncludeSeparator = true;
+				options.IncludeSeparator = false;
 				options.Callback = [&]()
 				{
 					RenderSettings& settings = submodel.Material->GetSettings();
@@ -466,44 +562,55 @@ namespace Editor
 
 					DrawVec3Control("Position", position);
 					DrawVec3Control("Rotation", rotation);
-					DrawVec3Control("Scale", scale);
+					DrawVec3Control("Scale", scale, 1.0f);
 
 					transform = glm::translate(glm::mat4(1.0f), position) * glm::toMat4(glm::quat(glm::radians(rotation))) * glm::scale(glm::mat4(1.0f), scale);
-
-					TreeNodeOptions materialOptions;
-					materialOptions.IncludeSeparator = false;
-					materialOptions.Callback = [&]()
-					{
-						Shader& shader = *submodel.Material->GetShader(RenderPass::WithoutShadow);
-						UniformContext& uniforms = submodel.Material->GetUniforms();
-						for (const UniformDescriptor& descriptor : shader.GetUniformDescriptors())
-						{
-							if (!descriptor.Automatic)
-							{
-								switch (descriptor.Type)
-								{
-								case ShaderDataType::Int:
-									break;
-								case ShaderDataType::Float:
-									DrawFloatControl(descriptor.Name, uniforms.GetUniform<float>(descriptor.VariableName));
-									break;
-								case ShaderDataType::Float2:
-									DrawVec2Control(descriptor.Name, uniforms.GetUniform<glm::vec2>(descriptor.VariableName));
-									break;
-								case ShaderDataType::Float3:
-									DrawVec3Control(descriptor.Name, uniforms.GetUniform<glm::vec3>(descriptor.VariableName));
-									break;
-								case ShaderDataType::Float4:
-									DrawColorControl(descriptor.Name, uniforms.GetUniform<Color>(descriptor.VariableName));
-									break;
-								}
-							}
-						}
-					};
-
-					DrawTreeNode("Material", materialOptions);
 				};
-				DrawTreeNode(std::string("Mesh " + std::to_string(index + 1)), options);
+				DrawTreeNode("Mesh " + std::to_string(index + 1), options);
+				TreeNodeOptions materialOptions;
+				materialOptions.IncludeSeparator = false;
+				materialOptions.Callback = [&]()
+				{
+					Shader& shader = *submodel.Material->GetShader(RenderPass::WithoutShadow);
+					UniformContext& uniforms = submodel.Material->GetUniforms();
+					for (const UniformSpecification& specification : uniforms.GetUniforms())
+					{
+						switch (specification.Type)
+						{
+						case ShaderDataType::Int:
+							break;
+						case ShaderDataType::Float:
+							DrawFloatControl(specification.Name, uniforms.GetUniform<float>(specification.VariableName));
+							break;
+						case ShaderDataType::Float2:
+							DrawVec2Control(specification.Name, uniforms.GetUniform<glm::vec2>(specification.VariableName));
+							break;
+						case ShaderDataType::Float3:
+							DrawVec3Control(specification.Name, uniforms.GetUniform<glm::vec3>(specification.VariableName));
+							break;
+						case ShaderDataType::Float4:
+							DrawColorControl(specification.Name, uniforms.GetUniform<Color>(specification.VariableName));
+							break;
+						case ShaderDataType::Sampler1D:
+						case ShaderDataType::Sampler2D:
+						case ShaderDataType::Sampler3D:
+						case ShaderDataType::SamplerCube:
+							DrawTextureControl(specification.Name, uniforms.GetUniform<Ref<Texture>>(specification.VariableName));
+							break;
+						}
+					}
+				};
+				materialOptions.DragDropCallback = [&]()
+				{
+					const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PATH");
+					if (payload)
+					{
+						std::string filename = (char*)payload->Data;
+						submodel.Material = Material::Create(GraphicsCache::LoadShader(filename));
+					}
+				};
+				std::string shaderFilename = GraphicsCache::GetAssetLocation(submodel.Material->GetShader(RenderPass::WithShadow)).Path;
+				DrawTreeNode("Material " + std::to_string(index + 1) + " (" + shaderFilename + ")", materialOptions);
 				index++;
 			}
 		});

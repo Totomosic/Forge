@@ -1,6 +1,7 @@
 #pragma once
 #include "Forge.h"
 #include "Panels/SceneHierarchyPanel.h"
+#include "Panels/AssetBrowserPanel.h"
 
 #include <imgui.h>
 #include <ImGuizmo.h>
@@ -17,6 +18,7 @@ namespace Editor
 		Forge::Ref<Forge::RenderTexture> m_SceneTexture;
 
 		SceneHierarchyPanel m_SceneHierarchy;
+		AssetBrowserPanel m_AssetBrowser;
 
 		bool m_ViewportFocused = false;
 		bool m_ViewportHovered = false;

@@ -254,12 +254,12 @@ namespace Forge
     void Shader::Init(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource)
     {
         bool useGeometryShader = !geometrySource.empty();
-        FORGE_INFO("VERTEX SHADER SOURCE\n{}", vertexSource);
+        /* FORGE_INFO("VERTEX SHADER SOURCE\n{}", vertexSource);
         if (useGeometryShader)
         {
             FORGE_INFO("GEOMETRY SHADER SOURCE\n{}", geometrySource);
         }
-        FORGE_INFO("FRAGMENT SHADER SOURCE\n{}", fragmentSource);
+        FORGE_INFO("FRAGMENT SHADER SOURCE\n{}", fragmentSource); */
 
         uint32_t vertexShader = glCreateShader(GL_VERTEX_SHADER);
         uint32_t fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -338,7 +338,6 @@ namespace Forge
             {
                 descriptor.Name = descriptor.VariableName;
             }
-            FORGE_WARN("{} {}", descriptor.VariableName, descriptor.Count);
             m_UniformDescriptors.push_back(descriptor);
         }
     }

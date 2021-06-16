@@ -24,11 +24,12 @@ namespace Forge
 			if (!descriptor.Automatic)
 			{
 				UniformSpecification specification;
-				specification.Varname = descriptor.VariableName;
+				specification.Name = descriptor.Name;
+				specification.VariableName = descriptor.VariableName;
 				specification.Type = descriptor.Type;
 				specification.Offset = m_Size;
 
-				m_UniformSpecificationIndices[specification.Varname] = (int)m_UniformSpecifications.size();
+				m_UniformSpecificationIndices[specification.VariableName] = (int)m_UniformSpecifications.size();
 				m_UniformSpecifications.push_back(specification);
 
 				if (specification.Type == ShaderDataType::Sampler1D || specification.Type == ShaderDataType::Sampler2D || specification.Type == ShaderDataType::Sampler3D || specification.Type == ShaderDataType::SamplerCube)
@@ -52,6 +53,10 @@ namespace Forge
 				FORGE_UNIFORM_REFERENCE(int, specification.Offset) = index;
 				index++;
 			}
+			if (specification.Type == ShaderDataType::Float4)
+			{
+				FORGE_UNIFORM_REFERENCE(glm::vec4, specification.Offset) = glm::vec4{ 0.0f, 0.0f, 0.0f, 1.0f };
+			}
 		}
 	}
 
@@ -62,31 +67,31 @@ namespace Forge
 			switch (specification.Type)
 			{
 			case ShaderDataType::Mat4:
-				shader->SetUniform(specification.Varname, FORGE_UNIFORM_REFERENCE(glm::mat4, specification.Offset));
+				shader->SetUniform(specification.VariableName, FORGE_UNIFORM_REFERENCE(glm::mat4, specification.Offset));
 				break;
 			case ShaderDataType::Mat3:
-				shader->SetUniform(specification.Varname, FORGE_UNIFORM_REFERENCE(glm::mat3, specification.Offset));
+				shader->SetUniform(specification.VariableName, FORGE_UNIFORM_REFERENCE(glm::mat3, specification.Offset));
 				break;
 			case ShaderDataType::Mat2:
-				shader->SetUniform(specification.Varname, FORGE_UNIFORM_REFERENCE(glm::mat2, specification.Offset));
+				shader->SetUniform(specification.VariableName, FORGE_UNIFORM_REFERENCE(glm::mat2, specification.Offset));
 				break;
 			case ShaderDataType::Float:
-				shader->SetUniform(specification.Varname, FORGE_UNIFORM_REFERENCE(float, specification.Offset));
+				shader->SetUniform(specification.VariableName, FORGE_UNIFORM_REFERENCE(float, specification.Offset));
 				break;
 			case ShaderDataType::Float2:
-				shader->SetUniform(specification.Varname, FORGE_UNIFORM_REFERENCE(glm::vec2, specification.Offset));
+				shader->SetUniform(specification.VariableName, FORGE_UNIFORM_REFERENCE(glm::vec2, specification.Offset));
 				break;
 			case ShaderDataType::Float3:
-				shader->SetUniform(specification.Varname, FORGE_UNIFORM_REFERENCE(glm::vec3, specification.Offset));
+				shader->SetUniform(specification.VariableName, FORGE_UNIFORM_REFERENCE(glm::vec3, specification.Offset));
 				break;
 			case ShaderDataType::Float4:
-				shader->SetUniform(specification.Varname, FORGE_UNIFORM_REFERENCE(glm::vec4, specification.Offset));
+				shader->SetUniform(specification.VariableName, FORGE_UNIFORM_REFERENCE(glm::vec4, specification.Offset));
 				break;
 			case ShaderDataType::Int:
-				shader->SetUniform(specification.Varname, FORGE_UNIFORM_REFERENCE(int, specification.Offset));
+				shader->SetUniform(specification.VariableName, FORGE_UNIFORM_REFERENCE(int, specification.Offset));
 				break;
 			case ShaderDataType::Bool:
-				shader->SetUniform(specification.Varname, FORGE_UNIFORM_REFERENCE(bool, specification.Offset));
+				shader->SetUniform(specification.VariableName, FORGE_UNIFORM_REFERENCE(bool, specification.Offset));
 				break;
 			case ShaderDataType::Sampler1D:
 			case ShaderDataType::Sampler2D:
@@ -95,7 +100,7 @@ namespace Forge
 			{
 				int textureIndex = FORGE_UNIFORM_REFERENCE(int, specification.Offset);
 				int slot = context.BindTexture(m_Textures[textureIndex]);
-				shader->SetUniform(specification.Varname, slot);
+				shader->SetUniform(specification.VariableName, slot);
 				break;
 			}
 			default:

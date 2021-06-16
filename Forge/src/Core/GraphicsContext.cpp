@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "Renderer/GraphicsCache.h"
+#include "Assets/GraphicsCache.h"
 
 namespace Forge
 {
