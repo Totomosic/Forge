@@ -32,11 +32,16 @@ namespace Forge
 
 		entt::registry m_Registry;
 		entt::entity m_PrimaryCamera;
+		float m_Time;
 
+		Renderer3D* m_Renderer;
 		Ref<Framebuffer> m_DefaultFramebuffer;
+		Ref<Framebuffer> m_PickFramebuffer;
 
 	public:
-		Scene(const Ref<Framebuffer>& defaultFramebuffer);
+		Scene(const Ref<Framebuffer>& defaultFramebuffer, Renderer3D* renderer);
+
+		inline const Ref<Framebuffer>& GetPickFramebuffer() const { return m_PickFramebuffer; }
 
 		inline bool HasPrimaryCamera() { FindPrimaryCamera(); return m_PrimaryCamera != entt::null; }
 		Entity GetPrimaryCamera();
@@ -53,7 +58,9 @@ namespace Forge
 		void SetPrimaryCamera(const Entity& entity);
 		Entity CreateCamera(const Frustum& frustum);
 
-		void OnUpdate(Timestep ts, Renderer3D& renderer);
+		Entity PickEntity(const glm::vec2& viewportCoord, const Entity& camera);
+
+		void OnUpdate(Timestep ts);
 
 		friend class Entity;
 

@@ -3,10 +3,22 @@
 #include "Texture.h"
 #include "RenderCommand.h"
 
+#include <bitset>
+
 namespace Forge
 {
 
 	class RendererContext;
+
+	constexpr int RENDER_PASS_COUNT = 4;
+
+	FORGE_API enum class RenderPass
+	{
+		ShadowFormation,
+		WithShadow,
+		WithoutShadow,
+		Pick,
+	};
 
 	FORGE_API enum class PolygonMode
 	{
@@ -28,6 +40,7 @@ namespace Forge
 		std::string VariableName;
 		ShaderDataType Type;
 		int Offset;
+		std::bitset<RENDER_PASS_COUNT> RenderPasses;
 	};
 
 	class FORGE_API UniformContext
@@ -64,8 +77,8 @@ namespace Forge
 			GetUniform<T>(varname) = value;
 		}
 
-		void CreateFromDescriptors(const std::vector<UniformDescriptor>& descriptors);
-		void Apply(const Ref<Shader>& shader, RendererContext& context) const;
+		void AddFromDescriptors(RenderPass pass, const std::vector<UniformDescriptor>& descriptors);
+		void Apply(RenderPass pass, const Ref<Shader>& shader, RendererContext& context) const;
 
 	};
 

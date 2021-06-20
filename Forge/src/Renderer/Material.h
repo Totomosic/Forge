@@ -46,7 +46,7 @@ namespace Forge
 		static Ref<Material> CreateFromShaderSource(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource, ShaderDefines defines = {});
 		static Ref<Material> CreateFromShaderFile(const std::string& vertexFilePath, const std::string& geometryFilePath, const std::string& fragmentFilePath, ShaderDefines defines = {});
 		static Ref<Material> CreateFromShaderFile(const std::string& shaderFilePath, ShaderDefines defines = {});
-		static Ref<Material> Create(const Ref<Shader>& shader);
+		static Ref<Material> Create(const Ref<Shader>& shader, const Ref<Shader>& shadowShader = nullptr);
 
 	};
 

@@ -77,6 +77,9 @@ namespace Forge
 		inline float GetAspectRatio() const { return GetFramebuffer()->GetAspect(); }
 		inline void Close() { m_ShouldClose = true; }
 
+		void EnableVSync();
+		void DisableVSync();
+
 		void Update();
 
 	private:

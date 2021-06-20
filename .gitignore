@@ -37,3 +37,4 @@ Makefile
 *.xcodeproj/
 *.xcworkspace/
 imgui.ini
+Editor/assets

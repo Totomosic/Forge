@@ -11,8 +11,8 @@
 namespace Forge
 {
 
-    Scene::Scene(const Ref<Framebuffer>& defaultFramebuffer)
-        : m_Registry(), m_PrimaryCamera(entt::null), m_DefaultFramebuffer(defaultFramebuffer)
+    Scene::Scene(const Ref<Framebuffer>& defaultFramebuffer, Renderer3D* renderer)
+        : m_Registry(), m_PrimaryCamera(entt::null), m_Time(0.0f), m_Renderer(renderer), m_DefaultFramebuffer(defaultFramebuffer), m_PickFramebuffer(nullptr)
     {
     }
 
@@ -75,9 +75,57 @@ namespace Forge
         return camera;
     }
 
-    void Scene::OnUpdate(Timestep ts, Renderer3D& renderer)
+    Entity Scene::PickEntity(const glm::vec2& viewportCoord, const Entity& camera)
+    {
+        CameraData data;
+        auto [transform, cameraComponent, enabled] = m_Registry.get<TransformComponent, CameraComponent, EnabledFlag>(camera);
+        data.Frustum = cameraComponent.Frustum;
+        data.ViewMatrix = transform.GetInverseMatrix();
+        data.Viewport = cameraComponent.Viewport;
+        data.ClippingPlanes = cameraComponent.ClippingPlanes;
+        data.ClearColor = cameraComponent.ClearColor;
+        data.Mode = cameraComponent.Mode;
+
+        if (!m_PickFramebuffer)
+        {
+            FramebufferProps props;
+            props.Width = data.Viewport.Width;
+            props.Height = data.Viewport.Height;
+            props.Attachments = { FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
+            m_PickFramebuffer = Framebuffer::Create(props);
+        }
+        else if (m_PickFramebuffer->GetWidth() != data.Viewport.Width || m_PickFramebuffer->GetHeight() != data.Viewport.Height)
+        {
+            m_PickFramebuffer->SetSize(data.Viewport.Width, data.Viewport.Height);
+        }
+
+        m_PickFramebuffer->Bind();
+        RenderCommand::Clear();
+        m_PickFramebuffer->ClearAttachment(0, -1);
+        m_Renderer->BeginPickScene(m_PickFramebuffer, data);
+        for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent, EnabledFlag>())
+        {
+            if (CheckLayerMask(entity, cameraComponent.LayerMask))
+            {
+                auto [transform, model] = m_Registry.get<TransformComponent, ModelRendererComponent>(entity);
+                RenderOptions options;
+                options.EntityId = (int)entity;
+                m_Renderer->RenderModel(model.Model, transform.GetMatrix(), options);
+            }
+        }
+        m_Renderer->EndScene();
+
+        int pixel = m_PickFramebuffer->ReadPixel(0, viewportCoord.x, viewportCoord.y);
+        return Entity((entt::entity)pixel, this);
+    }
+
+    void Scene::OnUpdate(Timestep ts)
     {
         static std::vector<LightSource> s_LightSources;
+        static std::vector<Ref<Framebuffer>> s_LightSourceShadowFramebuffers;
+
+        m_Time += ts.Seconds();
+
         auto cameraView = m_Registry.view<TransformComponent, CameraComponent, EnabledFlag>();
         std::vector<entt::entity> cameras = { cameraView.begin(), cameraView.end() };
         std::sort(cameras.begin(), cameras.end(), [this](entt::entity a, entt::entity b)
@@ -127,6 +175,7 @@ namespace Forge
             }
 
             s_LightSources.clear();
+            s_LightSourceShadowFramebuffers.clear();
             for (auto entity : m_Registry.view<TransformComponent, LightSourceComponent, EnabledFlag>())
             {
                 if (CheckLayerMask(entity, cameraComponent.LayerMask))
@@ -140,21 +189,30 @@ namespace Forge
                     source.Attenuation = light.Attenuation;
                     source.Type = light.Type;
                     s_LightSources.push_back(source);
+                    s_LightSourceShadowFramebuffers.push_back(light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr);
                 }
             }
 
             Ref<Framebuffer> framebuffer = cameraComponent.RenderTarget ? cameraComponent.RenderTarget : m_DefaultFramebuffer;
 
-            renderer.BeginScene(framebuffer, data, s_LightSources, cameraComponent.Shadows.Enabled ? cameraComponent.Shadows.RenderTarget : nullptr);
+            m_Renderer->SetTime(m_Time);
+            m_Renderer->BeginScene(framebuffer, data, s_LightSources);
+            for (int i = 0; i < s_LightSources.size(); i++)
+            {
+                if (s_LightSourceShadowFramebuffers[i])
+                    m_Renderer->AddShadowPass(s_LightSourceShadowFramebuffers[i], s_LightSources[i].Position);
+            }
             for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent, EnabledFlag>())
             {
                 if (CheckLayerMask(entity, cameraComponent.LayerMask))
                 {
                     auto [transform, model] = m_Registry.get<TransformComponent, ModelRendererComponent>(entity);
-                    renderer.RenderModel(model.Model, transform.GetMatrix(), CheckLayerMask(entity, cameraComponent.Shadows.LayerMask));
+                    RenderOptions options;
+                    options.CreatesShadow = true;
+                    m_Renderer->RenderModel(model.Model, transform.GetMatrix(), options);
                 }
             }
-            renderer.EndScene();
+            m_Renderer->EndScene();
         }
     }
 

@@ -36,16 +36,11 @@ namespace Forge
 	constexpr const char PointShadowMatricesArrayUniformName5[] = "frg_PointShadowMatrices[5]";
 	constexpr const char ShadowMapUniformName[] = "frg_ShadowMap";
 	constexpr const char ShadowLightPositionUniformName[] = "frg_LightPosition";
+	constexpr const char ShadowFormationLightPositionUniformName[] = "frg_ShadowLightPosition";
 
-	constexpr int RENDER_PASS_COUNT = 4;
+	constexpr const char TimeUniformName[] = "frg_Time";
 
-	FORGE_API enum class RenderPass
-	{
-		ShadowFormation,
-		WithShadow,
-		WithoutShadow,
-		Pick,
-	};
+	constexpr const char EntityIdUniformName[] = "frg_EntityID";
 
 	struct FORGE_API ShaderRequirements
 	{
@@ -62,16 +57,26 @@ namespace Forge
 		bool Animation;
 		bool ClippingPlanes;
 
+		bool ShadowFormationLightPosition;
 		bool PointShadowMatrices;
 		bool ShadowMap;
 		bool ShadowLightPosition;
+
+		bool Time;
+	};
+
+	struct FORGE_API ShadowRenderData
+	{
+	public:
+		Ref<Texture> ShadowMap;
+		glm::vec3 LightPosition;
+
+		// Set by RendererContext
+		int BindLocation;
 	};
 
 	class FORGE_API RendererContext
 	{
-	private:
-		static constexpr int SHADOW_MAP_TEXTURE_SLOT = 0;
-
 	private:
 		glm::mat4 m_ProjectionMatrix;
 		glm::mat4 m_ViewMatrix;
@@ -79,20 +84,20 @@ namespace Forge
 		float m_CameraFarPlane;
 		float m_CameraNearPlane;
 		glm::vec3 m_CameraPosition;
+		float m_Time;
+		glm::mat4 m_ShadowPointMatrices[6];
+		glm::vec3 m_CurrentShadowLightPosition;
 
 		std::vector<LightSource> m_LightSources;
+		std::vector<ShadowRenderData> m_ShadowData;
 		std::vector<glm::vec4> m_ClippingPlanes;
 		int m_NextTextureSlot;
-
-		// Shadows
-		glm::mat4 m_PointShadowMatrices[6];
-		glm::vec3 m_ShadowLightSourcePosition;
-		Ref<Texture> m_ShadowMap;
 
 		bool m_CullingEnabled;
 		RenderSettings m_RenderSettings;
 
 		std::unordered_map<const Shader*, ShaderRequirements> m_RequirementsMap;
+		Ref<Shader> m_CurrentShader;
 
 	public:
 		RendererContext();
@@ -103,9 +108,10 @@ namespace Forge
 		void SetLightSources(const std::vector<LightSource>& lights);
 		void AddLightSource(const LightSource& light);
 		void SetClippingPlanes(const std::vector<glm::vec4>& planes);
-		void SetPointShadowMatrices(const glm::mat4* matrices);
-		void SetShadowLightPosition(const glm::vec3& position);
-		void SetShadowMap(const Ref<Texture>& shadowMap);
+		void SetTime(float time);
+		void SetShadowPointMatrices(const glm::vec3& lightPosition, const glm::mat4 matrices[6]);
+		void AddShadowData(ShadowRenderData data);
+		void NewScene();
 		void Reset();
 
 		ShaderRequirements GetShaderRequirements(const Ref<Shader>& shader);

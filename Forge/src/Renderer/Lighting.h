@@ -25,6 +25,8 @@ namespace Forge
 		Forge::Color Color = COLOR_WHITE;
 		glm::vec3 Attenuation = { 1, 0, 0 };
 		glm::vec3 Direction = { 0, 0, 0 };
+
+
 	};
 
 }

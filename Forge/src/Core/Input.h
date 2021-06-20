@@ -18,6 +18,9 @@ namespace Forge
 	private:
 		static const Window* s_Window;
 		static glm::vec2 s_LastMousePos;
+		
+		static glm::vec2 s_MouseDownPos;
+		static MouseButton s_MouseDownButton;
 
 	public:
 		static EventEmitter<KeyCode> OnKeyPressed;
@@ -26,6 +29,7 @@ namespace Forge
 		static EventEmitter<MouseMove> OnMouseMoved;
 		static EventEmitter<MouseButton> OnMousePressed;
 		static EventEmitter<MouseButton> OnMouseReleased;
+		static EventEmitter<MouseButton> OnMouseClicked;
 
 	public:
 		static void SetWindow(const Window* window);

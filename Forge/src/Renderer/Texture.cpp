@@ -95,6 +95,13 @@ namespace Forge
 		return nullptr;
 	}
 
+	Ref<Texture2D> Texture2D::Create(uint32_t width, uint32_t height, const uint8_t* pixels)
+	{
+		Ref<Texture2D> texture = CreateRef<Texture2D>(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA);
+		texture->Init((const void*)pixels);
+		return texture;
+	}
+
 	void Texture2D::Init(const void* data)
 	{
 		glCreateTextures(GL_TEXTURE_2D, 1, &m_Handle.Id);

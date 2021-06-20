@@ -6,6 +6,8 @@ namespace Forge
 
     const Window* Input::s_Window = nullptr;
     glm::vec2 Input::s_LastMousePos = { 0, 0 };
+    glm::vec2 Input::s_MouseDownPos = { 0, 0 };
+    MouseButton Input::s_MouseDownButton = MouseButton::Last;
 
     EventEmitter<KeyCode> Input::OnKeyPressed;
     EventEmitter<KeyCode> Input::OnKeyReleased;
@@ -13,6 +15,7 @@ namespace Forge
     EventEmitter<MouseMove> Input::OnMouseMoved;
     EventEmitter<MouseButton> Input::OnMousePressed;
     EventEmitter<MouseButton> Input::OnMouseReleased;
+    EventEmitter<MouseButton> Input::OnMouseClicked;
 
     void Input::SetWindow(const Window* window)
     {
@@ -39,10 +42,14 @@ namespace Forge
             switch (action)
             {
             case GLFW_PRESS:
+                s_MouseDownPos = GetMousePosition();
+                s_MouseDownButton = MouseButton(button);
                 OnMousePressed.Trigger(MouseButton(button));
                 break;
             case GLFW_RELEASE:
                 OnMouseReleased.Trigger(MouseButton(button));
+                if (MouseButton(button) == s_MouseDownButton && glm::length(GetMousePosition() - s_MouseDownPos) < 3.0f)
+                    OnMouseClicked.Trigger(MouseButton(button));
                 break;
             default:
                 break;

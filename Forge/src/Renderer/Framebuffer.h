@@ -40,6 +40,19 @@ namespace Forge
 		TextureCube,
 	};
 
+	inline constexpr GLenum FramebufferTextureFormatToOpenGL(FramebufferTextureFormat format)
+	{
+		switch (format)
+		{
+		case FramebufferTextureFormat::RGBA8:
+			return GL_RGBA8;
+		case FramebufferTextureFormat::RED_INTEGER:
+			return GL_RED_INTEGER;
+		}
+		FORGE_ASSERT(false, "Invalid texture format");
+		return 0;
+	}
+
 	struct FORGE_API FramebufferTextureSpecification
 	{
 	public:
@@ -91,6 +104,8 @@ namespace Forge
 		void Bind() const;
 		void Unbind() const;
 		void SetSize(uint32_t width, uint32_t height);
+		void ClearAttachment(int index, int value);
+		int ReadPixel(int index, int x, int y);
 
 		friend class RenderTexture;
 

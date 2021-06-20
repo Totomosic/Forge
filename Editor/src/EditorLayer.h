@@ -2,6 +2,7 @@
 #include "Forge.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/AssetBrowserPanel.h"
+#include "Panels/LibraryBrowserPanel.h"
 
 #include <imgui.h>
 #include <ImGuizmo.h>
@@ -15,17 +16,22 @@ namespace Editor
 	{
 	private:
 		Forge::Application* m_Application;
+		Forge::Scene* m_Scene;
 		Forge::Ref<Forge::RenderTexture> m_SceneTexture;
 
 		SceneHierarchyPanel m_SceneHierarchy;
 		AssetBrowserPanel m_AssetBrowser;
+		LibraryBrowserPanel m_LibraryBrowser;
 
 		bool m_ViewportFocused = false;
 		bool m_ViewportHovered = false;
+		glm::vec2 m_ViewportBounds[2];
 		glm::vec2 m_ViewportSize;
 
 		Forge::Entity m_Camera;
 		ImGuizmo::OPERATION m_GuizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+
+		Forge::Timestep m_Timestep;
 
 	public:
 		EditorLayer() = default;

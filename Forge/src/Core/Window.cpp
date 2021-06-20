@@ -12,6 +12,16 @@ namespace Forge
 		InitFromProps(props);
 	}
 
+	void Window::EnableVSync()
+	{
+		glfwSwapInterval(1);
+	}
+
+	void Window::DisableVSync()
+	{
+		glfwSwapInterval(0);
+	}
+
 	void Window::Update()
 	{
 		glfwPollEvents();

@@ -18,12 +18,15 @@ namespace Forge
 	Material::Material(const MaterialShaderSet& shaders)
 		: m_Shaders({ shaders.ShadowFormationShader, shaders.WithShadowShader, shaders.WithoutShadowShader, shaders.PickShader }), m_Uniforms()
 	{
-		m_Uniforms.CreateFromDescriptors(shaders.WithShadowShader->GetUniformDescriptors());
+		m_Uniforms.AddFromDescriptors(RenderPass::ShadowFormation, GetShader(RenderPass::ShadowFormation)->GetUniformDescriptors());
+		m_Uniforms.AddFromDescriptors(RenderPass::WithShadow, GetShader(RenderPass::WithShadow)->GetUniformDescriptors());
+		m_Uniforms.AddFromDescriptors(RenderPass::WithoutShadow, GetShader(RenderPass::WithoutShadow)->GetUniformDescriptors());
+		m_Uniforms.AddFromDescriptors(RenderPass::Pick, GetShader(RenderPass::Pick)->GetUniformDescriptors());
 	}
 
 	void Material::Apply(RenderPass pass, RendererContext& context) const
 	{
-		m_Uniforms.Apply(GetShader(pass), context);
+		m_Uniforms.Apply(pass, GetShader(pass), context);
 	}
 
 	Ref<Material> Material::CreateFromShaderSource(const std::string& vertexSource, const std::string& fragmentSource, ShaderDefines defines)
@@ -67,9 +70,9 @@ namespace Forge
 		return CreateRef<Material>(MaterialShaderSet{ shadowFormationShader, shadowShader, withoutShadowShader, GraphicsCache::DefaultPickShader() });
 	}
 
-	Ref<Material> Material::Create(const Ref<Shader>& shader)
+	Ref<Material> Material::Create(const Ref<Shader>& shader, const Ref<Shader>& shadowShader)
 	{
-		return CreateRef<Material>(MaterialShaderSet{ GraphicsCache::DefaultPointShadowShader(), shader, shader, GraphicsCache::DefaultPickShader() });
+		return CreateRef<Material>(MaterialShaderSet{ GraphicsCache::DefaultPointShadowShader(), shadowShader ? shadowShader : shader, shader, GraphicsCache::DefaultPickShader() });
 	}
 
 }

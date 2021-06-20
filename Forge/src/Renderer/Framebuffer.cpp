@@ -59,9 +59,29 @@ namespace Forge
 
     void Framebuffer::SetSize(uint32_t width, uint32_t height)
     {
-        FORGE_ASSERT(m_Handle.Id == 0, "Not implemented");
         m_Props.Width = width;
         m_Props.Height = height;
+        if (m_Handle.Id != 0)
+        {
+            Invalidate();
+        }
+    }
+
+    void Framebuffer::ClearAttachment(int index, int value)
+    {
+        FORGE_ASSERT(index >= 0 && index < m_ColorAttachmentSpecifications.size(), "Invalid attachment index");
+        FramebufferTextureSpecification& specification = m_ColorAttachmentSpecifications[index];
+        glClearTexImage(m_ColorAttachments[index]->GetId(), 0, FramebufferTextureFormatToOpenGL(specification.TextureFormat), GL_INT, &value);
+    }
+
+    int Framebuffer::ReadPixel(int index, int x, int y)
+    {
+        FORGE_ASSERT(index >= 0 && index < m_ColorAttachmentSpecifications.size(), "Invalid attachment index");
+        Bind();
+        glReadBuffer(GL_COLOR_ATTACHMENT0 + index);
+        int pixelData;
+        glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
+        return pixelData;
     }
 
     Ref<Framebuffer> Framebuffer::Create(const FramebufferProps& props)

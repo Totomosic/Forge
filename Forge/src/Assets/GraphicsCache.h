@@ -1,4 +1,5 @@
 #pragma once
+#pragma warning(disable : 26812)
 #include "Renderer/Model.h"
 #include "Renderer/Texture.h"
 
@@ -13,10 +14,17 @@ namespace Forge
 
 	FORGE_API enum class AssetLocationType
 	{
+		None,
 		Texture2D,
 		TextureCube,
 		Mesh,
 		Shader,
+	};
+
+	FORGE_API enum AssetFlags : uint8_t
+	{
+		AssetFlags_None = 0,
+		AssetFlags_ShaderShadows = 1 << 0,
 	};
 
 	struct FORGE_API AssetLocation
@@ -24,18 +32,37 @@ namespace Forge
 	public:
 		std::string Path;
 		AssetLocationSource Source;
+		AssetFlags Flags = AssetFlags_None;
 		AssetLocationType Type = AssetLocationType::Texture2D;
 	};
 
 	inline bool operator==(const AssetLocation& left, const AssetLocation& right)
 	{
-		return left.Source == right.Source && left.Type == right.Type && left.Path == right.Path;
+		return left.Source == right.Source && left.Type == right.Type && left.Flags == right.Flags && left.Path == right.Path;
 	}
 
 	inline bool operator!=(const AssetLocation& left, const AssetLocation& right)
 	{
 		return !(left == right);
 	}
+
+	extern const AssetLocation DefaultColorShaderAssetLocation;
+	extern const AssetLocation DefaultTextureShaderAssetLocation;
+	extern const AssetLocation LitColorNoShadowShaderAssetLocation;
+	extern const AssetLocation LitColorShaderAssetLocation;
+	extern const AssetLocation LitTextureNoShadowShaderAssetLocation;
+	extern const AssetLocation LitTextureShaderAssetLocation;
+	extern const AssetLocation DefaultShadowShaderAssetLocation;
+	extern const AssetLocation DefaultPointShadowShaderAssetLocation;
+	extern const AssetLocation DefaultPickShaderAssetLocation;
+
+	extern const AssetLocation SquareMeshAssetLocation;
+	extern const AssetLocation CubeMeshAssetLocation;
+	extern const AssetLocation SphereMeshAssetLocation;
+
+	extern const AssetLocation WhiteTextureAssetLocation;
+
+	AssetLocation GetGridMeshAssetLocation(int xVertices, int zVertices);
 
 	class FORGE_API GraphicsCache
 	{
@@ -53,6 +80,8 @@ namespace Forge
 		static Ref<Mesh> s_SquareMesh;
 		static Ref<Mesh> s_CubeMesh;
 		static Ref<Mesh> s_SphereMesh;
+
+		static Ref<Texture2D> s_WhiteTexture;
 
 		static std::unordered_map<AssetLocation, std::weak_ptr<Shader>> s_Shaders;
 		static std::unordered_map<AssetLocation, std::weak_ptr<Mesh>> s_Meshes;
@@ -75,6 +104,8 @@ namespace Forge
 			if constexpr (std::is_same_v<T, Texture2D>)
 			{
 				FORGE_ASSERT(location.Type == AssetLocationType::Texture2D, "Invalid location");
+				if (location.Source == AssetLocationSource::Generated)
+					HandleGeneratedTexture2D(location);
 				auto it = s_Texture2Ds.find(location);
 				if (it != s_Texture2Ds.end())
 					return it->second.lock();
@@ -92,7 +123,12 @@ namespace Forge
 			{
 				FORGE_ASSERT(location.Type == AssetLocationType::Mesh, "Invalid location");
 				if (location.Source == AssetLocationSource::Generated)
-					HandleGeneratedMesh(location);
+				{
+					// Some generated meshes are not cached - just return them here
+					Ref<Mesh> result = HandleGeneratedMesh(location);
+					if (result)
+						return result;
+				}
 				auto it = s_Meshes.find(location);
 				if (it != s_Meshes.end())
 					return it->second.lock();
@@ -110,17 +146,18 @@ namespace Forge
 			}
 		}
 
-		static Ref<Texture2D> LoadTexture2D(const std::string& filename);
+		static Ref<Texture2D> LoadTexture2D(const std::string& filename, AssetFlags flags = AssetFlags_None);
 		static Ref<TextureCube> LoadTextureCube(
 			const std::string& front,
 			const std::string& back,
 			const std::string& left,
 			const std::string& right,
 			const std::string& bottom,
-			const std::string& top
+			const std::string& top,
+			AssetFlags flags = AssetFlags_None
 		);
-		static Ref<Mesh> LoadMesh(const std::string& filename);
-		static Ref<Shader> LoadShader(const std::string& filename);
+		static Ref<Mesh> LoadMesh(const std::string& filename, AssetFlags flags = AssetFlags_None);
+		static Ref<Shader> LoadShader(const std::string& filename, AssetFlags flags = AssetFlags_None);
 
 		// Meshes
 		inline static Ref<Mesh> SquareMesh() { CreateSquareMesh(); return s_SquareMesh; }
@@ -148,6 +185,9 @@ namespace Forge
 		inline static Ref<Shader> DefaultPointShadowShader() { CreateDefaultPointShadowShader(); return s_DefaultPointShadowShader; }
 		inline static Ref<Shader> DefaultPickShader() { CreateDefaultPickShader(); return s_DefaultPickShader; }
 
+		// Textures
+		inline static Ref<Texture2D> WhiteTexture() { CreateWhiteTexture(); return s_WhiteTexture; }
+
 		// Models
 		inline static Ref<Model> SquareModel(float width, float height, const Ref<Material>& material)
 		{
@@ -171,8 +211,11 @@ namespace Forge
 		static void CreateCubeMesh();
 		static void CreateSphereMesh();
 
+		static void CreateWhiteTexture();
+
 		static void HandleGeneratedShader(const AssetLocation& location);
-		static void HandleGeneratedMesh(const AssetLocation& location);
+		static void HandleGeneratedTexture2D(const AssetLocation& location);
+		static Ref<Mesh> HandleGeneratedMesh(const AssetLocation& location);
 
 		template<typename T>
 		static void RegisterNewAsset(AssetLocation location, const Ref<T>& asset, std::unordered_map<AssetLocation, std::weak_ptr<T>>& map)

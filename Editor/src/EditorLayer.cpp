@@ -10,14 +10,16 @@ namespace Editor
 		float width = app.GetWindow().GetWidth();
 		float height = app.GetWindow().GetHeight();
 
+		m_Application->GetWindow().DisableVSync();
+
 		m_SceneTexture = RenderTexture::Create(1920, 1080);
 
 		Scene& scene = app.CreateScene();
+		m_Scene = &scene;
 		m_Camera = scene.CreateCamera(Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 1000.0f));
 		m_Camera.GetComponent<CameraComponent>().RenderTarget = *m_SceneTexture;
 		m_Camera.GetComponent<CameraComponent>().LayerMask &= ~FORGE_LAYERS(UI_LAYER);
 		m_Camera.GetComponent<CameraComponent>().Viewport = m_SceneTexture->GetFramebuffer()->GetViewport();
-		// m_Camera.GetComponent<CameraComponent>().ClearColor = COLOR_RED;
 
 		m_Camera.GetTransform().SetPosition({ 0, 5, 5 });
 		m_Camera.GetTransform().Rotate(-PI / 4.0f, { 1, 0, 0 });
@@ -25,7 +27,7 @@ namespace Editor
 		Entity groundPlane = scene.CreateEntity("Ground");
 		groundPlane.AddComponent<ModelRendererComponent>(
 			Model::Create(
-				GraphicsCache::GridMesh(2, 2),
+				GraphicsCache::GridMesh(400, 400),
 				GraphicsCache::LitColorMaterial(COLOR_WHITE)
 			)
 		);
@@ -46,6 +48,27 @@ namespace Editor
 				m_SceneHierarchy.SetSelectedEntity({});
 			return false;
 		});
+
+		Input::OnMouseClicked.AddEventListener([&](MouseButton button)
+		{
+			if (button == MouseButton::Left && m_ViewportFocused)
+			{
+				ImVec2 position = ImGui::GetMousePos();
+				position.x -= m_ViewportBounds[0].x;
+				position.y -= m_ViewportBounds[0].y;
+				glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+				position.y = viewportSize.y - position.y;
+				if (position.x >= 0 && position.x < viewportSize.x && position.y >= 0 && position.y < viewportSize.y)
+				{
+					Viewport cameraViewport = m_Camera.GetComponent<CameraComponent>().Viewport;
+					position.x = position.x * cameraViewport.Width / viewportSize.x;
+					position.y = position.y * cameraViewport.Height / viewportSize.y;
+					Entity pickedEntity = m_Scene->PickEntity({ position.x, position.y }, m_Camera);
+					m_SceneHierarchy.SetSelectedEntity(pickedEntity);
+				}
+			}
+			return false;
+		});
 	}
 
 	void EditorLayer::OnDetach()
@@ -55,6 +78,7 @@ namespace Editor
 
 	void EditorLayer::OnUpdate(Forge::Timestep ts)
 	{
+		m_Timestep = ts;
 		if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f)
 		{
 			m_Camera.GetComponent<CameraComponent>().Frustum = Frustum::Perspective(PI / 3.0f, m_ViewportSize.x / m_ViewportSize.y, 0.01f, 1000.0f);
@@ -168,6 +192,12 @@ namespace Editor
 
 		m_SceneHierarchy.OnImGuiRender();
 		m_AssetBrowser.OnImGuiRender();
+		m_LibraryBrowser.OnImGuiRender();
+
+		ImGui::Begin("Stats");
+		ImGui::Text("Frame time: %.3f", m_Timestep.Milliseconds());
+		ImGui::Text("Draw calls: %i", m_Application->GetRenderer().GetStats().DrawCount);
+		ImGui::End();
 
 		ImGui::Begin("Scene");
 
@@ -176,9 +206,8 @@ namespace Editor
 		ImVec2 viewportMin = ImGui::GetWindowContentRegionMin();
 		ImVec2 viewportMax = ImGui::GetWindowContentRegionMax();
 		ImVec2 viewportOffset = ImGui::GetWindowPos();
-		glm::vec2 viewportBounds[2];
-		viewportBounds[0] = { viewportMin.x + viewportOffset.x, viewportMin.y + viewportOffset.y };
-		viewportBounds[1] = { viewportMax.x + viewportOffset.x, viewportMax.y + viewportOffset.y };
+		m_ViewportBounds[0] = { viewportMin.x + viewportOffset.x, viewportMin.y + viewportOffset.y };
+		m_ViewportBounds[1] = { viewportMax.x + viewportOffset.x, viewportMax.y + viewportOffset.y };
 
 		ImVec2 sceneSize = ImGui::GetContentRegionAvail();
 		m_ViewportSize = { sceneSize.x, sceneSize.y };
@@ -190,7 +219,7 @@ namespace Editor
 			ImGuizmo::SetOrthographic(false);
 			ImGuizmo::SetDrawlist();
 
-			ImGuizmo::SetRect(viewportBounds[0].x, viewportBounds[0].y, viewportBounds[1].x - viewportBounds[0].x, viewportBounds[1].y - viewportBounds[0].y);
+			ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y, m_ViewportBounds[1].x - m_ViewportBounds[0].x, m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
 			const glm::mat4& projection = m_Camera.GetComponent<CameraComponent>().Frustum.ProjectionMatrix;
 			glm::mat4 viewMatrix = m_Camera.GetTransform().GetInverseMatrix();

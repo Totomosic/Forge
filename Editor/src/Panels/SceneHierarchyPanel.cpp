@@ -223,38 +223,12 @@ namespace Editor
 				std::string filename = (char*)payload->Data;
 				texture = GraphicsCache::LoadTexture2D(filename);
 			}
-			ImGui::EndDragDropTarget();
-		}
-
-		ImGui::PopStyleVar();
-
-		ImGui::Columns(1);
-		ImGui::PopID();
-	}
-
-	static void DrawModelControl(const std::string& name, Ref<Model>& model, float resetValue = 0.0f, float columnWidth = 100.0f)
-	{
-		ImGui::PushID(name.c_str());
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, columnWidth);
-		ImGui::Text(name.c_str());
-		ImGui::NextColumn();
-
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 2 });
-		char buffer[255]{};
-		if (model && model->GetSubModels().size() > 0 && model->GetSubModels()[0].Mesh)
-		{
-			std::string name = GraphicsCache::GetAssetLocation(model->GetSubModels()[0].Mesh).Path;
-			std::memcpy(buffer, name.c_str(), name.size() + 1);
-		}
-		ImGui::InputText("##Value", buffer, sizeof(buffer));
-		if (ImGui::BeginDragDropTarget())
-		{
-			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PATH");
-			if (payload)
+			const ImGuiPayload* assetLocationPayload = ImGui::AcceptDragDropPayload("TEXTURE_ASSET_LOCATION_POINTER");
+			if (assetLocationPayload)
 			{
-				std::string filename = (char*)payload->Data;
-				model = Model::Create(GraphicsCache::LoadMesh(filename), GraphicsCache::LitColorMaterial(COLOR_WHITE));
+				const AssetLocation* location = *(const AssetLocation**)assetLocationPayload->Data;
+				Ref<Texture2D> tex = GraphicsCache::GetAsset<Texture2D>(*location);
+				texture = tex;
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -531,11 +505,22 @@ namespace Editor
 		{
 			DrawColorControl("Color", light.Color);
 			DrawFloatControl("Ambient", light.Ambient);
+			bool shadows = light.Shadows.Enabled;
+			DrawBooleanControl("Cast shadows", shadows);
+			if (shadows != light.Shadows.Enabled)
+			{
+				if (shadows)
+					light.CreateShadowPass(4096, 4096);
+				else
+				{
+					light.Shadows.Enabled = false;
+					light.Shadows.RenderTarget = nullptr;
+				}
+			}
 		});
 
 		DrawComponent<ModelRendererComponent>("Model renderer", entity, true, [](ModelRendererComponent& modelRenderer)
 		{
-			DrawModelControl("Model", modelRenderer.Model);
 			int index = 0;
 			for (Model::SubModel& submodel : modelRenderer.Model->GetSubModels())
 			{
@@ -566,7 +551,28 @@ namespace Editor
 
 					transform = glm::translate(glm::mat4(1.0f), position) * glm::toMat4(glm::quat(glm::radians(rotation))) * glm::scale(glm::mat4(1.0f), scale);
 				};
-				DrawTreeNode("Mesh " + std::to_string(index + 1), options);
+				options.DragDropCallback = [&]()
+				{
+					const ImGuiPayload* pathPayload = ImGui::AcceptDragDropPayload("PATH");
+					if (pathPayload)
+					{
+						std::string filename = (char*)pathPayload->Data;
+						Ref<Mesh> mesh = GraphicsCache::LoadMesh(filename);
+						submodel.Mesh = mesh;
+					}
+					const ImGuiPayload* assetLocationPayload = ImGui::AcceptDragDropPayload("MESH_ASSET_LOCATION_POINTER");
+					if (assetLocationPayload)
+					{
+						const AssetLocation* location = *(const AssetLocation**)assetLocationPayload->Data;
+						Ref<Mesh> mesh = GraphicsCache::GetAsset<Mesh>(*location);
+						submodel.Mesh = mesh;
+					}
+				};
+				if (submodel.Mesh)
+				{
+					std::string meshFilename = GraphicsCache::GetAssetLocation(submodel.Mesh).Path;
+					DrawTreeNode("Mesh " + std::to_string(index + 1) + " (" + meshFilename + ")", options);
+				}
 				TreeNodeOptions materialOptions;
 				materialOptions.IncludeSeparator = false;
 				materialOptions.Callback = [&]()
@@ -602,31 +608,34 @@ namespace Editor
 				};
 				materialOptions.DragDropCallback = [&]()
 				{
-					const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PATH");
-					if (payload)
+					const ImGuiPayload* pathPayload = ImGui::AcceptDragDropPayload("PATH");
+					if (pathPayload)
 					{
-						std::string filename = (char*)payload->Data;
-						submodel.Material = Material::Create(GraphicsCache::LoadShader(filename));
+						std::string filename = (char*)pathPayload->Data;
+						Ref<Shader> withoutShadows = GraphicsCache::LoadShader(filename);
+						Ref<Shader> withShadows = GraphicsCache::LoadShader(filename, AssetFlags_ShaderShadows);
+						submodel.Material = Material::Create(withoutShadows, withShadows);
+					}
+					const ImGuiPayload* assetLocationPayload = ImGui::AcceptDragDropPayload("SHADER_ASSET_LOCATION_POINTER");
+					if (assetLocationPayload)
+					{
+						const AssetLocation* location = *(const AssetLocation**)assetLocationPayload->Data;
+						Ref<Shader> withShadows = GraphicsCache::GetAsset<Shader>(*location);
+						submodel.Material = Material::Create(withShadows, withShadows);
 					}
 				};
-				std::string shaderFilename = GraphicsCache::GetAssetLocation(submodel.Material->GetShader(RenderPass::WithShadow)).Path;
-				DrawTreeNode("Material " + std::to_string(index + 1) + " (" + shaderFilename + ")", materialOptions);
+				if (submodel.Material)
+				{
+					std::string shaderFilename = GraphicsCache::GetAssetLocation(submodel.Material->GetShader(RenderPass::WithShadow)).Path;
+					DrawTreeNode("Material " + std::to_string(index + 1) + " (" + shaderFilename + ")", materialOptions);
+				}
 				index++;
 			}
 		});
 
 		DrawComponent<CameraComponent>("Camera", entity, true, [](CameraComponent& camera)
 		{
-			bool shadows = camera.Shadows.Enabled;
 			DrawColorControl("Clear Color", camera.ClearColor);
-			DrawBooleanControl("Shadows", shadows);
-			if (shadows != camera.Shadows.Enabled)
-			{
-				if (shadows)
-					camera.CreateShadowPass(4096, 4096);
-				else
-					camera.Shadows.Enabled = false;
-			}
 		});
 	}
 

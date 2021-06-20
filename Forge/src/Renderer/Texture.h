@@ -109,6 +109,7 @@ namespace Forge
 	public:
 		static Ref<Texture2D> Create(uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
 		static Ref<Texture2D> Create(const std::string& filename);
+		static Ref<Texture2D> Create(uint32_t width, uint32_t height, const uint8_t* pixels);
 
 	private:
 		void Init(const void* data);

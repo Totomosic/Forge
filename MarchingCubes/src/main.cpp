@@ -57,6 +57,8 @@ int main()
 	camera.GetComponent<CameraComponent>().Priority = 1;
 	camera.GetComponent<CameraComponent>().Viewport = { 0, 0, screen->GetWidth(), screen->GetHeight() };
 
+	// skyboxMaterial->GetUniforms().SetUniform("u_Texture", camera.GetComponent<CameraComponent>().Shadows.RenderTarget->GetDepthAttachment());
+
 	Entity screenCamera = scene.CreateCamera(Frustum::Orthographic(-0.5f, 0.5f, -0.5f, 0.5f));
 	screenCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(UI_LAYER);
 

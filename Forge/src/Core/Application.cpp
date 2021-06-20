@@ -28,7 +28,7 @@ namespace Forge
 
     Scene& Application::CreateScene()
     {
-        Scope<Scene> scene = CreateScope<Scene>(m_Window.GetFramebuffer());
+        Scope<Scene> scene = CreateScope<Scene>(m_Window.GetFramebuffer(), &m_Renderer);
         Scene& ref = *scene;
         m_Scenes.push_back(std::move(scene));
         return ref;
@@ -44,7 +44,7 @@ namespace Forge
         }
         for (const Scope<Scene>& scene : m_Scenes)
         {
-            scene->OnUpdate(ts, m_Renderer);
+            scene->OnUpdate(ts);
         }
         if (m_ImGuiLayer)
         {
