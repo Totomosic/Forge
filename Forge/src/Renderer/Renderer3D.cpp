@@ -64,10 +64,12 @@ namespace Forge
 			if (!m_ShadowPasses.empty())
 			{
 				m_CurrentRenderPass = RenderPass::ShadowFormation;
+				m_CurrentShadowIndex = 0;
 				for (const ShadowPass& pass : m_ShadowPasses)
 				{
 					ShadowRenderData data = RenderShadowScene(pass);
 					m_Context.AddShadowData(std::move(data));
+					m_CurrentShadowIndex++;
 				}
 				m_CurrentRenderPass = RenderPass::WithShadow;
 				SetupScene(m_CurrentScene);
@@ -168,7 +170,7 @@ namespace Forge
 
 	void Renderer3D::RenderModelInternal(const RenderData& data)
 	{
-		if (m_CurrentRenderPass == RenderPass::ShadowFormation && !data.Options.CreatesShadow)
+		if (m_CurrentRenderPass == RenderPass::ShadowFormation && !data.Options.ShadowMask.test(m_CurrentShadowIndex))
 			return;
 		const Ref<Model>& model = data.Model;
 		const glm::mat4& transform = data.Transform;
@@ -181,7 +183,8 @@ namespace Forge
 			if (m_CurrentRenderPass == RenderPass::ShadowFormation)
 			{
 				RenderSettings settings = submodel.Material->GetSettings();
-				settings.Culling = CullFace::Front;
+				if (settings.Culling != CullFace::None)
+					settings.Culling = CullFace::Front;
 				m_Context.ApplyRenderSettings(settings);
 			}
 			else

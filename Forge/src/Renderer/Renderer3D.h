@@ -17,7 +17,7 @@ namespace Forge
 	struct FORGE_API RenderOptions
 	{
 	public:
-		bool CreatesShadow = true;
+		std::bitset<MAX_LIGHT_COUNT> ShadowMask;
 		int EntityId;
 	};
 
@@ -52,6 +52,7 @@ namespace Forge
 		std::vector<ShadowPass> m_ShadowPasses;
 		std::vector<RenderData> m_Renderables;
 		bool m_RenderImGui;
+		int m_CurrentShadowIndex;
 		RenderPass m_CurrentRenderPass;
 
 		RendererContext m_Context;

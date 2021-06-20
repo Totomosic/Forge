@@ -123,6 +123,7 @@ namespace Forge
     {
         static std::vector<LightSource> s_LightSources;
         static std::vector<Ref<Framebuffer>> s_LightSourceShadowFramebuffers;
+        static std::vector<uint64_t> s_LightSourceShadowLayerMasks;
 
         m_Time += ts.Seconds();
 
@@ -176,6 +177,7 @@ namespace Forge
 
             s_LightSources.clear();
             s_LightSourceShadowFramebuffers.clear();
+            s_LightSourceShadowLayerMasks.clear();
             for (auto entity : m_Registry.view<TransformComponent, LightSourceComponent, EnabledFlag>())
             {
                 if (CheckLayerMask(entity, cameraComponent.LayerMask))
@@ -190,6 +192,7 @@ namespace Forge
                     source.Type = light.Type;
                     s_LightSources.push_back(source);
                     s_LightSourceShadowFramebuffers.push_back(light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr);
+                    s_LightSourceShadowLayerMasks.push_back(light.Shadows.LayerMask);
                 }
             }
 
@@ -208,7 +211,9 @@ namespace Forge
                 {
                     auto [transform, model] = m_Registry.get<TransformComponent, ModelRendererComponent>(entity);
                     RenderOptions options;
-                    options.CreatesShadow = true;
+                    options.ShadowMask = 0;
+                    for (int i = 0; i < s_LightSourceShadowLayerMasks.size(); i++)
+                        options.ShadowMask.set(i, CheckLayerMask(entity, s_LightSourceShadowLayerMasks[i]));
                     m_Renderer->RenderModel(model.Model, transform.GetMatrix(), options);
                 }
             }

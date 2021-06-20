@@ -50,14 +50,10 @@ int main()
 	Entity camera = scene.CreateCamera(Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.01f, 50.0f));
 	camera.GetComponent<TransformComponent>().SetPosition({ 0, 2, 10 });
 	camera.GetComponent<CameraComponent>().ClearColor = SKY_BLUE;
-	camera.GetComponent<CameraComponent>().CreateShadowPass(4096, 4096);
-	camera.GetComponent<CameraComponent>().Shadows.LayerMask = FORGE_LAYERS(DEFAULT_LAYER);
 	camera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(DEFAULT_LAYER, WATER_LAYER, SKYBOX_LAYER);
 	camera.GetComponent<CameraComponent>().RenderTarget = *screen;
 	camera.GetComponent<CameraComponent>().Priority = 1;
 	camera.GetComponent<CameraComponent>().Viewport = { 0, 0, screen->GetWidth(), screen->GetHeight() };
-
-	// skyboxMaterial->GetUniforms().SetUniform("u_Texture", camera.GetComponent<CameraComponent>().Shadows.RenderTarget->GetDepthAttachment());
 
 	Entity screenCamera = scene.CreateCamera(Frustum::Orthographic(-0.5f, 0.5f, -0.5f, 0.5f));
 	screenCamera.GetComponent<CameraComponent>().LayerMask = FORGE_LAYERS(UI_LAYER);
@@ -77,7 +73,11 @@ int main()
 	sun.GetTransform().SetPosition({ 30, 20, 0 });
 	sun.AddComponent<LightSourceComponent>();
 	sun.GetComponent<LightSourceComponent>().Ambient = 0.3f;
+	sun.GetComponent<LightSourceComponent>().CreateShadowPass(4096, 4096);
+	sun.GetComponent<LightSourceComponent>().Shadows.LayerMask = FORGE_LAYERS(DEFAULT_LAYER);
 	scene.AddToAllLayers(sun);
+
+	// skyboxMaterial->GetUniforms().SetUniform("u_Texture", sun.GetComponent<LightSourceComponent>().Shadows.RenderTarget->GetDepthAttachment());
 
 	Terrain terrain({ -100, -1450, 300 }, -10.0f);
 	Ref<Mesh> mesh = terrain.GenerateMesh({ 20, 20, 20 }, { 200, 200, 200 }, 2.0f);
@@ -90,6 +90,7 @@ int main()
 	water.AddComponent<ModelRendererComponent>(Model::Create(waterMesh, waterMaterial));
 	water.GetTransform().SetScale({ 20.0f, 1.0f, 20.0f });
 	water.GetTransform().SetPosition({ 0, 0, 0 });
+	water.GetComponent<ModelRendererComponent>().Model->GetSubModels()[0].Material->GetSettings().Culling = CullFace::None;
 
 	Entity terrainEntity = scene.CreateEntity(DEFAULT_LAYER);
 	terrainEntity.AddComponent<ModelRendererComponent>(model);
