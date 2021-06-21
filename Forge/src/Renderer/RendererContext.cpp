@@ -24,6 +24,11 @@ namespace Forge
 	void RendererContext::SetLightSources(const std::vector<LightSource>& lights)
 	{
 		m_LightSources = lights;
+		for (LightSource& light : m_LightSources)
+		{
+			if (light.ShadowFramebuffer)
+				light.ShadowBindLocation = BindTexture(light.ShadowFramebuffer->GetDepthAttachment());
+		}
 	}
 
 	void RendererContext::AddLightSource(const LightSource& light)
@@ -47,21 +52,15 @@ namespace Forge
 		std::memcpy(m_ShadowPointMatrices, matrices, sizeof(glm::mat4) * 6);
 	}
 
-	void RendererContext::AddShadowData(ShadowRenderData data)
-	{
-		data.BindLocation = BindTexture(data.ShadowMap);
-		m_ShadowData.push_back(std::move(data));
-	}
-
 	void RendererContext::NewScene()
 	{
 		m_LightSources.clear();
+		m_CurrentShader = nullptr;
 	}
 
 	void RendererContext::Reset()
 	{
 		m_CurrentShader = nullptr;
-		m_ShadowData.clear();
 		m_NextTextureSlot = 0;
 	}
 
@@ -84,8 +83,6 @@ namespace Forge
 		requirements.Time = shader->UniformExists(TimeUniformName);
 		requirements.ShadowFormationLightPosition = shader->UniformExists(ShadowFormationLightPositionUniformName);
 		requirements.PointShadowMatrices = shader->UniformExists(PointShadowMatricesArrayUniformName0);
-		requirements.ShadowMap = shader->UniformExists(ShadowMapUniformName);
-		requirements.ShadowLightPosition = shader->UniformExists(ShadowLightPositionUniformName);
 		m_RequirementsMap[shader.get()] = requirements;
 		return requirements;
 	}
@@ -137,13 +134,20 @@ namespace Forge
 				shader->SetUniform(UsedLightSourcesUniformName, int(m_LightSources.size()));
 				for (size_t i = 0; i < m_LightSources.size(); i++)
 				{
+					glm::vec4 color = { m_LightSources[i].Color.r, m_LightSources[i].Color.g, m_LightSources[i].Color.b, m_LightSources[i].Color.a };
 					std::string uniformBase = std::string(LightSourceArrayBase) + "[" + std::to_string(i) + "]";
 					shader->SetUniform(uniformBase + ".Type", int(m_LightSources[i].Type));
 					shader->SetUniform(uniformBase + ".Position", m_LightSources[i].Position);
 					shader->SetUniform(uniformBase + ".Direction", m_LightSources[i].Direction);
 					shader->SetUniform(uniformBase + ".Attenuation", m_LightSources[i].Attenuation);
-					shader->SetUniform(uniformBase + ".Color", m_LightSources[i].Color);
+					shader->SetUniform(uniformBase + ".Color", color);
 					shader->SetUniform(uniformBase + ".Ambient", m_LightSources[i].Ambient);
+					shader->SetUniform(uniformBase + ".Intensity", m_LightSources[i].Intensity);
+					shader->SetUniform(uniformBase + ".UseShadows", m_LightSources[i].ShadowFramebuffer != nullptr);
+					if (m_LightSources[i].ShadowFramebuffer)
+					{
+						shader->SetUniform(uniformBase + ".ShadowMap", m_LightSources[i].ShadowBindLocation);
+					}
 				}
 			}
 			if (requirements.ClippingPlanes)
@@ -169,17 +173,6 @@ namespace Forge
 			if (requirements.ShadowFormationLightPosition)
 			{
 				shader->SetUniform(ShadowFormationLightPositionUniformName, m_CurrentShadowLightPosition);
-			}
-			if (!m_ShadowData.empty())
-			{
-				if (requirements.ShadowMap)
-				{
-					shader->SetUniform(ShadowMapUniformName, m_ShadowData[0].BindLocation);
-				}
-				if (requirements.ShadowLightPosition)
-				{
-					shader->SetUniform(ShadowLightPositionUniformName, m_ShadowData[0].LightPosition);
-				}
 			}
 		}
 	}

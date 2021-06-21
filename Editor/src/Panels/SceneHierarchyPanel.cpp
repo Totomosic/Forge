@@ -504,7 +504,9 @@ namespace Editor
 		DrawComponent<LightSourceComponent>("Light source", entity, true, [](LightSourceComponent& light)
 		{
 			DrawColorControl("Color", light.Color);
+			DrawFloatControl("Intensity", light.Intensity);
 			DrawFloatControl("Ambient", light.Ambient);
+			DrawVec3Control("Attenuation", light.Attenuation);
 			bool shadows = light.Shadows.Enabled;
 			DrawBooleanControl("Cast shadows", shadows);
 			if (shadows != light.Shadows.Enabled)

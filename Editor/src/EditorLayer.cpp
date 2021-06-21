@@ -10,7 +10,7 @@ namespace Editor
 		float width = app.GetWindow().GetWidth();
 		float height = app.GetWindow().GetHeight();
 
-		m_Application->GetWindow().DisableVSync();
+		m_Application->GetWindow().EnableVSync();
 
 		m_SceneTexture = RenderTexture::Create(1920, 1080);
 

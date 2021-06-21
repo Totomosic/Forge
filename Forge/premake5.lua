@@ -41,7 +41,7 @@ project "Forge"
     }
 
     filter "files:vendor/ImGuizmo/**.cpp"
-	flags { "NoPCH" }
+    flags { "NoPCH" }
 
     filter "system:windows"
         systemversion "latest"

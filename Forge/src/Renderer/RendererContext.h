@@ -34,8 +34,6 @@ namespace Forge
 	constexpr const char PointShadowMatricesArrayUniformName3[] = "frg_PointShadowMatrices[3]";
 	constexpr const char PointShadowMatricesArrayUniformName4[] = "frg_PointShadowMatrices[4]";
 	constexpr const char PointShadowMatricesArrayUniformName5[] = "frg_PointShadowMatrices[5]";
-	constexpr const char ShadowMapUniformName[] = "frg_ShadowMap";
-	constexpr const char ShadowLightPositionUniformName[] = "frg_LightPosition";
 	constexpr const char ShadowFormationLightPositionUniformName[] = "frg_ShadowLightPosition";
 
 	constexpr const char TimeUniformName[] = "frg_Time";
@@ -59,20 +57,8 @@ namespace Forge
 
 		bool ShadowFormationLightPosition;
 		bool PointShadowMatrices;
-		bool ShadowMap;
-		bool ShadowLightPosition;
 
 		bool Time;
-	};
-
-	struct FORGE_API ShadowRenderData
-	{
-	public:
-		Ref<Texture> ShadowMap;
-		glm::vec3 LightPosition;
-
-		// Set by RendererContext
-		int BindLocation;
 	};
 
 	class FORGE_API RendererContext
@@ -89,7 +75,6 @@ namespace Forge
 		glm::vec3 m_CurrentShadowLightPosition;
 
 		std::vector<LightSource> m_LightSources;
-		std::vector<ShadowRenderData> m_ShadowData;
 		std::vector<glm::vec4> m_ClippingPlanes;
 		int m_NextTextureSlot;
 
@@ -110,7 +95,6 @@ namespace Forge
 		void SetClippingPlanes(const std::vector<glm::vec4>& planes);
 		void SetTime(float time);
 		void SetShadowPointMatrices(const glm::vec3& lightPosition, const glm::mat4 matrices[6]);
-		void AddShadowData(ShadowRenderData data);
 		void NewScene();
 		void Reset();
 

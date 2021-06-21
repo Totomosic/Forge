@@ -14,7 +14,7 @@ namespace Forge
 {
 
 	Renderer3D::Renderer3D()
-		: m_CurrentScene(), m_CurrentRenderPass(), m_RenderImGui(false), m_Context(), m_ClearedFramebuffers()
+		: m_CurrentScene(), m_CurrentRenderPass(), m_RenderImGui(false), m_CurrentShadowLightIndex(0), m_Context(), m_ClearedFramebuffers()
 	{
 	}
 
@@ -23,11 +23,12 @@ namespace Forge
 		m_Context.SetTime(time);
 	}
 
-	void Renderer3D::AddShadowPass(const Ref<Framebuffer>& framebuffer, const glm::vec3& lightPosition)
+	void Renderer3D::AddShadowPass(const Ref<Framebuffer>& framebuffer, const glm::vec3& lightPosition, int index)
 	{
 		ShadowPass pass;
 		pass.Position = lightPosition;
 		pass.RenderTarget = framebuffer;
+		pass.LightIndex = index;
 		m_ShadowPasses.push_back(pass);
 	}
 
@@ -54,6 +55,14 @@ namespace Forge
 		m_ShadowPasses.clear();
 		m_RenderImGui = false;
 		m_CurrentRenderPass = RenderPass::ShadowFormation;
+
+		int index = 0;
+		for (const LightSource& light : m_CurrentScene.LightSources)
+		{
+			if (light.ShadowFramebuffer)
+				AddShadowPass(light.ShadowFramebuffer, light.Position, index);
+			index++;
+		}
 	}
 
 	void Renderer3D::EndScene()
@@ -64,12 +73,9 @@ namespace Forge
 			if (!m_ShadowPasses.empty())
 			{
 				m_CurrentRenderPass = RenderPass::ShadowFormation;
-				m_CurrentShadowIndex = 0;
 				for (const ShadowPass& pass : m_ShadowPasses)
 				{
-					ShadowRenderData data = RenderShadowScene(pass);
-					m_Context.AddShadowData(std::move(data));
-					m_CurrentShadowIndex++;
+					RenderShadowScene(pass);
 				}
 				m_CurrentRenderPass = RenderPass::WithShadow;
 				SetupScene(m_CurrentScene);
@@ -100,12 +106,8 @@ namespace Forge
 		m_Renderables.push_back({ model, transform, options });
 	}
 
-	ShadowRenderData Renderer3D::RenderShadowScene(const ShadowPass& pass)
+	void Renderer3D::RenderShadowScene(const ShadowPass& pass)
 	{
-		ShadowRenderData data;
-		data.LightPosition = pass.Position;
-		data.ShadowMap = pass.RenderTarget->GetDepthAttachment();
-
 		CameraData camera = m_CurrentScene.Camera;
 		camera.Viewport = { 0, 0, pass.RenderTarget->GetWidth(), pass.RenderTarget->GetHeight() };
 		SceneData shadowScene = {
@@ -113,13 +115,13 @@ namespace Forge
 			camera,
 		};
 
+		m_CurrentShadowLightIndex = pass.LightIndex;
+
 		glm::mat4 matrices[6];
 		GetCameraTransformsFromLightSource(pass.Position, pass.RenderTarget->GetAspect(), camera.Frustum, matrices);
 		m_Context.SetShadowPointMatrices(pass.Position, matrices);
 		SetupScene(shadowScene);
 		RenderAll();
-
-		return data;
 	}
 
 	void Renderer3D::SetupScene(const SceneData& data)
@@ -170,7 +172,7 @@ namespace Forge
 
 	void Renderer3D::RenderModelInternal(const RenderData& data)
 	{
-		if (m_CurrentRenderPass == RenderPass::ShadowFormation && !data.Options.ShadowMask.test(m_CurrentShadowIndex))
+		if (m_CurrentRenderPass == RenderPass::ShadowFormation && !data.Options.ShadowMask.test(m_CurrentShadowLightIndex))
 			return;
 		const Ref<Model>& model = data.Model;
 		const glm::mat4& transform = data.Transform;

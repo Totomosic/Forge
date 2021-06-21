@@ -72,7 +72,7 @@ int main()
 	Entity sun = scene.CreateEntity();
 	sun.GetTransform().SetPosition({ 30, 20, 0 });
 	sun.AddComponent<LightSourceComponent>();
-	sun.GetComponent<LightSourceComponent>().Ambient = 0.3f;
+	sun.GetComponent<LightSourceComponent>().Ambient = 0.15f;
 	sun.GetComponent<LightSourceComponent>().CreateShadowPass(4096, 4096);
 	sun.GetComponent<LightSourceComponent>().Shadows.LayerMask = FORGE_LAYERS(DEFAULT_LAYER);
 	scene.AddToAllLayers(sun);

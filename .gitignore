@@ -31,6 +31,8 @@ bin/
 bin-int/
 #Nuget packages folder
 packages/
+Forge/src/Assets/Shaders/*.h
+Forge/src/Renderer/Shaders/*.h
 *.pem
 Makefile
 !vendor/bin/

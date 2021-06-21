@@ -18,6 +18,7 @@ Currently supports both Windows and Linux, untested on MacOS and plans to suppor
 ## Installing:
 1. Download or clone this repository.
 2. If on windows run the `Scripts/Win-GenProjects.bat` script to generate the Visual Studio 2019 project and solution files.
+3. Run the `Tools/compile_engine_shaders.py` python script.
 
 ## Building on Windows:
 1. Run `Scripts/Win-GenProjects.bat` and build the Forge project using Visual Studio 2019.

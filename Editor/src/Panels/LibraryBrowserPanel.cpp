@@ -14,6 +14,7 @@ namespace Editor
 			DefaultTextureShaderAssetLocation,
 			LitColorShaderAssetLocation,
 			LitTextureShaderAssetLocation,
+			PbrColorShaderAssetLocation,
 		};
 		m_MeshAssets = {
 			SquareMeshAssetLocation,

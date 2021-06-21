@@ -17,6 +17,8 @@ namespace Forge
     const AssetLocation LitColorShaderAssetLocation = { "LitColor", AssetLocationSource::Generated, AssetFlags_ShaderShadows, AssetLocationType::Shader };
     const AssetLocation LitTextureNoShadowShaderAssetLocation = { "LitTexture", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
     const AssetLocation LitTextureShaderAssetLocation = { "LitTexture", AssetLocationSource::Generated, AssetFlags_ShaderShadows, AssetLocationType::Shader };
+    const AssetLocation PbrColorNoShadowShaderAssetLocation = { "PbrColor", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
+    const AssetLocation PbrColorShaderAssetLocation = { "PbrColor", AssetLocationSource::Generated, AssetFlags_ShaderShadows, AssetLocationType::Shader };
     const AssetLocation DefaultShadowShaderAssetLocation = { "DefaultShadow", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
     const AssetLocation DefaultPointShadowShaderAssetLocation = { "DefaultPointShadow", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
     const AssetLocation DefaultPickShaderAssetLocation = { "DefaultPick", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
@@ -38,6 +40,7 @@ namespace Forge
     Ref<Shader> GraphicsCache::s_DefaultTextureShader;
     Ref<Shader> GraphicsCache::s_LitColorShader[2];
     Ref<Shader> GraphicsCache::s_LitTextureShader[2];
+    Ref<Shader> GraphicsCache::s_PbrColorShader[2];
     Ref<Shader> GraphicsCache::s_DefaultShadowShader;
     Ref<Shader> GraphicsCache::s_DefaultPointShadowShader;
     Ref<Shader> GraphicsCache::s_DefaultPickShader;
@@ -172,36 +175,10 @@ namespace Forge
     {
         if (!s_DefaultColorShader)
         {
-            std::string vertexShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "#include \"Clipping.h\"\n"
-                "layout (location = 0) in vec3 v_Position;\n"
-                "\n"
-                "uniform mat4 frg_ModelMatrix;\n"
-                "uniform mat4 frg_ProjViewMatrix;\n"
-                "uniform vec4 frg_ClippingPlanes[MAX_CLIPPING_PLANES];\n"
-                "uniform int frg_UsedClippingPlanes;\n"
-                "\n"
-                "void main()\n"
-                "{\n"
-                "    vec4 worldPosition = frg_ModelMatrix * vec4(v_Position, 1.0);\n"
-                "    clipPlanes(worldPosition.xyz, frg_ClippingPlanes, frg_UsedClippingPlanes);\n"
-                "    gl_Position = frg_ProjViewMatrix * worldPosition;\n"
-                "}\n";
 
-            std::string fragmentShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "layout (location = 0) out vec4 f_FinalColor;\n"
-                "\n"
-                "[\"Color\"]\n"
-                "uniform vec4 u_Color;\n"
-                "\n"
-                "void main()\n"
-                "{\n"
-                "    f_FinalColor = u_Color;\n"
-                "}\n";
+#include "Shaders/LitColor.h"
 
-            s_DefaultColorShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+            s_DefaultColorShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "NO_LIGHTING" });
             RegisterNewAsset(DefaultColorShaderAssetLocation, s_DefaultColorShader, s_Shaders);
         }
     }
@@ -210,37 +187,10 @@ namespace Forge
     {
         if (!s_DefaultTextureShader)
         {
-            std::string vertexShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "layout (location = 0) in vec3 v_Position;\n"
-                "layout (location = 2) in vec2 v_TexCoord;\n"
-                "\n"
-                "uniform mat4 frg_ModelMatrix;\n"
-                "uniform mat4 frg_ProjViewMatrix;\n"
-                "\n"
-                "out vec2 f_TexCoord;\n"
-                "\n"
-                "void main()\n"
-                "{\n"
-                "    gl_Position = frg_ProjViewMatrix * frg_ModelMatrix * vec4(v_Position, 1.0);\n"
-                "    f_TexCoord = v_TexCoord;\n"
-                "}\n";
 
-            std::string fragmentShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "layout (location = 0) out vec4 f_FinalColor;\n"
-                "\n"
-                "[\"Texture\"]\n"
-                "uniform sampler2D u_Texture;\n"
-                "\n"
-                "in vec2 f_TexCoord;\n"
-                "\n"
-                "void main()\n"
-                "{\n"
-                "    f_FinalColor = texture(u_Texture, f_TexCoord);\n"
-                "}\n";
+#include "Shaders/LitTexture.h"
 
-            s_DefaultTextureShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+            s_DefaultTextureShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "NO_LIGHTING" });
             RegisterNewAsset(DefaultTextureShaderAssetLocation, s_DefaultTextureShader, s_Shaders);
         }
     }
@@ -249,57 +199,8 @@ namespace Forge
     {
         if (!s_LitColorShader[0])
         {
-            std::string vertexShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "#include \"Clipping.h\"\n"
-                "layout (location = 0) in vec3 v_Position;\n"
-                "layout (location = 1) in vec3 v_Normal;\n"
-                "\n"
-                "uniform mat4 frg_ModelMatrix;\n"
-                "uniform mat4 frg_ProjViewMatrix;\n"
-                "uniform vec4 frg_ClippingPlanes[MAX_CLIPPING_PLANES];\n"
-                "uniform int frg_UsedClippingPlanes;\n"
-                "\n"
-                "out vec3 f_Position;\n"
-                "out vec3 f_Normal;\n"
-                "\n"
-                "void main()\n"
-                "{\n"
-                "    vec4 worldPosition = frg_ModelMatrix * vec4(v_Position, 1.0);\n"
-                "    clipPlanes(worldPosition.xyz, frg_ClippingPlanes, frg_UsedClippingPlanes);\n"
-                "    gl_Position = frg_ProjViewMatrix * worldPosition;\n"
-                "    f_Position = worldPosition.xyz;\n"
-                "    f_Normal = vec3(transpose(inverse(frg_ModelMatrix)) * vec4(v_Normal, 0.0));\n"
-                "}\n";
 
-            std::string fragmentShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "#include <Lighting.h>\n"
-                "#include <Shadows.h>\n"
-                "\n"
-                "layout (location = 0) out vec4 f_FinalColor;\n"
-                "\n"
-                "[\"Color\"]\n"
-                "uniform vec4 u_Color;\n"
-                "uniform LightSource frg_LightSources[MAX_LIGHT_COUNT];\n"
-                "uniform int frg_UsedLightSources;\n"
-                "uniform samplerCube frg_ShadowMap;\n"
-                "uniform float frg_FarPlane;\n"
-                "uniform vec3 frg_LightPosition;\n"
-                "uniform vec3 frg_CameraPosition;\n"
-                "\n"
-                "in vec3 f_Position;\n"
-                "in vec3 f_Normal;\n"
-                "\n"
-                "void main()\n"
-                "{\n"
-                "#ifdef SHADOW_MAP\n"
-                "    float shadow = calculatePointShadow(f_Position, frg_ShadowMap, frg_FarPlane, frg_LightPosition, frg_CameraPosition);\n"
-                "#else\n"
-                "    float shadow = 0.0;\n"
-                "#endif\n"
-                "    f_FinalColor = u_Color * calculateLightDiffuse(f_Position, normalize(f_Normal), frg_LightSources, frg_UsedLightSources, shadow);\n"
-                "}\n";
+#include "Shaders/LitColor.h"
 
             s_LitColorShader[0] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
             s_LitColorShader[1] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ ShadowMapShaderDefine });
@@ -312,56 +213,8 @@ namespace Forge
     {
         if (!s_LitTextureShader[0])
         {
-            std::string vertexShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "layout (location = 0) in vec3 v_Position;\n"
-                "layout (location = 1) in vec3 v_Normal;\n"
-                "layout (location = 2) in vec2 v_TexCoord;\n"
-                "\n"
-                "uniform mat4 frg_ModelMatrix;\n"
-                "uniform mat4 frg_ProjViewMatrix;\n"
-                "\n"
-                "out vec3 f_Position;\n"
-                "out vec3 f_Normal;\n"
-                "out vec2 f_TexCoord;\n"
-                "\n"
-                "void main()\n"
-                "{\n"
-                "    gl_Position = frg_ProjViewMatrix * frg_ModelMatrix * vec4(v_Position, 1.0);\n"
-                "    f_Position = vec3(frg_ModelMatrix * vec4(v_Position, 1.0));\n"
-                "    f_Normal = vec3(transpose(inverse(frg_ModelMatrix)) * vec4(v_Normal, 0.0));\n"
-                "    f_TexCoord = v_TexCoord;\n"
-                "}\n";
 
-            std::string fragmentShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "#include <Lighting.h>\n"
-                "#include <Shadows.h>\n"
-                "\n"
-                "layout (location = 0) out vec4 f_FinalColor;\n"
-                "\n"
-                "[\"Texture\"]\n"
-                "uniform sampler2D u_Texture;\n"
-                "uniform LightSource frg_LightSources[MAX_LIGHT_COUNT];\n"
-                "uniform int frg_UsedLightSources;\n"
-                "uniform samplerCube frg_ShadowMap;\n"
-                "uniform float frg_FarPlane;\n"
-                "uniform vec3 frg_LightPosition;\n"
-                "uniform vec3 frg_CameraPosition;\n"
-                "\n"
-                "in vec3 f_Position;\n"
-                "in vec3 f_Normal;\n"
-                "in vec2 f_TexCoord;\n"
-                "\n"
-                "void main()\n"
-                "{\n"
-                "#ifdef SHADOW_MAP\n"
-                "   float shadow = calculatePointShadow(f_Position, frg_ShadowMap, frg_FarPlane, frg_LightPosition, frg_CameraPosition);\n"
-                "#else\n"
-                "   float shadow = 0.0;\n"
-                "#endif\n"
-                "   f_FinalColor = texture(u_Texture, f_TexCoord) * calculateLightDiffuse(f_Position, normalize(f_Normal), frg_LightSources, frg_UsedLightSources, shadow);\n"
-                "}\n";
+#include "Shaders/LitTexture.h"
 
             s_LitTextureShader[0] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
             s_LitTextureShader[1] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ ShadowMapShaderDefine });
@@ -370,47 +223,27 @@ namespace Forge
         }
     }
 
+    void GraphicsCache::CreatePbrColorShader()
+    {
+        if (!s_PbrColorShader[0])
+        {
+
+#include "Shaders/PBRColor.h"
+
+            s_PbrColorShader[0] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+            s_PbrColorShader[1] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ ShadowMapShaderDefine });
+            RegisterNewAsset(PbrColorNoShadowShaderAssetLocation, s_PbrColorShader[0], s_Shaders);
+            RegisterNewAsset(PbrColorShaderAssetLocation, s_PbrColorShader[1], s_Shaders);
+        }
+    }
+
     Ref<Shader> GraphicsCache::CreateDefaultColorAnimatedShader(int maxJoints)
     {
         auto it = s_DefaultColorAnimatedShaders.find(maxJoints);
         if (it != s_DefaultColorAnimatedShaders.end())
             return it->second;
-        std::string vertexShaderSource =
-            SHADER_VERSION_STRING + '\n' +
-            "layout (location = 0) in vec3 v_Position;\n"
-            "layout (location = 4) in ivec4 v_JointIds;\n"
-            "layout (location = 5) in vec4 v_JointWeights;\n"
-            "\n"
-            "uniform mat4 frg_ModelMatrix;\n"
-            "uniform mat4 frg_ProjViewMatrix;\n"
-            "\n"
-            "uniform mat4 frg_JointTransforms[JOINT_COUNT];\n"
-            "\n"
-            "void main()\n"
-            "{\n"
-            "    vec4 localPosition = vec4(0.0);\n"
-            "\n"
-            "    for (int i = 0; i < 4; i++)\n"
-            "    {\n"
-            "        mat4 jointTransform = frg_JointTransforms[v_JointIds[i]];\n"
-            "        vec4 posePosition = jointTransform * vec4(v_Position, 1.0);\n"
-            "        localPosition += posePosition * v_JointWeights[i];\n"
-            "    }\n"
-            "\n"
-            "    gl_Position = frg_ProjViewMatrix * frg_ModelMatrix * localPosition;\n"
-            "}\n";
 
-        std::string fragmentShaderSource =
-            SHADER_VERSION_STRING + '\n' +
-            "layout (location = 0) out vec4 f_FinalColor;\n"
-            "\n"
-            "[\"Color\"]\n"
-            "uniform vec4 u_Color;\n"
-            "\n"
-            "void main()\n"
-            "{\n"
-            "    f_FinalColor = u_Color;\n"
-            "}\n";
+#include "Shaders/DefaultColorAnimated.h"
 
         Ref<Shader> shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "JOINT_COUNT=" + std::to_string(maxJoints) });
         s_DefaultColorAnimatedShaders[maxJoints] = shader;
@@ -423,64 +256,8 @@ namespace Forge
         auto it = s_LitTextureAnimatedShaders.find(maxJoints);
         if (it != s_LitTextureAnimatedShaders.end())
             return it->second;
-        std::string vertexShaderSource =
-            SHADER_VERSION_STRING + '\n' +
-            "layout (location = 0) in vec3 v_Position;\n"
-            "layout (location = 1) in vec3 v_Normal;\n"
-            "layout (location = 2) in vec2 v_TexCoord;\n"
-            "layout (location = 4) in ivec4 v_JointIds;\n"
-            "layout (location = 5) in vec4 v_JointWeights;\n"
-            "\n"
-            "uniform mat4 frg_ModelMatrix;\n"
-            "uniform mat4 frg_ProjViewMatrix;\n"
-            "\n"
-            "uniform mat4 frg_JointTransforms[JOINT_COUNT];\n"
-            "\n"
-            "out vec3 f_Position;\n"
-            "out vec3 f_Normal;\n"
-            "out vec2 f_TexCoord;\n"
-            "\n"
-            "void main()\n"
-            "{\n"
-            "    vec4 localPosition = vec4(0.0);\n"
-            "    vec4 normal = vec4(0.0);\n"
-            "\n"
-            "    for (int i = 0; i < 4; i++)\n"
-            "    {\n"
-            "        mat4 jointTransform = frg_JointTransforms[v_JointIds[i]];\n"
-            "        vec4 posePosition = jointTransform * vec4(v_Position, 1.0);\n"
-            "        localPosition += posePosition * v_JointWeights[i];\n"
-            "\n"
-            "        vec4 worldNormal = jointTransform * vec4(v_Normal, 0.0);\n"
-            "        normal += worldNormal * v_JointWeights[i];\n"
-            "    }\n"
-            "\n"
-            "    gl_Position = frg_ProjViewMatrix * frg_ModelMatrix * localPosition;\n"
-            "    f_Position = vec3(frg_ModelMatrix * localPosition);\n"
-            "    f_Normal = normalize(normal.xyz);\n"
-            "    f_TexCoord = v_TexCoord;\n"
-            "}\n";
 
-        std::string fragmentShaderSource =
-            SHADER_VERSION_STRING + '\n' +
-            "#include <Lighting.h>\n"
-            "\n"
-            "layout (location = 0) out vec4 f_FinalColor;\n"
-            "\n"
-            "[\"Texture\"]\n"
-            "uniform sampler2D u_Texture;\n"
-            "uniform LightSource frg_LightSources[MAX_LIGHT_COUNT];\n"
-            "uniform int frg_UsedLightSources;\n"
-            "\n"
-            "in vec3 f_Position;\n"
-            "in vec3 f_Normal;\n"
-            "in vec2 f_TexCoord;\n"
-            "\n"
-            "void main()\n"
-            "{\n"
-            "    float shadow = 0.0;\n"
-            "    f_FinalColor = texture(u_Texture, f_TexCoord) * calculateLightDiffuse(f_Position, normalize(f_Normal), frg_LightSources, frg_UsedLightSources, shadow);\n"
-            "}\n";
+#include "Shaders/LitTextureAnimated.h"
 
         Ref<Shader> shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ "JOINT_COUNT=" + std::to_string(maxJoints) });
         s_LitTextureAnimatedShaders[maxJoints] = shader;
@@ -492,23 +269,8 @@ namespace Forge
     {
         if (!s_DefaultShadowShader)
         {
-            std::string vertexShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "layout (location = 0) in vec3 v_Position;\n"
-                "\n"
-                "uniform mat4 frg_ModelMatrix;\n"
-                "uniform mat4 frg_ProjViewMatrix;\n"
-                "\n"
-                "void main()\n"
-                "{\n"
-                "    gl_Position = frg_ProjViewMatrix * frg_ModelMatrix * vec4(v_Position, 1.0);\n"
-                "}\n";
 
-            std::string fragmentShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "void main()\n"
-                "{\n"
-                "}\n";
+#include "Shaders/DefaultShadow.h"
 
             s_DefaultShadowShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
             RegisterNewAsset(DefaultShadowShaderAssetLocation, s_DefaultShadowShader, s_Shaders);
@@ -519,50 +281,8 @@ namespace Forge
     {
         if (!s_DefaultPointShadowShader)
         {
-            std::string vertexShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "layout (location = 0) in vec3 v_Position;\n"
-                "\n"
-                "uniform mat4 frg_ModelMatrix;\n"
-                "\n"
-                "void main()\n"
-                "{\n"
-                "    gl_Position = frg_ModelMatrix * vec4(v_Position, 1.0);\n"
-                "}\n";
 
-            std::string geometryShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "layout(triangles) in;\n"
-                "layout(triangle_strip, max_vertices=18) out;\n"
-                "\n"
-                "uniform mat4 frg_PointShadowMatrices[6];\n"
-                "out vec4 f_FragPosition;\n"
-                "void main()\n"
-                "{\n"
-                "   for (int face = 0; face < 6; face++)\n"
-                "   {\n"
-                "       gl_Layer = face;\n"
-                "       for (int i = 0; i < 3; i++)\n"
-                "       {\n"
-                "           f_FragPosition = gl_in[i].gl_Position;\n"
-                "           gl_Position = frg_PointShadowMatrices[face] * f_FragPosition;\n"
-                "           EmitVertex();\n"
-                "       }\n"
-                "       EndPrimitive();\n"
-                "   }\n"
-                "}\n";
-
-            std::string fragmentShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "in vec4 f_FragPosition;\n"
-                "uniform vec3 frg_ShadowLightPosition;\n"
-                "uniform float frg_FarPlane;\n"
-                "void main()\n"
-                "{\n"
-                "   float lightDistance = length(f_FragPosition.xyz - frg_ShadowLightPosition);\n"
-                "   lightDistance = lightDistance / frg_FarPlane;\n"
-                "   gl_FragDepth = lightDistance;\n"
-                "}\n";
+#include "Shaders/DefaultPointShadow.h"
 
             s_DefaultPointShadowShader = Shader::CreateFromSource(vertexShaderSource, geometryShaderSource, fragmentShaderSource);
             RegisterNewAsset(DefaultPointShadowShaderAssetLocation, s_DefaultPointShadowShader, s_Shaders);
@@ -573,26 +293,8 @@ namespace Forge
     {
         if (!s_DefaultPickShader)
         {
-            std::string vertexShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "layout (location = 0) in vec3 v_Position;\n"
-                "\n"
-                "uniform mat4 frg_ModelMatrix;\n"
-                "uniform mat4 frg_ProjViewMatrix;\n"
-                "\n"
-                "void main()\n"
-                "{\n"
-                "    gl_Position = frg_ProjViewMatrix * frg_ModelMatrix * vec4(v_Position, 1.0);\n"
-                "}\n";
 
-            std::string fragmentShaderSource =
-                SHADER_VERSION_STRING + '\n' +
-                "layout (location = 0) out int f_EntityID;\n"
-                "uniform int frg_EntityID;\n"
-                "void main()\n"
-                "{\n"
-                "   f_EntityID = frg_EntityID;\n"
-                "}\n";
+#include "Shaders/DefaultPick.h"
 
             s_DefaultPickShader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
             RegisterNewAsset(DefaultPickShaderAssetLocation, s_DefaultPickShader, s_Shaders);
@@ -884,6 +586,10 @@ namespace Forge
             else if (location.Path == LitTextureShaderAssetLocation.Path)
             {
                 CreateLitTextureShader();
+            }
+            else if (location.Path == PbrColorShaderAssetLocation.Path)
+            {
+                CreatePbrColorShader();
             }
             else if (location.Path == DefaultShadowShaderAssetLocation.Path)
             {

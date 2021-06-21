@@ -44,6 +44,7 @@ namespace Forge
 		public:
 			Ref<Framebuffer> RenderTarget;
 			glm::vec3 Position;
+			int LightIndex;
 		};
 
 	private:
@@ -52,8 +53,8 @@ namespace Forge
 		std::vector<ShadowPass> m_ShadowPasses;
 		std::vector<RenderData> m_Renderables;
 		bool m_RenderImGui;
-		int m_CurrentShadowIndex;
 		RenderPass m_CurrentRenderPass;
+		int m_CurrentShadowLightIndex;
 
 		RendererContext m_Context;
 		Ref<Framebuffer> m_CurrentFramebuffer = nullptr;
@@ -65,7 +66,6 @@ namespace Forge
 		inline const RendererStats& GetStats() const { return m_Stats; }
 		void SetTime(float time);
 
-		void AddShadowPass(const Ref<Framebuffer>& framebuffer, const glm::vec3& lightPosition);
 		void BeginPickScene(const Ref<Framebuffer>& framebuffer, const CameraData& camera);
 		void BeginScene(const Ref<Framebuffer>& framebuffer, const CameraData& camera, const std::vector<LightSource>& lightSources = {});
 		void EndScene();
@@ -75,7 +75,8 @@ namespace Forge
 		inline void RenderImGui() { m_RenderImGui = true; }
 
 	private:
-		ShadowRenderData RenderShadowScene(const ShadowPass& pass);
+		void AddShadowPass(const Ref<Framebuffer>& framebuffer, const glm::vec3& lightPosition, int index);
+		void RenderShadowScene(const ShadowPass& pass);
 		void SetupScene(const SceneData& data);
 		void RenderAll();
 		void RenderModelInternal(const RenderData& data);

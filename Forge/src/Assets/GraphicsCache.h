@@ -52,6 +52,8 @@ namespace Forge
 	extern const AssetLocation LitColorShaderAssetLocation;
 	extern const AssetLocation LitTextureNoShadowShaderAssetLocation;
 	extern const AssetLocation LitTextureShaderAssetLocation;
+	extern const AssetLocation PbrColorNoShadowShaderAssetLocation;
+	extern const AssetLocation PbrColorShaderAssetLocation;
 	extern const AssetLocation DefaultShadowShaderAssetLocation;
 	extern const AssetLocation DefaultPointShadowShaderAssetLocation;
 	extern const AssetLocation DefaultPickShaderAssetLocation;
@@ -71,6 +73,7 @@ namespace Forge
 		static Ref<Shader> s_DefaultTextureShader;
 		static Ref<Shader> s_LitColorShader[2];
 		static Ref<Shader> s_LitTextureShader[2];
+		static Ref<Shader> s_PbrColorShader[2];
 		static Ref<Shader> s_DefaultShadowShader;
 		static Ref<Shader> s_DefaultPointShadowShader;
 		static Ref<Shader> s_DefaultPickShader;
@@ -178,6 +181,7 @@ namespace Forge
 		inline static Ref<Shader> DefaultTextureShader() { CreateDefaultTextureShader(); return s_DefaultTextureShader; }
 		inline static Ref<Shader> LitColorShader(bool useShadows) { CreateLitColorShader(); return s_LitColorShader[useShadows ? 1 : 0]; }
 		inline static Ref<Shader> LitTextureShader(bool useShadows) { CreateLitTextureShader(); return s_LitTextureShader[useShadows ? 1 : 0]; }
+		inline static Ref<Shader> PbrColorShader(bool useShadows) { CreatePbrColorShader(); return s_PbrColorShader[useShadows ? 1 : 0]; }
 		inline static Ref<Shader> AnimatedDefaultColorShader(int maxJoints) { return CreateDefaultColorAnimatedShader(maxJoints); }
 		inline static Ref<Shader> AnimatedLitTextureShader(int maxJoints) { return CreateLitTextureAnimatedShader(maxJoints); }
 
@@ -201,6 +205,7 @@ namespace Forge
 		static void CreateDefaultTextureShader();
 		static void CreateLitColorShader();
 		static void CreateLitTextureShader();
+		static void CreatePbrColorShader();
 		static Ref<Shader> CreateDefaultColorAnimatedShader(int maxJoints);
 		static Ref<Shader> CreateLitTextureAnimatedShader(int maxJoints);
 		static void CreateDefaultShadowShader();

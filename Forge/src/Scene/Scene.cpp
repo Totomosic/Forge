@@ -122,7 +122,6 @@ namespace Forge
     void Scene::OnUpdate(Timestep ts)
     {
         static std::vector<LightSource> s_LightSources;
-        static std::vector<Ref<Framebuffer>> s_LightSourceShadowFramebuffers;
         static std::vector<uint64_t> s_LightSourceShadowLayerMasks;
 
         m_Time += ts.Seconds();
@@ -176,7 +175,6 @@ namespace Forge
             }
 
             s_LightSources.clear();
-            s_LightSourceShadowFramebuffers.clear();
             s_LightSourceShadowLayerMasks.clear();
             for (auto entity : m_Registry.view<TransformComponent, LightSourceComponent, EnabledFlag>())
             {
@@ -189,9 +187,10 @@ namespace Forge
                     source.Ambient = light.Ambient;
                     source.Color = light.Color;
                     source.Attenuation = light.Attenuation;
+                    source.Intensity = light.Intensity;
                     source.Type = light.Type;
+                    source.ShadowFramebuffer = light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr;
                     s_LightSources.push_back(source);
-                    s_LightSourceShadowFramebuffers.push_back(light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr);
                     s_LightSourceShadowLayerMasks.push_back(light.Shadows.LayerMask);
                 }
             }
@@ -200,11 +199,6 @@ namespace Forge
 
             m_Renderer->SetTime(m_Time);
             m_Renderer->BeginScene(framebuffer, data, s_LightSources);
-            for (int i = 0; i < s_LightSources.size(); i++)
-            {
-                if (s_LightSourceShadowFramebuffers[i])
-                    m_Renderer->AddShadowPass(s_LightSourceShadowFramebuffers[i], s_LightSources[i].Position);
-            }
             for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent, EnabledFlag>())
             {
                 if (CheckLayerMask(entity, cameraComponent.LayerMask))

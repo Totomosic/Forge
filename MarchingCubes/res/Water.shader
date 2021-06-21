@@ -1,5 +1,5 @@
 #shader VERTEX
-#version 430 core
+#version 450 core
 #include "Clipping.h"
 
 in layout(location = 0) vec3 in_Position;
@@ -11,14 +11,12 @@ uniform mat4 frg_ViewMatrix;
 uniform mat4 frg_ProjViewMatrix;
 uniform vec4 frg_ClippingPlanes[MAX_CLIPPING_PLANES];
 uniform int frg_UsedClippingPlanes;
-uniform mat4 frg_LightSpaceTransform;
 uniform float u_Time;
 
 out vec3 g_Position;
 out vec2 g_TexCoord;
 out vec4 g_ClipSpace;
 out vec3 g_ToCameraVector;
-out vec4 g_LightSpacePosition;
 
 out VData
 {
@@ -26,7 +24,6 @@ out VData
 	vec2 TexCoord;
 	vec4 ClipSpace;
 	vec3 ToCameraVector;
-	vec4 LightSpacePosition;
 } OutData;
 
 const float PI = 3.14159;
@@ -68,11 +65,10 @@ void main()
 	vec3 cameraPosition = (inverse(frg_ViewMatrix)[3]).xyz;
 	OutData.ToCameraVector = cameraPosition - OutData.Position;
 	OutData.TexCoord = in_TexCoord * 80.0;
-	OutData.LightSpacePosition = frg_LightSpaceTransform * worldPosition;
 }
 
 #shader GEOMETRY
-#version 430 core
+#version 450 core
 
 layout(triangles) in;
 layout(triangle_strip, max_vertices=3) out;
@@ -83,7 +79,6 @@ in VData
 	vec2 TexCoord;
 	vec4 ClipSpace;
 	vec3 ToCameraVector;
-	vec4 LightSpacePosition;
 } InData[];
 
 out FData
@@ -93,7 +88,6 @@ out FData
 	vec2 TexCoord;
 	vec4 ClipSpace;
 	vec3 ToCameraVector;
-	vec4 LightSpacePosition;
 	mat3 TBN;
 } OutData;
 
@@ -122,24 +116,18 @@ void main()
 		OutData.TexCoord = InData[i].TexCoord;
 		OutData.ClipSpace = InData[i].ClipSpace;
 		OutData.ToCameraVector = InData[i].ToCameraVector;
-		OutData.LightSpacePosition = InData[i].LightSpacePosition;
 		OutData.TBN = tbn;
 		EmitVertex();
 	}
 }
 
 #shader FRAGMENT
-#version 430 core
-#include "Lighting.h"
-#include "Shadows.h"
+#version 450 core
+#include <Lighting.h>
 
 out layout(location = 0) vec4 out_FragColor;
 
 uniform vec4 u_Color;
-uniform LightSource frg_LightSources[MAX_LIGHT_COUNT];
-uniform int frg_UsedLightSources;
-uniform samplerCube frg_ShadowMap;
-uniform vec3 frg_LightPosition;
 uniform vec3 frg_CameraPosition;
 
 uniform sampler2D u_RefractionTexture;
@@ -148,7 +136,6 @@ uniform sampler2D u_DepthTexture;
 uniform sampler2D u_NormalMap;
 uniform sampler2D u_DUDVMap;
 uniform sampler2D u_FoamTexture;
-uniform float frg_FarPlane;
 uniform float frg_NearPlane;
 uniform float u_Time;
 
@@ -161,7 +148,6 @@ in FData
 	vec2 TexCoord;
 	vec4 ClipSpace;
 	vec3 ToCameraVector;
-	vec4 LightSpacePosition;
 	mat3 TBN;
 } InData;
 
@@ -206,14 +192,10 @@ void main()
 
 	vec4 color = BLUE * mix(reflection, refraction, max(refractiveFactor, 0.0));
 
-#ifdef SHADOW_MAP
-	float shadow = calculatePointShadow(InData.Position, frg_ShadowMap, frg_FarPlane, frg_LightPosition, frg_CameraPosition);
-#else
-	float shadow = 0.0;
-#endif
-
-	vec4 lighting = calculateLightDiffuse(InData.Position, unitNormal, frg_LightSources, frg_UsedLightSources, shadow);
-	lighting += calculateLightSpecular(InData.Position, unitNormal, 8.0, 10.0, unitToCamera, frg_LightSources, frg_UsedLightSources, shadow);
-	out_FragColor = color * lighting;
+	MaterialOptions material;
+	material.Diffuse = 1.0;
+	material.Specular = 8.0;
+	material.ShineDamper = 10.0;
+	out_FragColor = color * calculateLighting(InData.Position, normalize(InData.Normal), frg_CameraPosition, material);;
 	out_FragColor.a = clamp(waterDepth / 0.5, 0.1, 1.0);
 }
