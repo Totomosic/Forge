@@ -29,6 +29,7 @@ namespace Editor
 		glm::vec2 m_ViewportSize;
 
 		Forge::Entity m_Camera;
+		bool m_OperationLocked = false;
 		ImGuizmo::OPERATION m_GuizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
 
 		Forge::Timestep m_Timestep;

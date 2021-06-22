@@ -45,23 +45,50 @@ namespace Forge
 		uint64_t LayerMask = 0xFFFFFFFFFFFFFFFF;
 	};
 
-	struct FORGE_API LightSourceComponent
+	struct FORGE_API PointLightComponent
 	{
 	public:
-		LightType Type = LightType::Point;
-		float Ambient = 0.2f;
+		static constexpr LightType Type = LightType::Point;
+		float Ambient = 0.03f;
 		Forge::Color Color = COLOR_WHITE;
-		glm::vec3 Attenuation = { 1.0f, 0.0f, 0.0f };
+		float Radius = 10.0f;
+		float Cutoff = 1.0f;
 		float Intensity = 1.0f;
 		ShadowPass Shadows;
 
 	public:
-		LightSourceComponent(LightType type = LightType::Point, float ambient = 0.2f, const Forge::Color& color = COLOR_WHITE, const glm::vec3& attenuation = { 1.0f, 0.0f, 0.0f })
-			: Type(type), Ambient(ambient), Color(color), Attenuation(attenuation)
+		PointLightComponent(float ambient = 0.03f, const Forge::Color& color = COLOR_WHITE, float radius = 10.0f, float cutoff = 1.0f)
+			: Ambient(ambient), Color(color), Radius(radius), Cutoff(cutoff)
 		{}
 
 		void CreateShadowPass(uint32_t width = DEFAULT_SHADOW_WIDTH, uint32_t height = DEFAULT_SHADOW_HEIGHT)
 		{
+			Shadows.Enabled = true;
+			FramebufferProps props;
+			props.Width = width;
+			props.Height = height;
+			props.Attachments = { { FramebufferTextureFormat::Depth, FramebufferTextureType::TextureCube } };
+			Shadows.RenderTarget = Framebuffer::Create(props);
+		}
+	};
+
+	struct FORGE_API DirectionalLightComponent
+	{
+	public:
+		static constexpr LightType Type = LightType::Directional;
+		float Ambient = 0.03f;
+		Forge::Color Color = COLOR_WHITE;
+		float Intensity = 1.0f;
+		ShadowPass Shadows;
+
+	public:
+		DirectionalLightComponent(float ambient = 0.03f, const Forge::Color& color = COLOR_WHITE)
+			: Ambient(ambient), Color(color)
+		{}
+
+		void CreateShadowPass(uint32_t width = DEFAULT_SHADOW_WIDTH, uint32_t height = DEFAULT_SHADOW_HEIGHT)
+		{
+			FORGE_ASSERT(false, "Not implemented");
 			Shadows.Enabled = true;
 			FramebufferProps props;
 			props.Width = width;

@@ -28,15 +28,17 @@ namespace Editor
 		groundPlane.AddComponent<ModelRendererComponent>(
 			Model::Create(
 				GraphicsCache::GridMesh(400, 400),
-				GraphicsCache::LitColorMaterial(COLOR_WHITE)
+				GraphicsCache::PbrColorMaterial(COLOR_WHITE)
 			)
 		);
 		groundPlane.GetTransform().SetPosition({ 0, 0, 0 });
 		groundPlane.GetTransform().SetScale({ 15, 1, 15 });
 
 		Entity sun = scene.CreateEntity("Sun");
-		sun.GetTransform().SetPosition({ 0, 5, 0 });
-		LightSourceComponent& lightSource = sun.AddComponent<LightSourceComponent>();
+		sun.GetTransform().SetPosition({ 0, 0, 0 });
+		sun.GetTransform().Rotate(-PI / 2.0f, { 1, 0, 0 });
+		DirectionalLightComponent& lightSource = sun.AddComponent<DirectionalLightComponent>();
+		// lightSource.CreateShadowPass(DefaultShadowMapDimension, DefaultShadowMapDimension);
 
 		m_SceneHierarchy.SetScene(&scene);
 		m_AssetBrowser.SetRootDirectory("assets");
@@ -86,6 +88,17 @@ namespace Editor
 
 		if (m_ViewportFocused)
 		{
+			if (!m_OperationLocked)
+			{
+				if (Input::IsKeyDown(KeyCode::LeftShift))
+					m_GuizmoOperation = ImGuizmo::OPERATION::SCALE;
+				else if (Input::IsKeyDown(KeyCode::LeftControl))
+					m_GuizmoOperation = ImGuizmo::OPERATION::ROTATE;
+				else
+					m_GuizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+			}
+			m_OperationLocked = Input::IsMouseButtonDown(MouseButton::Left);
+
 			float speed = 5.0f;
 			TransformComponent& transform = m_Camera.GetTransform();
 			if (Input::IsKeyDown(KeyCode::A))

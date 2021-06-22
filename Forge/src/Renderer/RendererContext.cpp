@@ -146,7 +146,20 @@ namespace Forge
 					shader->SetUniform(uniformBase + ".UseShadows", m_LightSources[i].ShadowFramebuffer != nullptr);
 					if (m_LightSources[i].ShadowFramebuffer)
 					{
-						shader->SetUniform(uniformBase + ".ShadowMap", m_LightSources[i].ShadowBindLocation);
+						if (m_LightSources[i].Type == LightType::Point)
+						{
+							shader->SetUniform(uniformBase + ".PointShadowMap", m_LightSources[i].ShadowBindLocation);
+						}
+						else
+						{
+							shader->SetUniform(uniformBase + ".ShadowMap", m_LightSources[i].ShadowBindLocation);
+						}
+						shader->SetUniform(uniformBase + ".ShadowNear", m_LightSources[i].ShadowNear);
+						shader->SetUniform(uniformBase + ".ShadowFar", m_LightSources[i].ShadowFar);
+						if (m_LightSources[i].Type != LightType::Point)
+						{
+							shader->SetUniform(uniformBase + ".LightSpaceTransform", m_LightSources[i].LightSpaceTransform);
+						}
 					}
 				}
 			}

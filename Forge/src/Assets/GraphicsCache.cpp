@@ -19,6 +19,8 @@ namespace Forge
     const AssetLocation LitTextureShaderAssetLocation = { "LitTexture", AssetLocationSource::Generated, AssetFlags_ShaderShadows, AssetLocationType::Shader };
     const AssetLocation PbrColorNoShadowShaderAssetLocation = { "PbrColor", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
     const AssetLocation PbrColorShaderAssetLocation = { "PbrColor", AssetLocationSource::Generated, AssetFlags_ShaderShadows, AssetLocationType::Shader };
+    const AssetLocation PbrTextureNoShadowShaderAssetLocation = { "PbrTexture", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
+    const AssetLocation PbrTextureShaderAssetLocation = { "PbrTexture", AssetLocationSource::Generated, AssetFlags_ShaderShadows, AssetLocationType::Shader };
     const AssetLocation DefaultShadowShaderAssetLocation = { "DefaultShadow", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
     const AssetLocation DefaultPointShadowShaderAssetLocation = { "DefaultPointShadow", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
     const AssetLocation DefaultPickShaderAssetLocation = { "DefaultPick", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
@@ -41,6 +43,7 @@ namespace Forge
     Ref<Shader> GraphicsCache::s_LitColorShader[2];
     Ref<Shader> GraphicsCache::s_LitTextureShader[2];
     Ref<Shader> GraphicsCache::s_PbrColorShader[2];
+    Ref<Shader> GraphicsCache::s_PbrTextureShader[2];
     Ref<Shader> GraphicsCache::s_DefaultShadowShader;
     Ref<Shader> GraphicsCache::s_DefaultPointShadowShader;
     Ref<Shader> GraphicsCache::s_DefaultPickShader;
@@ -131,42 +134,52 @@ namespace Forge
 
     Ref<Material> GraphicsCache::DefaultColorMaterial(const Color& color)
     {
-        Ref<Material> material = CreateRef<Material>(DefaultColorShader());
+        Ref<Material> material = Material::Create(DefaultColorShader());
         material->GetUniforms().SetUniform("u_Color", color);
         return material;
     }
 
     Ref<Material> GraphicsCache::DefaultTextureMaterial(const Ref<Texture>& texture)
     {
-        Ref<Material> material = CreateRef<Material>(DefaultTextureShader());
+        Ref<Material> material = Material::Create(DefaultTextureShader());
         material->GetUniforms().SetUniform("u_Texture", texture);
         return material;
     }
 
     Ref<Material> GraphicsCache::LitColorMaterial(const Color& color)
     {
-        Ref<Material> material = CreateRef<Material>(MaterialShaderSet{ DefaultPointShadowShader(), LitColorShader(true), LitColorShader(false), DefaultPickShader() });
+        Ref<Material> material = Material::Create(LitColorShader(false), LitColorShader(true));
         material->GetUniforms().SetUniform("u_Color", color);
         return material;
     }
 
     Ref<Material> GraphicsCache::LitTextureMaterial(const Ref<Texture>& texture)
     {
-        Ref<Material> material = CreateRef<Material>(MaterialShaderSet{ DefaultPointShadowShader(), LitTextureShader(true), LitTextureShader(false), DefaultPickShader() });
+        Ref<Material> material = Material::Create(LitTextureShader(false), LitTextureShader(true));
         material->GetUniforms().SetUniform("u_Texture", texture);
+        return material;
+    }
+
+    Ref<Material> GraphicsCache::PbrColorMaterial(const Color& albedo, float roughness, float metallic, float ao)
+    {
+        Ref<Material> material = Material::Create(PbrColorShader(false), PbrColorShader(true));
+        material->GetUniforms().SetUniform("u_Albedo", albedo);
+        material->GetUniforms().SetUniform("u_Roughness", roughness);
+        material->GetUniforms().SetUniform("u_Metallic", metallic);
+        material->GetUniforms().SetUniform("u_AO", ao);
         return material;
     }
 
     Ref<Material> GraphicsCache::AnimatedDefaultColorMaterial(int maxJoints, const Color& color)
     {
-        Ref<Material> material = CreateRef<Material>(AnimatedDefaultColorShader(maxJoints));
+        Ref<Material> material = Material::Create(AnimatedDefaultColorShader(maxJoints));
         material->GetUniforms().SetUniform("u_Color", color);
         return material;
     }
 
     Ref<Material> GraphicsCache::AnimatedLitTextureMaterial(int maxJoints, const Ref<Texture>& texture)
     {
-        Ref<Material> material = CreateRef<Material>(AnimatedLitTextureShader(maxJoints));
+        Ref<Material> material = Material::Create(AnimatedLitTextureShader(maxJoints));
         material->GetUniforms().SetUniform("u_Texture", texture);
         return material;
     }
@@ -234,6 +247,20 @@ namespace Forge
             s_PbrColorShader[1] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ ShadowMapShaderDefine });
             RegisterNewAsset(PbrColorNoShadowShaderAssetLocation, s_PbrColorShader[0], s_Shaders);
             RegisterNewAsset(PbrColorShaderAssetLocation, s_PbrColorShader[1], s_Shaders);
+        }
+    }
+
+    void GraphicsCache::CreatePbrTextureShader()
+    {
+        if (!s_PbrTextureShader[0])
+        {
+
+#include "Shaders/PBRTexture.h"
+
+            s_PbrTextureShader[0] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+            s_PbrTextureShader[1] = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource, ShaderDefines{ ShadowMapShaderDefine });
+            RegisterNewAsset(PbrTextureNoShadowShaderAssetLocation, s_PbrTextureShader[0], s_Shaders);
+            RegisterNewAsset(PbrTextureShaderAssetLocation, s_PbrTextureShader[1], s_Shaders);
         }
     }
 
@@ -590,6 +617,10 @@ namespace Forge
             else if (location.Path == PbrColorShaderAssetLocation.Path)
             {
                 CreatePbrColorShader();
+            }
+            else if (location.Path == PbrTextureShaderAssetLocation.Path)
+            {
+                CreatePbrTextureShader();
             }
             else if (location.Path == DefaultShadowShaderAssetLocation.Path)
             {

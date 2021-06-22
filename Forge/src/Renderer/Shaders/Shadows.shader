@@ -28,7 +28,7 @@ vec3 sampleOffsetDirections[20] = vec3[]
 
 float CalculatePointShadow(vec3 position, samplerCube shadowMap, float farPlane, vec3 lightPosition, vec3 cameraPosition)
 {
-   float bias = 0.01;
+   float bias = 0.00;
    float viewDistance = length(cameraPosition - position);
    float diskRadius = (0.1 + (4.0 * viewDistance / farPlane)) / 25.0;
    vec3 lightToFrag = position - lightPosition;

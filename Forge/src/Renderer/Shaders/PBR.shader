@@ -3,7 +3,9 @@
 
 uniform LightSource frg_LightSources[MAX_LIGHT_COUNT];
 uniform int frg_UsedLightSources;
-uniform float frg_FarPlane;
+#ifdef SHADOW_MAP
+uniform mat4 frg_LightSpaceTransform;
+#endif
 
 vec4 CalculateLightingPBR(vec3 position, vec3 normal, vec3 cameraPosition, PBRMaterialOptions material)
 {
@@ -20,7 +22,13 @@ vec4 CalculateLightingPBR(vec3 position, vec3 normal, vec3 cameraPosition, PBRMa
 #ifdef SHADOW_MAP
         if (frg_LightSources[i].UseShadows)
         {
-            shadow = CalculatePointShadow(position, frg_LightSources[i].ShadowMap, frg_FarPlane, frg_LightSources[i].Position, cameraPosition);
+            if (frg_LightSources[i].Type == LIGHT_TYPE_POINT)
+                shadow = CalculatePointShadow(position, frg_LightSources[i].PointShadowMap, frg_LightSources[i].ShadowFar, frg_LightSources[i].Position, cameraPosition);
+            else
+            {
+                vec4 lightSpacePosition = frg_LightSpaceTransform * vec4(position, 1.0);
+                // shadow = CalculateShadow(lightSpacePosition, frg_LightSources[i].ShadowMap, normal, frg_LightSources[i].Direction);
+            }
         }
 #endif
         vec4 lighting = CalculateSinglePBRLight(position, normal, F0, unitToCameraVector, frg_LightSources[i], material, shadow);

@@ -42,8 +42,8 @@ namespace Forge
 		struct ShadowPass
 		{
 		public:
+			const LightSource* Light;
 			Ref<Framebuffer> RenderTarget;
-			glm::vec3 Position;
 			int LightIndex;
 		};
 
@@ -75,13 +75,13 @@ namespace Forge
 		inline void RenderImGui() { m_RenderImGui = true; }
 
 	private:
-		void AddShadowPass(const Ref<Framebuffer>& framebuffer, const glm::vec3& lightPosition, int index);
+		void AddShadowPass(const Ref<Framebuffer>& framebuffer, const LightSource& light, int index);
 		void RenderShadowScene(const ShadowPass& pass);
 		void SetupScene(const SceneData& data);
 		void RenderAll();
 		void RenderModelInternal(const RenderData& data);
 
-		CameraData CreateCameraFromLightSource(const LightSource& light, const Ref<Framebuffer>& renderTarget, float range) const;
+		CameraData CreateCameraFromLightSource(const glm::vec3& lightPosition, const glm::vec3& lightDirection, const Ref<Framebuffer>& renderTarget, float nearDistance, float farDistance) const;
 		void GetCameraTransformsFromLightSource(const glm::vec3& lightPosition, float aspect, const Frustum& frustum, glm::mat4 transforms[6]);
 
 	};

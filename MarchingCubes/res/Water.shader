@@ -137,6 +137,7 @@ uniform sampler2D u_NormalMap;
 uniform sampler2D u_DUDVMap;
 uniform sampler2D u_FoamTexture;
 uniform float frg_NearPlane;
+uniform float frg_FarPlane;
 uniform float u_Time;
 
 const float waveStrength = 0.05;

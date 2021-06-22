@@ -54,6 +54,8 @@ namespace Forge
 	extern const AssetLocation LitTextureShaderAssetLocation;
 	extern const AssetLocation PbrColorNoShadowShaderAssetLocation;
 	extern const AssetLocation PbrColorShaderAssetLocation;
+	extern const AssetLocation PbrTextureNoShadowShaderAssetLocation;
+	extern const AssetLocation PbrTextureShaderAssetLocation;
 	extern const AssetLocation DefaultShadowShaderAssetLocation;
 	extern const AssetLocation DefaultPointShadowShaderAssetLocation;
 	extern const AssetLocation DefaultPickShaderAssetLocation;
@@ -74,6 +76,7 @@ namespace Forge
 		static Ref<Shader> s_LitColorShader[2];
 		static Ref<Shader> s_LitTextureShader[2];
 		static Ref<Shader> s_PbrColorShader[2];
+		static Ref<Shader> s_PbrTextureShader[2];
 		static Ref<Shader> s_DefaultShadowShader;
 		static Ref<Shader> s_DefaultPointShadowShader;
 		static Ref<Shader> s_DefaultPickShader;
@@ -173,6 +176,7 @@ namespace Forge
 		static Ref<Material> DefaultTextureMaterial(const Ref<Texture>& texture);
 		static Ref<Material> LitColorMaterial(const Color& color = COLOR_WHITE);
 		static Ref<Material> LitTextureMaterial(const Ref<Texture>& texture);
+		static Ref<Material> PbrColorMaterial(const Color& albedo = COLOR_WHITE, float roughness = 0.4f, float metallic = 0.0f, float ao = 1.0f);
 		static Ref<Material> AnimatedDefaultColorMaterial(int maxJoints, const Color& color = COLOR_WHITE);
 		static Ref<Material> AnimatedLitTextureMaterial(int maxJoints, const Ref<Texture>& texture);
 
@@ -182,12 +186,21 @@ namespace Forge
 		inline static Ref<Shader> LitColorShader(bool useShadows) { CreateLitColorShader(); return s_LitColorShader[useShadows ? 1 : 0]; }
 		inline static Ref<Shader> LitTextureShader(bool useShadows) { CreateLitTextureShader(); return s_LitTextureShader[useShadows ? 1 : 0]; }
 		inline static Ref<Shader> PbrColorShader(bool useShadows) { CreatePbrColorShader(); return s_PbrColorShader[useShadows ? 1 : 0]; }
+		inline static Ref<Shader> PbrTextureShader(bool useShadows) { CreatePbrTextureShader(); return s_PbrTextureShader[useShadows ? 1 : 0]; }
 		inline static Ref<Shader> AnimatedDefaultColorShader(int maxJoints) { return CreateDefaultColorAnimatedShader(maxJoints); }
 		inline static Ref<Shader> AnimatedLitTextureShader(int maxJoints) { return CreateLitTextureAnimatedShader(maxJoints); }
 
 		inline static Ref<Shader> DefaultShadowShader() { CreateDefaultShadowShader(); return s_DefaultShadowShader; }
 		inline static Ref<Shader> DefaultPointShadowShader() { CreateDefaultPointShadowShader(); return s_DefaultPointShadowShader; }
 		inline static Ref<Shader> DefaultPickShader() { CreateDefaultPickShader(); return s_DefaultPickShader; }
+
+		inline static ShadowFormationShaderSet DefaultShadowShaders()
+		{
+			return ShadowFormationShaderSet{
+				DefaultPointShadowShader(),
+				DefaultShadowShader()
+			};
+		}
 
 		// Textures
 		inline static Ref<Texture2D> WhiteTexture() { CreateWhiteTexture(); return s_WhiteTexture; }
@@ -206,6 +219,7 @@ namespace Forge
 		static void CreateLitColorShader();
 		static void CreateLitTextureShader();
 		static void CreatePbrColorShader();
+		static void CreatePbrTextureShader();
 		static Ref<Shader> CreateDefaultColorAnimatedShader(int maxJoints);
 		static Ref<Shader> CreateLitTextureAnimatedShader(int maxJoints);
 		static void CreateDefaultShadowShader();

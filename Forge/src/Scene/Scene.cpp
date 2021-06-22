@@ -176,20 +176,42 @@ namespace Forge
 
             s_LightSources.clear();
             s_LightSourceShadowLayerMasks.clear();
-            for (auto entity : m_Registry.view<TransformComponent, LightSourceComponent, EnabledFlag>())
+            for (auto entity : m_Registry.view<TransformComponent, PointLightComponent, EnabledFlag>())
             {
                 if (CheckLayerMask(entity, cameraComponent.LayerMask))
                 {
-                    auto [transform, light] = m_Registry.get<TransformComponent, LightSourceComponent>(entity);
+                    auto [transform, light] = m_Registry.get<TransformComponent, PointLightComponent>(entity);
                     LightSource source;
                     source.Position = transform.GetPosition();
                     source.Direction = transform.GetForward();
                     source.Ambient = light.Ambient;
                     source.Color = light.Color;
-                    source.Attenuation = light.Attenuation;
+                    source.Attenuation = { 1, 0.0f, 1.0f / (light.Radius * light.Radius) };
                     source.Intensity = light.Intensity;
                     source.Type = light.Type;
                     source.ShadowFramebuffer = light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr;
+                    source.ShadowNear = cameraComponent.Frustum.NearPlane;
+                    source.ShadowFar = cameraComponent.Frustum.FarPlane;
+                    s_LightSources.push_back(source);
+                    s_LightSourceShadowLayerMasks.push_back(light.Shadows.LayerMask);
+                }
+            }
+            for (auto entity : m_Registry.view<TransformComponent, DirectionalLightComponent, EnabledFlag>())
+            {
+                if (CheckLayerMask(entity, cameraComponent.LayerMask))
+                {
+                    auto [transform, light] = m_Registry.get<TransformComponent, DirectionalLightComponent>(entity);
+                    LightSource source;
+                    source.Position = transform.GetPosition();
+                    source.Direction = transform.GetForward();
+                    source.Ambient = light.Ambient;
+                    source.Color = light.Color;
+                    source.Attenuation = { 1, 0, 0 };
+                    source.Intensity = light.Intensity;
+                    source.Type = light.Type;
+                    source.ShadowFramebuffer = light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr;
+                    source.ShadowNear = cameraComponent.Frustum.NearPlane;
+                    source.ShadowFar = cameraComponent.Frustum.FarPlane;
                     s_LightSources.push_back(source);
                     s_LightSourceShadowLayerMasks.push_back(light.Shadows.LayerMask);
                 }

@@ -10,14 +10,15 @@ namespace Forge
 
 	class RendererContext;
 
-	constexpr int RENDER_PASS_COUNT = 4;
+	constexpr int RENDER_PASS_COUNT = 5;
 
 	FORGE_API enum class RenderPass
 	{
-		ShadowFormation,
+		Pick,
 		WithShadow,
 		WithoutShadow,
-		Pick,
+		PointShadowFormation,
+		ShadowFormation,
 	};
 
 	FORGE_API enum class PolygonMode

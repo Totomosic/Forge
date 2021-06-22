@@ -4,6 +4,8 @@
 namespace Editor
 {
 
+	constexpr uint32_t DefaultShadowMapDimension = 2048;
+
 	class SceneHierarchyPanel
 	{
 	private:

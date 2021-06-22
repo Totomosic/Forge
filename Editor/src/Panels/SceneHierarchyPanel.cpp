@@ -349,10 +349,23 @@ namespace Editor
 					Entity entity = m_Scene->CreateEntity();
 					m_SelectedEntity = entity;
 				}
+				if (ImGui::MenuItem("Create Point light"))
+				{
+					Entity entity = m_Scene->CreateEntity();
+					entity.AddComponent<PointLightComponent>().CreateShadowPass(DefaultShadowMapDimension, DefaultShadowMapDimension);
+					m_SelectedEntity = entity;
+				}
+				if (ImGui::MenuItem("Create Directional light"))
+				{
+					Entity entity = m_Scene->CreateEntity();
+					entity.AddComponent<DirectionalLightComponent>();
+					entity.GetTransform().Rotate(-PI / 2.0f, { 1, 0, 0 });
+					m_SelectedEntity = entity;
+				}
 				if (ImGui::MenuItem("Create Cube"))
 				{
 					Entity entity = m_Scene->CreateEntity();
-					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::CubeMesh(), GraphicsCache::LitColorMaterial(COLOR_WHITE)));
+					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::CubeMesh(), GraphicsCache::PbrColorMaterial(COLOR_WHITE)));
 					m_SelectedEntity = entity;
 				}
 				if (ImGui::MenuItem("Create Textured Cube"))
@@ -364,7 +377,7 @@ namespace Editor
 				if (ImGui::MenuItem("Create Sphere"))
 				{
 					Entity entity = m_Scene->CreateEntity();
-					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::SphereMesh(), GraphicsCache::LitColorMaterial(COLOR_WHITE)));
+					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::SphereMesh(), GraphicsCache::PbrColorMaterial(COLOR_WHITE)));
 					m_SelectedEntity = entity;
 				}
 				if (ImGui::MenuItem("Create Textured Sphere"))
@@ -376,7 +389,7 @@ namespace Editor
 				if (ImGui::MenuItem("Create Plane"))
 				{
 					Entity entity = m_Scene->CreateEntity();
-					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::GridMesh(2, 2), GraphicsCache::LitColorMaterial(COLOR_WHITE)));
+					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::GridMesh(2, 2), GraphicsCache::PbrColorMaterial(COLOR_WHITE)));
 					m_SelectedEntity = entity;
 				}
 				ImGui::EndPopup();
@@ -459,15 +472,15 @@ namespace Editor
 			{
 				if (!entity.HasComponent<ModelRendererComponent>())
 				{
-					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::CubeMesh(), GraphicsCache::LitColorMaterial(COLOR_WHITE)));
+					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::CubeMesh(), GraphicsCache::PbrColorMaterial(COLOR_WHITE)));
 				}
 				ImGui::CloseCurrentPopup();
 			}
-			if (ImGui::MenuItem("Light source"))
+			if (ImGui::MenuItem("Point light"))
 			{
-				if (!entity.HasComponent<LightSourceComponent>())
+				if (!entity.HasComponent<PointLightComponent>())
 				{
-					entity.AddComponent<LightSourceComponent>();
+					entity.AddComponent<PointLightComponent>();
 				}
 				ImGui::CloseCurrentPopup();
 			}
@@ -501,18 +514,37 @@ namespace Editor
 				transform.SetScale(scale);
 		});
 
-		DrawComponent<LightSourceComponent>("Light source", entity, true, [](LightSourceComponent& light)
+		DrawComponent<PointLightComponent>("Point light", entity, true, [](PointLightComponent& light)
 		{
 			DrawColorControl("Color", light.Color);
 			DrawFloatControl("Intensity", light.Intensity);
 			DrawFloatControl("Ambient", light.Ambient);
-			DrawVec3Control("Attenuation", light.Attenuation);
+			DrawFloatControl("Radius", light.Radius);
 			bool shadows = light.Shadows.Enabled;
 			DrawBooleanControl("Cast shadows", shadows);
 			if (shadows != light.Shadows.Enabled)
 			{
 				if (shadows)
-					light.CreateShadowPass(4096, 4096);
+					light.CreateShadowPass(DefaultShadowMapDimension, DefaultShadowMapDimension);
+				else
+				{
+					light.Shadows.Enabled = false;
+					light.Shadows.RenderTarget = nullptr;
+				}
+			}
+		});
+
+		DrawComponent<DirectionalLightComponent>("Directional light", entity, true, [](DirectionalLightComponent& light)
+		{
+			DrawColorControl("Color", light.Color);
+			DrawFloatControl("Intensity", light.Intensity);
+			DrawFloatControl("Ambient", light.Ambient);
+			bool shadows = light.Shadows.Enabled;
+			DrawBooleanControl("Cast shadows", shadows);
+			if (shadows != light.Shadows.Enabled)
+			{
+				if (shadows)
+					light.CreateShadowPass(DefaultShadowMapDimension, DefaultShadowMapDimension);
 				else
 				{
 					light.Shadows.Enabled = false;
@@ -579,7 +611,6 @@ namespace Editor
 				materialOptions.IncludeSeparator = false;
 				materialOptions.Callback = [&]()
 				{
-					Shader& shader = *submodel.Material->GetShader(RenderPass::WithoutShadow);
 					UniformContext& uniforms = submodel.Material->GetUniforms();
 					for (const UniformSpecification& specification : uniforms.GetUniforms())
 					{

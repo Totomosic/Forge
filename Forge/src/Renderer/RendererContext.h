@@ -73,6 +73,7 @@ namespace Forge
 		float m_Time;
 		glm::mat4 m_ShadowPointMatrices[6];
 		glm::vec3 m_CurrentShadowLightPosition;
+		glm::mat4 m_ShadowLightSpaceTransform;
 
 		std::vector<LightSource> m_LightSources;
 		std::vector<glm::vec4> m_ClippingPlanes;

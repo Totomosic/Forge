@@ -30,7 +30,10 @@ namespace Forge
 
 		// Shadows
 		Ref<Framebuffer> ShadowFramebuffer = nullptr;
+		float ShadowNear = 0.1f;
+		float ShadowFar = 50.0f;
 		mutable int ShadowBindLocation;
+		mutable glm::mat4 LightSpaceTransform;
 	};
 
 }

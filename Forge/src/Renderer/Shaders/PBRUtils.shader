@@ -53,11 +53,17 @@ vec4 CalculateSinglePBRLight(vec3 position, vec3 normal, vec3 F0, vec3 unitToCam
 {
     vec3 N = normal;
     vec3 V = unitToCameraVector;
-    vec3 toLightVector = light.Position - position;
+    vec3 toLightVector;
+    if (light.Type == LIGHT_TYPE_POINT)
+        toLightVector = light.Position - position;
+    else if (light.Type == LIGHT_TYPE_DIRECTIONAL)
+        toLightVector = -light.Direction;
     float distance = length(toLightVector);
     vec3 L = toLightVector / distance;
     vec3 H = normalize(V + L);
-    float attenuation = 1.0 / (light.Attenuation.x + distance * light.Attenuation.y + distance * distance * light.Attenuation.z);
+    float attenuation = 1.0;
+    if (light.Type == LIGHT_TYPE_POINT)
+        attenuation = 1.0 / (light.Attenuation.x + distance * light.Attenuation.y + distance * distance * light.Attenuation.z);
 
     vec4 radiance = vec4(light.Color.xyz * light.Intensity * attenuation, light.Color.a);
     float ndf = DistributionGGX(N, H, material.Roughness);

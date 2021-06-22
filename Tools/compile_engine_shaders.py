@@ -12,6 +12,7 @@ SHADER_FILES = [
     ["DefaultPointShadow.shader", "DefaultPointShadow.h"],
     ["DefaultPick.shader", "DefaultPick.h"],
     ["PBRColor.shader", "PBRColor.h"],
+    ["PBRTexture.shader", "PBRTexture.h"],
 ]
 
 SHADER_LIBRARY_FILES = [

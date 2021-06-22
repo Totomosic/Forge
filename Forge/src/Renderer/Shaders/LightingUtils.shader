@@ -12,7 +12,10 @@ struct LightSource
     vec3 Attenuation;
     float Intensity;
     bool UseShadows;
-    samplerCube ShadowMap;
+    samplerCube PointShadowMap;
+    // sampler2D ShadowMap;
+    float ShadowNear;
+    float ShadowFar;
 };
 
 vec4 CalculateSingleLightDiffuse(vec3 position, vec3 normal, LightSource light, float shadow)

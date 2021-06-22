@@ -23,10 +23,10 @@ namespace Forge
 		m_Context.SetTime(time);
 	}
 
-	void Renderer3D::AddShadowPass(const Ref<Framebuffer>& framebuffer, const glm::vec3& lightPosition, int index)
+	void Renderer3D::AddShadowPass(const Ref<Framebuffer>& framebuffer, const LightSource& light, int index)
 	{
 		ShadowPass pass;
-		pass.Position = lightPosition;
+		pass.Light = &light;
 		pass.RenderTarget = framebuffer;
 		pass.LightIndex = index;
 		m_ShadowPasses.push_back(pass);
@@ -54,13 +54,13 @@ namespace Forge
 		m_Renderables.clear();
 		m_ShadowPasses.clear();
 		m_RenderImGui = false;
-		m_CurrentRenderPass = RenderPass::ShadowFormation;
+		m_CurrentRenderPass = RenderPass::PointShadowFormation;
 
 		int index = 0;
 		for (const LightSource& light : m_CurrentScene.LightSources)
 		{
 			if (light.ShadowFramebuffer)
-				AddShadowPass(light.ShadowFramebuffer, light.Position, index);
+				AddShadowPass(light.ShadowFramebuffer, light, index);
 			index++;
 		}
 	}
@@ -72,7 +72,6 @@ namespace Forge
 		{
 			if (!m_ShadowPasses.empty())
 			{
-				m_CurrentRenderPass = RenderPass::ShadowFormation;
 				for (const ShadowPass& pass : m_ShadowPasses)
 				{
 					RenderShadowScene(pass);
@@ -117,9 +116,19 @@ namespace Forge
 
 		m_CurrentShadowLightIndex = pass.LightIndex;
 
-		glm::mat4 matrices[6];
-		GetCameraTransformsFromLightSource(pass.Position, pass.RenderTarget->GetAspect(), camera.Frustum, matrices);
-		m_Context.SetShadowPointMatrices(pass.Position, matrices);
+		if (pass.Light->Type == LightType::Point)
+		{
+			m_CurrentRenderPass = RenderPass::PointShadowFormation;
+			glm::mat4 matrices[6];
+			GetCameraTransformsFromLightSource(pass.Light->Position, pass.RenderTarget->GetAspect(), camera.Frustum, matrices);
+			m_Context.SetShadowPointMatrices(pass.Light->Position, matrices);
+		}
+		else
+		{
+			m_CurrentRenderPass = RenderPass::ShadowFormation;
+			shadowScene.Camera = CreateCameraFromLightSource(pass.Light->Position, pass.Light->Direction, pass.RenderTarget, pass.Light->ShadowNear, pass.Light->ShadowFar);
+			pass.Light->LightSpaceTransform = shadowScene.Camera.Frustum.ProjectionMatrix * shadowScene.Camera.ViewMatrix;
+		}
 		SetupScene(shadowScene);
 		RenderAll();
 	}
@@ -134,7 +143,7 @@ namespace Forge
 		}
 		if (m_CurrentRenderPass != RenderPass::Pick)
 		{
-			if (m_CurrentRenderPass == RenderPass::ShadowFormation)
+			if (m_CurrentRenderPass == RenderPass::PointShadowFormation || m_CurrentRenderPass == RenderPass::ShadowFormation)
 			{
 				RenderCommand::ClearDepth();
 			}
@@ -172,7 +181,7 @@ namespace Forge
 
 	void Renderer3D::RenderModelInternal(const RenderData& data)
 	{
-		if (m_CurrentRenderPass == RenderPass::ShadowFormation && !data.Options.ShadowMask.test(m_CurrentShadowLightIndex))
+		if (m_CurrentRenderPass == RenderPass::PointShadowFormation && !data.Options.ShadowMask.test(m_CurrentShadowLightIndex))
 			return;
 		const Ref<Model>& model = data.Model;
 		const glm::mat4& transform = data.Transform;
@@ -182,7 +191,7 @@ namespace Forge
 			Ref<Material> material = submodel.Material;
 			glm::mat4 overallTransform = transform * submodel.Transform;
 
-			if (m_CurrentRenderPass == RenderPass::ShadowFormation)
+			if (m_CurrentRenderPass == RenderPass::PointShadowFormation || m_CurrentRenderPass == RenderPass::ShadowFormation)
 			{
 				RenderSettings settings = submodel.Material->GetSettings();
 				if (settings.Culling != CullFace::None)
@@ -206,12 +215,12 @@ namespace Forge
 		}
 	}
 
-	CameraData Renderer3D::CreateCameraFromLightSource(const LightSource& light, const Ref<Framebuffer>& renderTarget, float range) const
+	CameraData Renderer3D::CreateCameraFromLightSource(const glm::vec3& lightPosition, const glm::vec3& lightDirection, const Ref<Framebuffer>& renderTarget, float nearDistance, float farDistance) const
 	{
 		CameraData camera;
 		camera.Viewport = { 0, 0, renderTarget->GetWidth(), renderTarget->GetHeight() };
-		camera.ViewMatrix = glm::lookAt(light.Position, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
-		camera.Frustum = Frustum::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, range);
+		camera.ViewMatrix = glm::lookAt(lightPosition, lightPosition + lightDirection, { 0.0f, 1.0f, 0.0f });
+		camera.Frustum = Frustum::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f, nearDistance, farDistance);
 		return camera;
 	}
 

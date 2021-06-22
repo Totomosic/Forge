@@ -8,13 +8,20 @@ namespace Forge
 
 	constexpr const char ShadowMapShaderDefine[] = "SHADOW_MAP";
 
+	struct FORGE_API ShadowFormationShaderSet
+	{
+	public:
+		Ref<Shader> PointShadow = nullptr;
+		Ref<Shader> Shadow = nullptr;
+	};
+
 	struct FORGE_API MaterialShaderSet
 	{
 	public:
-		Ref<Shader> ShadowFormationShader = nullptr;
+		Ref<Shader> PickShader = nullptr;
 		Ref<Shader> WithShadowShader = nullptr;
 		Ref<Shader> WithoutShadowShader = nullptr;
-		Ref<Shader> PickShader = nullptr;
+		ShadowFormationShaderSet ShadowFormationShaders = {};
 	};
 
 	class FORGE_API Material
@@ -47,6 +54,7 @@ namespace Forge
 		static Ref<Material> CreateFromShaderFile(const std::string& vertexFilePath, const std::string& geometryFilePath, const std::string& fragmentFilePath, ShaderDefines defines = {});
 		static Ref<Material> CreateFromShaderFile(const std::string& shaderFilePath, ShaderDefines defines = {});
 		static Ref<Material> Create(const Ref<Shader>& shader, const Ref<Shader>& shadowShader = nullptr);
+		static Ref<Material> Create(const MaterialShaderSet& shaders);
 
 	};
 
