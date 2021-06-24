@@ -7,7 +7,7 @@ namespace Forge
 
 	RendererContext::RendererContext()
 		: m_ViewMatrix(), m_ProjectionMatrix(), m_ProjViewMatrix(), m_CameraFarPlane(0.0f), m_CameraNearPlane(0.0f), m_CameraPosition(), m_LightSources(), m_ClippingPlanes(),
-		m_NextTextureSlot(0), m_CullingEnabled(false), m_RenderSettings(), m_RequirementsMap()
+		m_NextTextureSlot(FirstTextureSlot), m_CullingEnabled(false), m_RenderSettings(), m_RequirementsMap(), m_BoundSlots{ false, false }
 	{
 	}
 
@@ -26,8 +26,17 @@ namespace Forge
 		m_LightSources = lights;
 		for (LightSource& light : m_LightSources)
 		{
+			GLenum textureTarget = GL_TEXTURE_CUBE_MAP;
+			if (light.Type != LightType::Point)
+				textureTarget = GL_TEXTURE_2D;
 			if (light.ShadowFramebuffer)
-				light.ShadowBindLocation = BindTexture(light.ShadowFramebuffer->GetDepthAttachment());
+			{
+				light.ShadowBindLocation = BindTexture(light.ShadowFramebuffer->GetDepthAttachment(), textureTarget);
+			}
+			else
+			{
+				light.ShadowBindLocation = BindTexture(nullptr, textureTarget);
+			}
 		}
 	}
 
@@ -61,7 +70,8 @@ namespace Forge
 	void RendererContext::Reset()
 	{
 		m_CurrentShader = nullptr;
-		m_NextTextureSlot = 0;
+		m_NextTextureSlot = FirstTextureSlot;
+		m_BoundSlots[0] = m_BoundSlots[1] = false;
 	}
 
 	ShaderRequirements RendererContext::GetShaderRequirements(const Ref<Shader>& shader)
@@ -144,18 +154,22 @@ namespace Forge
 					shader->SetUniform(uniformBase + ".Ambient", m_LightSources[i].Ambient);
 					shader->SetUniform(uniformBase + ".Intensity", m_LightSources[i].Intensity);
 					shader->SetUniform(uniformBase + ".UseShadows", m_LightSources[i].ShadowFramebuffer != nullptr);
+					if (m_LightSources[i].Type == LightType::Point)
+					{
+						BindTexture(nullptr, GL_TEXTURE_2D);
+						shader->SetUniform(uniformBase + ".PointShadowMap", m_LightSources[i].ShadowBindLocation);
+						shader->SetUniform(uniformBase + ".ShadowMap", NullTexture2DSlot);
+					}
+					else
+					{
+						BindTexture(nullptr, GL_TEXTURE_CUBE_MAP);
+						shader->SetUniform(uniformBase + ".ShadowMap", m_LightSources[i].ShadowBindLocation);
+						shader->SetUniform(uniformBase + ".PointShadowMap", NullTextureCubeSlot);
+					}
 					if (m_LightSources[i].ShadowFramebuffer)
 					{
-						if (m_LightSources[i].Type == LightType::Point)
-						{
-							shader->SetUniform(uniformBase + ".PointShadowMap", m_LightSources[i].ShadowBindLocation);
-						}
-						else
-						{
-							shader->SetUniform(uniformBase + ".ShadowMap", m_LightSources[i].ShadowBindLocation);
-						}
-						shader->SetUniform(uniformBase + ".ShadowNear", m_LightSources[i].ShadowNear);
-						shader->SetUniform(uniformBase + ".ShadowFar", m_LightSources[i].ShadowFar);
+						shader->SetUniform(uniformBase + ".ShadowNear", m_LightSources[i].ShadowFrustum.NearPlane);
+						shader->SetUniform(uniformBase + ".ShadowFar", m_LightSources[i].ShadowFrustum.FarPlane);
 						if (m_LightSources[i].Type != LightType::Point)
 						{
 							shader->SetUniform(uniformBase + ".LightSpaceTransform", m_LightSources[i].LightSpaceTransform);
@@ -190,16 +204,21 @@ namespace Forge
 		}
 	}
 
-	int RendererContext::BindTexture(const Ref<Texture>& texture)
+	int RendererContext::BindTexture(const Ref<Texture>& texture, GLenum textureTarget)
 	{
 		FORGE_ASSERT(m_NextTextureSlot < 32, "Too many textures bound");
 		if (texture)
 			texture->Bind(m_NextTextureSlot);
 		else
 		{
-			// TODO: rework
-			glActiveTexture(GL_TEXTURE0 + m_NextTextureSlot);
-			glBindTexture(GL_TEXTURE_2D, 0);
+			int slot = textureTarget == GL_TEXTURE_2D ? NullTexture2DSlot : NullTextureCubeSlot;
+			if (!m_BoundSlots[slot])
+			{
+				glActiveTexture(GL_TEXTURE0 + slot);
+				glBindTexture(textureTarget, 0);
+				m_BoundSlots[slot] = true;
+			}
+			return slot;
 		}
 		return m_NextTextureSlot++;
 	}

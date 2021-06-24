@@ -1,5 +1,4 @@
 #shader VERTEX
-#version 450 core
 layout (location = 0) in vec3 v_Position;
 
 uniform mat4 frg_ModelMatrix;
@@ -11,7 +10,6 @@ void main()
 }
 
 #shader FRAGMENT
-#version 450 core
 void main()
 {
 }

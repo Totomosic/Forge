@@ -7,6 +7,8 @@
 namespace Forge
 {
 
+	using ShaderDefines = std::vector<std::string>;
+
 	namespace Detail
 	{
 
@@ -18,6 +20,20 @@ namespace Forge
 				glUseProgram(0);
 				glDeleteProgram(id);
 			}
+		};
+		
+		class FORGE_API ShaderSource
+		{
+		private:
+			std::vector<char*> m_Strings;
+
+		public:
+			ShaderSource(const std::string& source, const ShaderDefines& defines);
+			~ShaderSource();
+
+			inline bool IsValid() const { return Count() > 0; }
+			inline size_t Count() const { return m_Strings.size(); }
+			inline const char* const* Data() const { return m_Strings.data(); }
 		};
 
 	}
@@ -31,8 +47,6 @@ namespace Forge
 		int Count;
 		bool Automatic;
 	};
-
-	using ShaderDefines = std::vector<std::string>;
 
 	class FORGE_API Shader
 	{
@@ -72,7 +86,7 @@ namespace Forge
 		static Ref<Shader> CreateFromFile(const std::string& shaderFilePath, const ShaderDefines& defines = {});
 
 	private:
-		void Init(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource);
+		void Init(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource, const ShaderDefines& defines);
 		void ReflectShader(const std::unordered_map<std::string, std::string>& nameMap);
 		int GetUniformLocation(const std::string& name);
 		

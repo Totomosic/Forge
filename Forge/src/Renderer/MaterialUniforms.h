@@ -81,6 +81,9 @@ namespace Forge
 		void AddFromDescriptors(RenderPass pass, const std::vector<UniformDescriptor>& descriptors);
 		void Apply(RenderPass pass, const Ref<Shader>& shader, RendererContext& context) const;
 
+	private:
+		void ApplyTextureUniform(const Ref<Shader>& shader, const UniformSpecification& specifiation, RendererContext& context, GLenum textureTarget) const;
+
 	};
 
 }

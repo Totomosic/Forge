@@ -4,7 +4,8 @@
 namespace Editor
 {
 
-	constexpr uint32_t DefaultShadowMapDimension = 2048;
+	constexpr uint32_t DefaultPointShadowMapDimension = 2048;
+	constexpr uint32_t DefaultShadowMapDimension = 4096;
 
 	class SceneHierarchyPanel
 	{

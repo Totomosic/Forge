@@ -1,5 +1,4 @@
 #shader VERTEX
-#version 450 core
 layout (location = 0) in vec3 v_Position;
 layout (location = 4) in ivec4 v_JointIds;
 layout (location = 5) in vec4 v_JointWeights;
@@ -24,7 +23,6 @@ void main()
 }
 
 #shader FRAGMENT
-#version 450 core
 layout (location = 0) out vec4 f_FinalColor;
 
 ["Color"]

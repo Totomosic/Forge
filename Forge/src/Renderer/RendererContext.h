@@ -64,6 +64,11 @@ namespace Forge
 	class FORGE_API RendererContext
 	{
 	private:
+		static constexpr int FirstTextureSlot = 2;
+		static constexpr int NullTexture2DSlot = 0;
+		static constexpr int NullTextureCubeSlot = 1;
+
+	private:
 		glm::mat4 m_ProjectionMatrix;
 		glm::mat4 m_ViewMatrix;
 		glm::mat4 m_ProjViewMatrix;
@@ -77,6 +82,7 @@ namespace Forge
 
 		std::vector<LightSource> m_LightSources;
 		std::vector<glm::vec4> m_ClippingPlanes;
+		bool m_BoundSlots[FirstTextureSlot];
 		int m_NextTextureSlot;
 
 		bool m_CullingEnabled;
@@ -101,7 +107,7 @@ namespace Forge
 
 		ShaderRequirements GetShaderRequirements(const Ref<Shader>& shader);
 		void BindShader(const Ref<Shader>& shader, const ShaderRequirements& requirements);
-		int BindTexture(const Ref<Texture>& texture);
+		int BindTexture(const Ref<Texture>& texture, GLenum textureTarget);
 	};
 
 }

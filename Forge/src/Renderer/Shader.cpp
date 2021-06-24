@@ -11,6 +11,49 @@
 namespace Forge
 {
 
+    namespace Detail
+    {
+
+        void AddString(std::vector<char*>& vector, const char* string, size_t length = std::string::npos)
+        {
+            if (length == std::string::npos)
+                length = std::strlen(string);
+            length++;
+            char* buffer = new char[length];
+            std::memcpy(buffer, string, length);
+            vector.push_back(buffer);
+        }
+
+        ShaderSource::ShaderSource(const std::string& source, const ShaderDefines& defines)
+            : m_Strings{}
+        {
+            if (!source.empty())
+            {
+                AddString(m_Strings, "#version 450 core\n");
+                for (const std::string& define : defines)
+                {
+                    size_t index = define.find_first_of('=');
+                    if (index != std::string::npos)
+                    {
+                        AddString(m_Strings, ("#define " + define.substr(0, index) + " " + define.substr(index + 1) + "\n").c_str());
+                    }
+                    else
+                    {
+                        AddString(m_Strings, ("#define " + define + "\n").c_str());
+                    }
+                }
+                AddString(m_Strings, source.c_str(), source.size());
+            }
+        }
+
+        ShaderSource::~ShaderSource()
+        {
+            for (char* str : m_Strings)
+                delete[] str;
+        }
+
+    }
+
     namespace Utils
     {
         
@@ -116,7 +159,7 @@ namespace Forge
         : m_Handle(), m_UniformLocations(), m_UniformDescriptors()
     {
         std::unordered_map<std::string, std::string> nameMap;
-        Init(PreprocessShaderSource(vertexSource, defines, nameMap), PreprocessShaderSource(geometrySource, defines, nameMap), PreprocessShaderSource(fragmentSource, defines, nameMap));
+        Init(PreprocessShaderSource(vertexSource, defines, nameMap), PreprocessShaderSource(geometrySource, defines, nameMap), PreprocessShaderSource(fragmentSource, defines, nameMap), defines);
         ReflectShader(nameMap);
     }
 
@@ -251,41 +294,40 @@ namespace Forge
         return CreateFromSource(vertexSource.str(), geometrySource.str(), fragmentSource.str(), defines);
     }
 
-    void Shader::Init(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource)
+    void Shader::Init(const std::string& vertexSource, const std::string& geometrySource, const std::string& fragmentSource, const ShaderDefines& defines)
     {
-        bool useGeometryShader = !geometrySource.empty();
-        /* FORGE_INFO("VERTEX SHADER SOURCE\n{}", vertexSource);
-        if (useGeometryShader)
+        Detail::ShaderSource vertex(vertexSource, defines);
+        Detail::ShaderSource fragment(fragmentSource, defines);
+        Detail::ShaderSource geometry(geometrySource, defines);
+
+        FORGE_INFO("VERTEX SHADER SOURCE\n{}", vertexSource);
+        if (geometry.IsValid())
         {
             FORGE_INFO("GEOMETRY SHADER SOURCE\n{}", geometrySource);
         }
-        FORGE_INFO("FRAGMENT SHADER SOURCE\n{}", fragmentSource); */
+        FORGE_INFO("FRAGMENT SHADER SOURCE\n{}", fragmentSource);
 
         uint32_t vertexShader = glCreateShader(GL_VERTEX_SHADER);
         uint32_t fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
         uint32_t geometryShader = 0;
-        if (useGeometryShader)
+        if (geometry.IsValid())
             geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
 
-        const char* vSourcePtr = vertexSource.c_str();
-        const char* fSourcePtr = fragmentSource.c_str();
-        const char* gSourcePtr = geometrySource.c_str();
-
-        glShaderSource(vertexShader, 1, &vSourcePtr, nullptr);
-        glShaderSource(fragmentShader, 1, &fSourcePtr, nullptr);
-        if (useGeometryShader)
-            glShaderSource(geometryShader, 1, &gSourcePtr, nullptr);
+        glShaderSource(vertexShader, vertex.Count(), vertex.Data(), nullptr);
+        glShaderSource(fragmentShader, fragment.Count(), fragment.Data(), nullptr);
+        if (geometry.IsValid())
+            glShaderSource(geometryShader, geometry.Count(), geometry.Data(), nullptr);
 
         glCompileShader(vertexShader);
         glCompileShader(fragmentShader);
-        if (useGeometryShader)
+        if (geometry.IsValid())
             glCompileShader(geometryShader);
 
         int success;
         char log[512];
         for (uint32_t shader : { vertexShader, fragmentShader, geometryShader })
         {
-            if (shader == geometryShader && !useGeometryShader)
+            if (shader == geometryShader && !geometry.IsValid())
                 continue;
             glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
             if (!success)
@@ -299,7 +341,7 @@ namespace Forge
         m_Handle.Id = glCreateProgram();
         glAttachShader(m_Handle.Id, vertexShader);
         glAttachShader(m_Handle.Id, fragmentShader);
-        if (useGeometryShader)
+        if (geometry.IsValid())
             glAttachShader(m_Handle.Id, geometryShader);
         glLinkProgram(m_Handle.Id);
 
@@ -313,7 +355,7 @@ namespace Forge
 
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
-        if (useGeometryShader)
+        if (geometry.IsValid())
             glDeleteShader(geometryShader);
     }
 
@@ -378,7 +420,7 @@ namespace Forge
 
             directiveStart = result.find("#include ");
         }
-        PreprocessIfDefs(result, "#ifdef ", [&defines](const std::string& define) { return std::find(defines.begin(), defines.end(), define) != defines.end(); });
+        /*PreprocessIfDefs(result, "#ifdef ", [&defines](const std::string& define) { return std::find(defines.begin(), defines.end(), define) != defines.end(); });
         PreprocessIfDefs(result, "#ifndef ", [&defines](const std::string& define) { return std::find(defines.begin(), defines.end(), define) == defines.end(); });
         for (const std::string& def : defines)
         {
@@ -396,7 +438,7 @@ namespace Forge
                 }
             }
         }
-        PreprocessIfDefs(result, "#if ", [](const std::string& value) { return value == "1" || value == "true"; });
+        PreprocessIfDefs(result, "#if ", [](const std::string& value) { return value == "1" || value == "true"; });*/
 
         // Parse uniform descriptors
         size_t index = result.find("[\"");

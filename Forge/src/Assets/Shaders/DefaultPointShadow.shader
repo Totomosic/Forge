@@ -1,5 +1,4 @@
 #shader VERTEX
-#version 450 core
 layout (location = 0) in vec3 v_Position;
 
 uniform mat4 frg_ModelMatrix;
@@ -10,7 +9,6 @@ void main()
 }
 
 #shader GEOMETRY
-#version 450 core
 layout(triangles) in;
 layout(triangle_strip, max_vertices=18) out;
 
@@ -32,7 +30,6 @@ void main()
 }
 
 #shader FRAGMENT
-#version 450 core
 in vec4 f_FragPosition;
 uniform vec3 frg_ShadowLightPosition;
 uniform float frg_FarPlane;

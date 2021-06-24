@@ -2,6 +2,7 @@
 #include "ForgePch.h"
 #include "Core/Color.h"
 #include "Framebuffer.h"
+#include "CameraData.h"
 
 #include <glm/glm.hpp>
 
@@ -30,8 +31,7 @@ namespace Forge
 
 		// Shadows
 		Ref<Framebuffer> ShadowFramebuffer = nullptr;
-		float ShadowNear = 0.1f;
-		float ShadowFar = 50.0f;
+		Frustum ShadowFrustum;
 		mutable int ShadowBindLocation;
 		mutable glm::mat4 LightSpaceTransform;
 	};

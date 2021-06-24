@@ -190,8 +190,7 @@ namespace Forge
                     source.Intensity = light.Intensity;
                     source.Type = light.Type;
                     source.ShadowFramebuffer = light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr;
-                    source.ShadowNear = cameraComponent.Frustum.NearPlane;
-                    source.ShadowFar = cameraComponent.Frustum.FarPlane;
+                    source.ShadowFrustum = cameraComponent.Frustum;
                     s_LightSources.push_back(source);
                     s_LightSourceShadowLayerMasks.push_back(light.Shadows.LayerMask);
                 }
@@ -210,8 +209,7 @@ namespace Forge
                     source.Intensity = light.Intensity;
                     source.Type = light.Type;
                     source.ShadowFramebuffer = light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr;
-                    source.ShadowNear = cameraComponent.Frustum.NearPlane;
-                    source.ShadowFar = cameraComponent.Frustum.FarPlane;
+                    source.ShadowFrustum = Frustum::Orthographic(-25, 25, -25, 25, -20, 20);
                     s_LightSources.push_back(source);
                     s_LightSourceShadowLayerMasks.push_back(light.Shadows.LayerMask);
                 }

@@ -101,21 +101,31 @@ namespace Forge
 					shader->SetUniform(specification.VariableName, FORGE_UNIFORM_REFERENCE(bool, specification.Offset));
 					break;
 				case ShaderDataType::Sampler1D:
-				case ShaderDataType::Sampler2D:
-				case ShaderDataType::Sampler3D:
-				case ShaderDataType::SamplerCube:
-				{
-					int textureIndex = FORGE_UNIFORM_REFERENCE(int, specification.Offset);
-					int slot = context.BindTexture(m_Textures[textureIndex]);
-					shader->SetUniform(specification.VariableName, slot);
+					ApplyTextureUniform(shader, specification, context, GL_TEXTURE_1D);
 					break;
-				}
+				case ShaderDataType::Sampler2D:
+					ApplyTextureUniform(shader, specification, context, GL_TEXTURE_2D);
+					break;
+				case ShaderDataType::Sampler3D:
+					ApplyTextureUniform(shader, specification, context, GL_TEXTURE_3D);
+					break;
+				case ShaderDataType::SamplerCube:
+					ApplyTextureUniform(shader, specification, context, GL_TEXTURE_CUBE_MAP);
+					break;
 				default:
 					FORGE_ASSERT(false, "Invalid uniform type");
 					break;
 				}
 			}
 		}
+	}
+
+	void UniformContext::ApplyTextureUniform(const Ref<Shader>& shader, const UniformSpecification& specification, RendererContext& context, GLenum textureTarget) const
+	{
+		int textureIndex = FORGE_UNIFORM_REFERENCE(int, specification.Offset);
+		FORGE_ASSERT(!m_Textures[textureIndex] || m_Textures[textureIndex]->GetTarget() == textureTarget, "Invalid texture for uniform");
+		int slot = context.BindTexture(m_Textures[textureIndex], textureTarget);
+		shader->SetUniform(specification.VariableName, slot);
 	}
 
 #undef FORGE_UNIFORM_REFERENCE

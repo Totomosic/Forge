@@ -1,5 +1,4 @@
 #shader VERTEX
-#version 450 core
 layout (location = 0) in vec3 v_Position;
 layout (location = 1) in vec3 v_Normal;
 layout (location = 2) in vec2 v_TexCoord;
@@ -37,7 +36,6 @@ void main()
 }
 
 #shader FRAGMENT
-#version 450 core
 #include <Lighting.h>
 
 layout (location = 0) out vec4 f_FinalColor;

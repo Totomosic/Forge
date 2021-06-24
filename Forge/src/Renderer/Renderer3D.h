@@ -81,7 +81,7 @@ namespace Forge
 		void RenderAll();
 		void RenderModelInternal(const RenderData& data);
 
-		CameraData CreateCameraFromLightSource(const glm::vec3& lightPosition, const glm::vec3& lightDirection, const Ref<Framebuffer>& renderTarget, float nearDistance, float farDistance) const;
+		CameraData CreateCameraFromLightSource(const glm::vec3& lightPosition, const glm::vec3& lightDirection, const Ref<Framebuffer>& renderTarget, const Frustum& frustum) const;
 		void GetCameraTransformsFromLightSource(const glm::vec3& lightPosition, float aspect, const Frustum& frustum, glm::mat4 transforms[6]);
 
 	};

@@ -38,7 +38,7 @@ namespace Editor
 		sun.GetTransform().SetPosition({ 0, 0, 0 });
 		sun.GetTransform().Rotate(-PI / 2.0f, { 1, 0, 0 });
 		DirectionalLightComponent& lightSource = sun.AddComponent<DirectionalLightComponent>();
-		// lightSource.CreateShadowPass(DefaultShadowMapDimension, DefaultShadowMapDimension);
+		lightSource.CreateShadowPass(DefaultShadowMapDimension, DefaultShadowMapDimension);
 
 		m_SceneHierarchy.SetScene(&scene);
 		m_AssetBrowser.SetRootDirectory("assets");

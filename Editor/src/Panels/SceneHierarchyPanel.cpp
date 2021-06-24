@@ -352,7 +352,7 @@ namespace Editor
 				if (ImGui::MenuItem("Create Point light"))
 				{
 					Entity entity = m_Scene->CreateEntity();
-					entity.AddComponent<PointLightComponent>().CreateShadowPass(DefaultShadowMapDimension, DefaultShadowMapDimension);
+					entity.AddComponent<PointLightComponent>().CreateShadowPass(DefaultPointShadowMapDimension, DefaultPointShadowMapDimension);
 					m_SelectedEntity = entity;
 				}
 				if (ImGui::MenuItem("Create Directional light"))
