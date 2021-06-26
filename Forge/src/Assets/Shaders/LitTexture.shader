@@ -46,5 +46,5 @@ void main()
     material.Specular = 0.0;
     material.ShineDamper = 0.0;
     f_FinalColor = texture(u_Texture, f_TexCoord) * CalculateLighting(f_Position, normalize(f_Normal), frg_CameraPosition, material);
-#endif;
+#endif
 }

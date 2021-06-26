@@ -12,6 +12,8 @@ namespace Forge
             return Texture2D::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA);
         case FramebufferTextureFormat::RED_INTEGER:
             return Texture2D::Create(width, height, TextureFormat::RED_INTEGER, InternalTextureFormat::RED_INTEGER);
+        case FramebufferTextureFormat::RGBA16F:
+            return Texture2D::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA16F);
         case FramebufferTextureFormat::DEPTH32:
             return Texture2D::Create(width, height, TextureFormat::DEPTH, InternalTextureFormat::DEPTH);
         }
@@ -27,6 +29,8 @@ namespace Forge
             return TextureCube::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA);
         case FramebufferTextureFormat::RED_INTEGER:
             return TextureCube::Create(width, height, TextureFormat::RED_INTEGER, InternalTextureFormat::RED_INTEGER);
+        case FramebufferTextureFormat::RGBA16F:
+            return TextureCube::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA16F);
         case FramebufferTextureFormat::DEPTH32:
             return TextureCube::Create(width, height, TextureFormat::DEPTH, InternalTextureFormat::DEPTH);
         }

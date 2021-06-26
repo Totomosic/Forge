@@ -28,6 +28,7 @@ namespace Forge
 		None = 0,
 
 		RGBA8,
+		RGBA16F,
 		RED_INTEGER,
 
 		DEPTH32,
@@ -46,6 +47,8 @@ namespace Forge
 		{
 		case FramebufferTextureFormat::RGBA8:
 			return GL_RGBA8;
+		case FramebufferTextureFormat::RGBA16F:
+			return GL_RGBA16F;
 		case FramebufferTextureFormat::RED_INTEGER:
 			return GL_RED_INTEGER;
 		}
@@ -91,6 +94,7 @@ namespace Forge
 	public:
 		Framebuffer(const FramebufferProps& props);
 
+		inline bool SupportsDepth() const { return m_DepthAttachment != nullptr; }
 		inline uint32_t GetWidth() const { return m_Props.Width; }
 		inline uint32_t GetHeight() const { return m_Props.Height; }
 		inline int GetSamples() const { return m_Props.Samples; }

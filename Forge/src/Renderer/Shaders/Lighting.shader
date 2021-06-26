@@ -24,6 +24,11 @@ vec4 CalculateLighting(vec3 position, vec3 normal, vec3 cameraPosition, Material
         {
             if (frg_LightSources[i].Type == LIGHT_TYPE_POINT)
                 shadow = CalculatePointShadow(position, frg_LightSources[i].PointShadowMap, frg_FarPlane, frg_LightSources[i].Position, cameraPosition);
+            else
+            {
+                vec4 lightSpacePosition = frg_LightSources[i].LightSpaceTransform * vec4(position, 1.0);
+                shadow = CalculateShadow(lightSpacePosition, frg_LightSources[i].ShadowMap, normal, frg_LightSources[i].Direction);
+            }
         }
 #endif
         vec4 diffuse = CalculateSingleLightDiffuse(position, normal, frg_LightSources[i], shadow);

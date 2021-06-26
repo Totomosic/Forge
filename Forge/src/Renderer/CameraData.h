@@ -51,6 +51,7 @@ namespace Forge
 		std::vector<glm::vec4> ClippingPlanes;
 		Color ClearColor;
 		CameraMode Mode = CameraMode::Normal;
+		bool UsePostProcessing = true;
 	};
 
 }

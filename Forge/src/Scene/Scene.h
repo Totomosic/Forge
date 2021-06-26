@@ -47,6 +47,7 @@ namespace Forge
 		Entity GetPrimaryCamera();
 		Entity CreateEntity(uint8_t layer = DEFAULT_LAYER);
 		Entity CreateEntity(const std::string& name, uint8_t layer = DEFAULT_LAYER);
+		Entity CloneEntity(Entity entity);
 		void DestroyEntity(const Entity& entity);
 		void SetLayer(Entity entity, uint8_t layer);
 		void AddLayer(Entity entity, uint8_t layer);

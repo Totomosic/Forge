@@ -52,6 +52,7 @@ namespace Forge
             CameraData camera;
             camera.Viewport = m_Window.GetFramebuffer()->GetViewport();
             camera.ViewMatrix = glm::mat4(1.0f);
+            camera.UsePostProcessing = false;
             m_Renderer.BeginScene(m_Window.GetFramebuffer(), camera);
             for (const std::unique_ptr<Layer>& layer : m_LayerStack)
             {

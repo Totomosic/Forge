@@ -13,6 +13,11 @@ SHADER_FILES = [
     ["DefaultPick.shader", "DefaultPick.h"],
     ["PBRColor.shader", "PBRColor.h"],
     ["PBRTexture.shader", "PBRTexture.h"],
+
+    ["PostProcessing/Bloom.shader", "PostProcessing/Bloom.h"],
+    ["PostProcessing/BloomCombine.shader", "PostProcessing/BloomCombine.h"],
+    ["PostProcessing/Blur.shader", "PostProcessing/Blur.h"],
+    ["PostProcessing/HDR.shader", "PostProcessing/HDR.h"],
 ]
 
 SHADER_LIBRARY_FILES = [

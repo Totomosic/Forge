@@ -14,8 +14,9 @@ namespace Forge
 {
 
 	Renderer3D::Renderer3D()
-		: m_CurrentScene(), m_CurrentRenderPass(), m_RenderImGui(false), m_CurrentShadowLightIndex(0), m_Context(), m_ClearedFramebuffers()
+		: m_CurrentScene(), m_CurrentRenderPass(), m_RenderImGui(false), m_CurrentShadowLightIndex(0), m_Context(), m_ClearedFramebuffers(), m_PostProcessor()
 	{
+		m_PostProcessor.SetEnabled(true);
 	}
 
 	void Renderer3D::SetTime(float time)
@@ -49,12 +50,16 @@ namespace Forge
 		m_CurrentScene = {
 			framebuffer,
 			camera,
-			lightSources
+			lightSources,
+			camera.UsePostProcessing,
 		};
 		m_Renderables.clear();
 		m_ShadowPasses.clear();
 		m_RenderImGui = false;
 		m_CurrentRenderPass = RenderPass::PointShadowFormation;
+
+		if (camera.UsePostProcessing)
+			m_PostProcessor.Init(framebuffer->GetWidth(), framebuffer->GetHeight());
 
 		int index = 0;
 		for (const LightSource& light : m_CurrentScene.LightSources)
@@ -86,6 +91,9 @@ namespace Forge
 				SetupScene(m_CurrentScene);
 				RenderAll();
 			}
+			if (m_CurrentScene.UsePostProcessing)
+				m_PostProcessor.Render(m_Context);
+			RenderImGuiInternal();
 		}
 		else
 		{
@@ -138,7 +146,14 @@ namespace Forge
 		FORGE_ASSERT(data.RenderTarget != nullptr, "Invalid framebuffer");
 		if (data.RenderTarget != m_CurrentFramebuffer)
 		{
-			data.RenderTarget->Bind();
+			if (data.UsePostProcessing)
+			{
+				m_PostProcessor.SetDestination(data.RenderTarget);
+			}
+			else
+			{
+				data.RenderTarget->Bind();
+			}
 			m_CurrentFramebuffer = data.RenderTarget;
 		}
 		if (m_CurrentRenderPass != RenderPass::Pick)
@@ -172,6 +187,10 @@ namespace Forge
 	{
 		for (const RenderData& data : m_Renderables)
 			RenderModelInternal(data);
+	}
+
+	void Renderer3D::RenderImGuiInternal()
+	{
 		if (m_RenderImGui && m_CurrentRenderPass != RenderPass::Pick)
 		{
 			ImGui::Render();

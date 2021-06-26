@@ -44,6 +44,8 @@ namespace Editor
 		m_AssetBrowser.SetRootDirectory("assets");
 		m_ViewportSize = { width, height };
 
+		m_PostProcessing.SetRenderer(&m_Application->GetRenderer());
+
 		Input::OnKeyPressed.AddEventListener([&](const KeyCode& key)
 		{
 			if (key == KeyCode::Escape)
@@ -206,6 +208,7 @@ namespace Editor
 		m_SceneHierarchy.OnImGuiRender();
 		m_AssetBrowser.OnImGuiRender();
 		m_LibraryBrowser.OnImGuiRender();
+		m_PostProcessing.OnImGuiRender();
 
 		ImGui::Begin("Stats");
 		ImGui::Text("Frame time: %.3f", m_Timestep.Milliseconds());

@@ -56,6 +56,11 @@ namespace Forge
 
 	public:
 		UniformContext();
+		UniformContext(const UniformContext& other);
+		UniformContext& operator=(const UniformContext& other);
+		UniformContext(UniformContext&& other) = default;
+		UniformContext& operator=(UniformContext&& other) = default;
+		~UniformContext() = default;
 
 		inline const std::vector<UniformSpecification>& GetUniforms() const { return m_UniformSpecifications; }
 		inline bool HasUniform(const std::string& varname) const { return m_UniformSpecificationIndices.find(varname) != m_UniformSpecificationIndices.end(); }

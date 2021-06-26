@@ -3,6 +3,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/AssetBrowserPanel.h"
 #include "Panels/LibraryBrowserPanel.h"
+#include "Panels/PostProcessingPanel.h"
 
 #include <imgui.h>
 #include <ImGuizmo.h>
@@ -22,6 +23,7 @@ namespace Editor
 		SceneHierarchyPanel m_SceneHierarchy;
 		AssetBrowserPanel m_AssetBrowser;
 		LibraryBrowserPanel m_LibraryBrowser;
+		PostProcessingPanel m_PostProcessing;
 
 		bool m_ViewportFocused = false;
 		bool m_ViewportHovered = false;

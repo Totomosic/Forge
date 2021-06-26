@@ -3,6 +3,8 @@
 
 uniform LightSource frg_LightSources[MAX_LIGHT_COUNT];
 uniform int frg_UsedLightSources;
+["Emission"]
+uniform float u_Emission;
 
 vec4 CalculateLightingPBR(vec3 position, vec3 normal, vec3 cameraPosition, PBRMaterialOptions material)
 {
@@ -33,8 +35,6 @@ vec4 CalculateLightingPBR(vec3 position, vec3 normal, vec3 cameraPosition, PBRMa
         color.a = max(color.a, lighting.a);
     }
 
-    color.xyz = color.xyz / (color.xyz + vec3(1.0));
-    color.xyz = pow(color.xyz, vec3(1.0 / 2.2));
-
+    color.xyz += material.Albedo.xyz * u_Emission;
     return color;
 }

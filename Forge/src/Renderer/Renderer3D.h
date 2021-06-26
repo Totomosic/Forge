@@ -1,7 +1,7 @@
 #pragma once
 #include "RendererContext.h"
-#include "Framebuffer.h"
 #include "Model.h"
+#include "PostProcessor.h"
 
 #include <unordered_set>
 
@@ -29,6 +29,7 @@ namespace Forge
 			Ref<Framebuffer> RenderTarget;
 			CameraData Camera;
 			std::vector<LightSource> LightSources;
+			bool UsePostProcessing = false;
 		};
 
 		struct RenderData
@@ -60,9 +61,13 @@ namespace Forge
 		Ref<Framebuffer> m_CurrentFramebuffer = nullptr;
 		std::unordered_set<const Framebuffer*> m_ClearedFramebuffers;
 
+		PostProcessor m_PostProcessor;
+
 	public:
 		Renderer3D();
 
+		inline const PostProcessor& GetPostProcessor() const { return m_PostProcessor; }
+		inline PostProcessor& GetPostProcessor() { return m_PostProcessor; }
 		inline const RendererStats& GetStats() const { return m_Stats; }
 		void SetTime(float time);
 
@@ -79,6 +84,7 @@ namespace Forge
 		void RenderShadowScene(const ShadowPass& pass);
 		void SetupScene(const SceneData& data);
 		void RenderAll();
+		void RenderImGuiInternal();
 		void RenderModelInternal(const RenderData& data);
 
 		CameraData CreateCameraFromLightSource(const glm::vec3& lightPosition, const glm::vec3& lightDirection, const Ref<Framebuffer>& renderTarget, const Frustum& frustum) const;

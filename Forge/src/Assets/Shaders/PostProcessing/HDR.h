@@ -1,0 +1,28 @@
+std::string vertexShaderSource =
+	"layout(location = 0) in vec3 v_Position;\n"
+	"layout(location = 2) in vec2 v_TexCoord;\n"
+	"\n"
+	"out vec2 f_TexCoord;\n"
+	"\n"
+	"void main()\n"
+	"{\n"
+	"    gl_Position = vec4(v_Position * 2.0, 1.0);\n"
+	"    f_TexCoord = v_TexCoord;\n"
+	"}\n"
+	"\n";
+std::string fragmentShaderSource =
+	"layout(location = 0) out vec4 f_FragColor;\n"
+	"\n"
+	"in vec2 f_TexCoord;\n"
+	"\n"
+	"uniform sampler2D frg_Texture;\n"
+	"[\"Exposure\"]\n"
+	"uniform float u_Exposure;\n"
+	"\n"
+	"void main()\n"
+	"{\n"
+	"    vec4 color = texture(frg_Texture, f_TexCoord);\n"
+	"    vec3 mapped = vec3(1.0) - exp(-color.xyz * u_Exposure);\n"
+	"    mapped = pow(mapped, vec3(1.0 / 2.2));\n"
+	"    f_FragColor = vec4(mapped, 1.0);\n"
+	"}\n";

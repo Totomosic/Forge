@@ -11,6 +11,13 @@
 namespace Forge
 {
 
+    template<typename T>
+    void Clone(Entity& to, Entity from)
+    {
+        if (from.HasComponent<T>())
+            to.AddComponent<T>(CloneComponent(from.GetComponent<T>()));
+    }
+
     Scene::Scene(const Ref<Framebuffer>& defaultFramebuffer, Renderer3D* renderer)
         : m_Registry(), m_PrimaryCamera(entt::null), m_Time(0.0f), m_Renderer(renderer), m_DefaultFramebuffer(defaultFramebuffer), m_PickFramebuffer(nullptr)
     {
@@ -35,6 +42,20 @@ namespace Forge
         entity.AddComponent<TagComponent>(name);
         entity.SetEnabled(true);
         return entity;
+    }
+
+    Entity Scene::CloneEntity(Entity entity)
+    {
+        Entity result(m_Registry.create(), this);
+        Clone<TransformComponent>(result, entity);
+        Clone<LayerId>(result, entity);
+        Clone<TagComponent>(result, entity);
+        Clone<EnabledFlag>(result, entity);
+        Clone<ModelRendererComponent>(result, entity);
+        Clone<CameraComponent>(result, entity);
+        Clone<PointLightComponent>(result, entity);
+        Clone<DirectionalLightComponent>(result, entity);
+        return result;
     }
 
     void Scene::DestroyEntity(const Entity& entity)

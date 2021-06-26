@@ -64,7 +64,7 @@ namespace Forge
 
 	GLenum Texture::GetComponentType() const
 	{
-		return m_InternalFormat == InternalTextureFormat::DEPTH ? GL_FLOAT : GL_UNSIGNED_BYTE;
+		return m_InternalFormat == InternalTextureFormat::DEPTH || m_InternalFormat == InternalTextureFormat::RGBA16F ? GL_FLOAT : GL_UNSIGNED_BYTE;
 	}
 
 	Texture2D::Texture2D(uint32_t width, uint32_t height, TextureFormat format, InternalTextureFormat internalFormat) : Texture(GL_TEXTURE_2D, width, height, format, internalFormat)

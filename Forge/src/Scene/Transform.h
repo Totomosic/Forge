@@ -133,7 +133,11 @@ namespace Forge
 			}
 			return matrix;
 		}
-
 	};
+
+	inline TransformComponent CloneComponent(const TransformComponent& component)
+	{
+		return component;
+	}
 
 }

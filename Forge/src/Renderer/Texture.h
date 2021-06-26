@@ -37,6 +37,7 @@ namespace Forge
 	FORGE_API enum class InternalTextureFormat
 	{
 		RGBA = GL_RGBA,
+		RGBA16F = GL_RGBA16F,
 		RED_INTEGER = GL_R32I,
 		DEPTH = GL_DEPTH_COMPONENT32,
 	};

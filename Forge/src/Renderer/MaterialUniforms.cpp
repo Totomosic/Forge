@@ -12,6 +12,31 @@ namespace Forge
 	{
 	}
 
+	UniformContext::UniformContext(const UniformContext& other)
+		: m_Size(other.m_Size), m_TextureSize(other.m_TextureSize), m_UniformSpecificationIndices(other.m_UniformSpecificationIndices), m_UniformSpecifications(other.m_UniformSpecifications),
+		m_Buffer(), m_Textures()
+	{
+		m_Buffer = std::make_unique<std::byte[]>(m_Size);
+		std::memcpy(m_Buffer.get(), other.m_Buffer.get(), m_Size);
+		m_Textures = std::make_unique<Ref<Texture>[]>(m_TextureSize);
+		for (int i = 0; i < m_TextureSize; i++)
+			m_Textures[i] = other.m_Textures[i];
+	}
+
+	UniformContext& UniformContext::operator=(const UniformContext& other)
+	{
+		m_Size = other.m_Size;
+		m_TextureSize = other.m_TextureSize;
+		m_UniformSpecificationIndices = other.m_UniformSpecificationIndices;
+		m_UniformSpecifications = other.m_UniformSpecifications;
+		m_Buffer = std::make_unique<std::byte[]>(m_Size);
+		std::memcpy(m_Buffer.get(), other.m_Buffer.get(), m_Size);
+		m_Textures = std::make_unique<Ref<Texture>[]>(m_TextureSize);
+		for (int i = 0; i < m_TextureSize; i++)
+			m_Textures[i] = other.m_Textures[i];
+		return *this;
+	}
+
 	void UniformContext::AddFromDescriptors(RenderPass pass, const std::vector<UniformDescriptor>& descriptors)
 	{
 		for (const UniformDescriptor& descriptor : descriptors)

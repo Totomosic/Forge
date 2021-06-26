@@ -27,4 +27,10 @@ namespace Forge
 		{}
 	};
 
+	inline CameraComponent CloneComponent(const CameraComponent& component)
+	{
+		CameraComponent result = component;
+		return result;
+	}
+
 }

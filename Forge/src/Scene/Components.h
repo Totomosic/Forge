@@ -97,4 +97,39 @@ namespace Forge
 		}
 	};
 
+	inline TagComponent CloneComponent(const TagComponent& component)
+	{
+		return component;
+	}
+	
+	inline LayerId CloneComponent(const LayerId& component)
+	{
+		return component;
+	}
+
+	inline EnabledFlag CloneComponent(const EnabledFlag& component)
+	{
+		return component;
+	}
+
+	inline PointLightComponent CloneComponent(const PointLightComponent& component)
+	{
+		PointLightComponent result = component;
+		if (result.Shadows.Enabled)
+		{
+			result.CreateShadowPass(component.Shadows.RenderTarget->GetWidth(), component.Shadows.RenderTarget->GetHeight());
+		}
+		return result;
+	}
+
+	inline DirectionalLightComponent CloneComponent(const DirectionalLightComponent& component)
+	{
+		DirectionalLightComponent result = component;
+		if (result.Shadows.Enabled)
+		{
+			result.CreateShadowPass(component.Shadows.RenderTarget->GetWidth(), component.Shadows.RenderTarget->GetHeight());
+		}
+		return result;
+	}
+
 }
