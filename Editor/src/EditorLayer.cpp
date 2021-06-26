@@ -12,39 +12,15 @@ namespace Editor
 
 		m_Application->GetWindow().EnableVSync();
 
-		m_SceneTexture = RenderTexture::Create(1920, 1080);
-
 		Scene& scene = app.CreateScene();
 		m_Scene = &scene;
-		m_Camera = scene.CreateCamera(Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 1000.0f));
-		m_Camera.GetComponent<CameraComponent>().RenderTarget = *m_SceneTexture;
-		m_Camera.GetComponent<CameraComponent>().LayerMask &= ~FORGE_LAYERS(UI_LAYER);
-		m_Camera.GetComponent<CameraComponent>().Viewport = m_SceneTexture->GetFramebuffer()->GetViewport();
+		m_SceneHierarchy.SetScene(m_Scene);
 
-		m_Camera.GetTransform().SetPosition({ 0, 5, 5 });
-		m_Camera.GetTransform().Rotate(-PI / 4.0f, { 1, 0, 0 });
-
-		Entity groundPlane = scene.CreateEntity("Ground");
-		groundPlane.AddComponent<ModelRendererComponent>(
-			Model::Create(
-				GraphicsCache::GridMesh(400, 400),
-				GraphicsCache::PbrColorMaterial(COLOR_WHITE)
-			)
-		);
-		groundPlane.GetTransform().SetPosition({ 0, 0, 0 });
-		groundPlane.GetTransform().SetScale({ 15, 1, 15 });
-
-		Entity sun = scene.CreateEntity("Sun");
-		sun.GetTransform().SetPosition({ 0, 0, 0 });
-		sun.GetTransform().Rotate(-PI / 2.0f, { 1, 0, 0 });
-		DirectionalLightComponent& lightSource = sun.AddComponent<DirectionalLightComponent>();
-		lightSource.CreateShadowPass(DefaultShadowMapDimension, DefaultShadowMapDimension);
-
-		m_SceneHierarchy.SetScene(&scene);
-		m_AssetBrowser.SetRootDirectory("assets");
+		m_SceneTexture = RenderTexture::Create(1920, 1080);
 		m_ViewportSize = { width, height };
-
 		m_PostProcessing.SetRenderer(&m_Application->GetRenderer());
+
+		NewScene();
 
 		Input::OnKeyPressed.AddEventListener([&](const KeyCode& key)
 		{
@@ -168,6 +144,7 @@ namespace Editor
 				//ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);1
 				if (ImGui::MenuItem("New", "Ctrl+N"))
 				{
+					NewScene();
 				}
 
 				if (ImGui::MenuItem("Open...", "Ctrl+O"))
@@ -176,6 +153,8 @@ namespace Editor
 
 				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
 				{
+					SceneSerializer serializer(m_Scene);
+					serializer.SerializeText("scene.txt");
 				}
 
 				if (ImGui::MenuItem("Exit"))
@@ -230,6 +209,23 @@ namespace Editor
 		uint32_t textureId = m_SceneTexture->GetId();
 		ImGui::Image((void*)textureId, ImVec2{ sceneSize.x, sceneSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
+		if (ImGui::BeginDragDropTarget())
+		{
+			const ImGuiPayload* pathPayload = ImGui::AcceptDragDropPayload("PATH");
+			if (pathPayload)
+			{
+				std::string filename = (char*)pathPayload->Data;
+				m_SceneHierarchy.SetSelectedEntity({});
+				m_Scene->Clear();
+				SceneSerializer serializer(m_Scene);
+				serializer.DeserializeText(filename);
+
+				m_Camera = m_Scene->GetPrimaryCamera();
+				m_Camera.GetComponent<CameraComponent>().RenderTarget = *m_SceneTexture;
+			}
+			ImGui::EndDragDropTarget();
+		}
+
 		if (m_SceneHierarchy.GetSelectedEntity())
 		{
 			ImGuizmo::SetOrthographic(false);
@@ -261,6 +257,37 @@ namespace Editor
 		ImGui::End();
 
 		ImGui::End();
+	}
+
+	void EditorLayer::NewScene()
+	{
+		m_Scene->Clear();
+		m_SceneHierarchy.SetSelectedEntity({});
+		m_Camera = m_Scene->CreateCamera(Frustum::Perspective(PI / 3.0f, m_Application->GetWindow().GetAspectRatio(), 0.1f, 1000.0f));
+		m_Camera.GetComponent<CameraComponent>().RenderTarget = *m_SceneTexture;
+		m_Camera.GetComponent<CameraComponent>().LayerMask &= ~FORGE_LAYERS(UI_LAYER);
+		m_Camera.GetComponent<CameraComponent>().Viewport = m_SceneTexture->GetFramebuffer()->GetViewport();
+
+		m_Camera.GetTransform().SetPosition({ 0, 5, 5 });
+		m_Camera.GetTransform().Rotate(-PI / 4.0f, { 1, 0, 0 });
+
+		Entity groundPlane = m_Scene->CreateEntity("Ground");
+		groundPlane.AddComponent<ModelRendererComponent>(
+			Model::Create(
+				GraphicsCache::GridMesh(400, 400),
+				GraphicsCache::PbrColorMaterial(COLOR_WHITE)
+			)
+			);
+		groundPlane.GetTransform().SetPosition({ 0, 0, 0 });
+		groundPlane.GetTransform().SetScale({ 15, 1, 15 });
+
+		Entity sun = m_Scene->CreateEntity("Sun");
+		sun.GetTransform().SetPosition({ 0, 0, 0 });
+		sun.GetTransform().Rotate(-PI / 2.0f, { 1, 0, 0 });
+		DirectionalLightComponent& lightSource = sun.AddComponent<DirectionalLightComponent>();
+		lightSource.CreateShadowPass(DefaultShadowMapDimension, DefaultShadowMapDimension);
+
+		m_AssetBrowser.SetRootDirectory("assets");
 	}
 
 }

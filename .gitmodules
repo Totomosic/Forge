@@ -19,3 +19,6 @@
 [submodule "Forge/vendor/ImGuizmo"]
 	path = Forge/vendor/ImGuizmo
 	url = https://github.com/Totomosic/ImGuizmo
+[submodule "Forge/vendor/yaml-cpp"]
+	path = Forge/vendor/yaml-cpp
+	url = https://github.com/Totomosic/yaml-cpp

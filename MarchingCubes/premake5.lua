@@ -23,6 +23,7 @@ project "MarchingCubes"
         "../%{IncludeDirs.glm}",
         "../%{IncludeDirs.entt}",
         "../%{IncludeDirs.tinygltf}",
+        "../%{IncludeDirs.yaml_cpp}",
         "../%{IncludeDirs.Forge}",
     }
 

@@ -170,7 +170,7 @@ namespace Forge
 			for (int j = 0; j < 3; j++)
 			{
 				const glm::vec3& position = vertices[face.Indices[j].Vertex - 1];
-				glm::vec3 normal = face.Indices[j].Normal < 0 ? glm::vec3{} : normals[face.Indices[j].Normal - 1];
+				glm::vec3 normal = face.Indices[j].Normal < 0 || face.Indices[j].Normal >= normals.size() ? glm::vec3{} : normals[face.Indices[j].Normal - 1];
 				glm::vec2 texCoord = face.Indices[j].TexCoord < 0 ? glm::vec2{} : texCoords[face.Indices[j].TexCoord - 1];
 
 				vertexData[(i * 3 + j) * vertexSize + 0] = position.x;

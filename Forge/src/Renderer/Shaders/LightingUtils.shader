@@ -32,7 +32,7 @@ vec4 CalculateSingleLightDiffuse(vec3 position, vec3 normal, LightSource light, 
     float attenuation = 1.0;
     if (light.Type == LIGHT_TYPE_POINT)
         attenuation = 1.0 / (light.Attenuation.x + distance * light.Attenuation.y + distance * distance * light.Attenuation.z);
-    vec3 color = diffusePower * light.Color.xyz * light.Intensity * (1.0 - shadow) + light.Color.xyz * light.Ambient;
+    vec3 color = diffusePower * light.Color.xyz * light.Intensity * (1.0 - shadow) + light.Color.xyz * light.Ambient * attenuation;
     return vec4(color * attenuation, light.Color.a);
 }
 

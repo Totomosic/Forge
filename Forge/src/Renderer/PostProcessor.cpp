@@ -48,6 +48,8 @@ namespace Forge
     {
         if (IsEnabled())
         {
+            RenderSettings settings;
+            context.ApplyRenderSettings(settings);
             ResetStages();
             PostProcessingStage* current = GetNextStage();
             while (current != nullptr)

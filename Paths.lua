@@ -14,6 +14,7 @@ IncludeDirs["glm"] =            ForgeCoreDir .. "vendor/glm"
 IncludeDirs["entt"] =           ForgeCoreDir .. "vendor/entt/src"
 IncludeDirs["tinygltf"] =       ForgeCoreDir .. "vendor/tinygltf"
 IncludeDirs["ImGuizmo"] =       ForgeCoreDir .. "vendor/ImGuizmo"
+IncludeDirs["yaml_cpp"] =       ForgeCoreDir .. "vendor/yaml-cpp/include"
 
 -- Library directories relative to solution directory
 LibraryDirs = {}

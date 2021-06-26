@@ -46,6 +46,8 @@ namespace Forge
 		return !(left == right);
 	}
 
+	extern const AssetLocation NullAssetLocation;
+
 	extern const AssetLocation DefaultColorShaderAssetLocation;
 	extern const AssetLocation DefaultTextureShaderAssetLocation;
 	extern const AssetLocation LitColorNoShadowShaderAssetLocation;
@@ -99,29 +101,43 @@ namespace Forge
 		static void Init();
 
 		template<typename T>
+		static bool HasAssetLocation(const Ref<T>& asset)
+		{
+			if (!asset)
+				return true;
+			return s_AssetLocations.find((void*)asset.get()) != s_AssetLocations.end();
+		}
+
+		template<typename T>
 		static AssetLocation GetAssetLocation(const Ref<T>& asset)
 		{
+			if (!asset)
+				return NullAssetLocation;
 			return s_AssetLocations.at((void*)asset.get());
 		}
 
 		template<typename T>
 		static Ref<T> GetAsset(const AssetLocation& location)
 		{
+			if (location.Path == NullAssetLocation.Path)
+				return nullptr;
 			if constexpr (std::is_same_v<T, Texture2D>)
 			{
 				FORGE_ASSERT(location.Type == AssetLocationType::Texture2D, "Invalid location");
 				if (location.Source == AssetLocationSource::Generated)
 					HandleGeneratedTexture2D(location);
 				auto it = s_Texture2Ds.find(location);
-				if (it != s_Texture2Ds.end())
+				if (it != s_Texture2Ds.end() && !it->second.expired())
 					return it->second.lock();
+				if (location.Source == AssetLocationSource::File)
+					return LoadTexture2D(location.Path, location.Flags);
 				return nullptr;
 			}
 			if constexpr (std::is_same_v<T, TextureCube>)
 			{
 				FORGE_ASSERT(location.Type == AssetLocationType::TextureCube, "Invalid location");
 				auto it = s_TextureCubes.find(location);
-				if (it != s_TextureCubes.end())
+				if (it != s_TextureCubes.end() && !it->second.expired())
 					return it->second.lock();
 				return nullptr;
 			}
@@ -136,8 +152,10 @@ namespace Forge
 						return result;
 				}
 				auto it = s_Meshes.find(location);
-				if (it != s_Meshes.end())
+				if (it != s_Meshes.end() && !it->second.expired())
 					return it->second.lock();
+				if (location.Source == AssetLocationSource::File)
+					return LoadMesh(location.Path, location.Flags);
 				return nullptr;
 			}
 			if constexpr (std::is_same_v<T, Shader>)
@@ -146,8 +164,10 @@ namespace Forge
 				if (location.Source == AssetLocationSource::Generated)
 					HandleGeneratedShader(location);
 				auto it = s_Shaders.find(location);
-				if (it != s_Shaders.end())
+				if (it != s_Shaders.end() && !it->second.expired())
 					return it->second.lock();
+				if (location.Source == AssetLocationSource::File)
+					return LoadShader(location.Path, location.Flags);
 				return nullptr;
 			}
 		}

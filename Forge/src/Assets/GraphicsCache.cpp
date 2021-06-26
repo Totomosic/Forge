@@ -11,6 +11,8 @@
 namespace Forge
 {
 
+    const AssetLocation NullAssetLocation = { "NULL", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::None };
+
     const AssetLocation DefaultColorShaderAssetLocation = { "DefaultColor", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
     const AssetLocation DefaultTextureShaderAssetLocation = { "DefaultTexture", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
     const AssetLocation LitColorNoShadowShaderAssetLocation = { "LitColor", AssetLocationSource::Generated, AssetFlags_None, AssetLocationType::Shader };
@@ -596,7 +598,7 @@ namespace Forge
 
     void GraphicsCache::HandleGeneratedShader(const AssetLocation& location)
     {
-        if (s_Shaders.find(location) == s_Shaders.end())
+        if (s_Shaders.find(location) == s_Shaders.end() || s_Shaders[location].expired())
         {
             if (location.Path == DefaultColorShaderAssetLocation.Path)
             {
@@ -639,7 +641,7 @@ namespace Forge
 
     void GraphicsCache::HandleGeneratedTexture2D(const AssetLocation& location)
     {
-        if (s_Texture2Ds.find(location) == s_Texture2Ds.end())
+        if (s_Texture2Ds.find(location) == s_Texture2Ds.end()  || s_Texture2Ds[location].expired())
         {
             if (location.Path == WhiteTextureAssetLocation.Path)
             {
@@ -650,7 +652,7 @@ namespace Forge
 
     Ref<Mesh> GraphicsCache::HandleGeneratedMesh(const AssetLocation& location)
     {
-        if (s_Meshes.find(location) == s_Meshes.end())
+        if (s_Meshes.find(location) == s_Meshes.end() || s_Meshes[location].expired())
         {
             if (location.Path == SquareMeshAssetLocation.Path)
             {

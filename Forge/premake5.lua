@@ -29,6 +29,7 @@ project "Forge"
         "../%{IncludeDirs.glm}",
         "../%{IncludeDirs.entt}",
         "../%{IncludeDirs.tinygltf}",
+        "../%{IncludeDirs.yaml_cpp}",
         "src",
     }
 
@@ -38,6 +39,7 @@ project "Forge"
         "GLFW",
         "Glad",
         "ImGui",
+        "yaml-cpp",
     }
 
     filter "files:vendor/ImGuizmo/**.cpp"

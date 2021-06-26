@@ -89,6 +89,12 @@ namespace Forge
         m_PrimaryCamera = entity;
     }
 
+    void Scene::Clear()
+    {
+        m_Registry.clear();
+        m_PrimaryCamera = entt::null;
+    }
+
     Entity Scene::CreateCamera(const Frustum& frustum)
     {
         Entity camera = CreateEntity("Camera");

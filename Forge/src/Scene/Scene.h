@@ -53,6 +53,7 @@ namespace Forge
 		void AddLayer(Entity entity, uint8_t layer);
 		void RemoveLayer(Entity entity, uint8_t layer);
 		void AddToAllLayers(Entity entity);
+		void Clear();
 
 		inline entt::registry& GetRegistry() { return m_Registry; }
 

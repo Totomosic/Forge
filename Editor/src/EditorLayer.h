@@ -43,6 +43,9 @@ namespace Editor
 		virtual void OnDetach() override;
 		virtual void OnUpdate(Forge::Timestep ts) override;
 		virtual void OnImGuiRender() override;
+
+	private:
+		void NewScene();
 	};
 
 }
