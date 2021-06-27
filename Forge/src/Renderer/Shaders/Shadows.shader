@@ -1,3 +1,9 @@
+struct LightSourceShadowMaps
+{
+    sampler2D ShadowMap;
+    samplerCube PointShadowMap;
+};
+
 float CalculateShadow(vec4 positionLightSpace, sampler2D shadowMap, vec3 normal, vec3 lightDirection)
 {
    float bias = 0.0; // max(0.005 * (1.0 - abs(dot(normal, lightDirection))), 0.0005);

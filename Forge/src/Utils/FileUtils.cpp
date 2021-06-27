@@ -22,4 +22,14 @@ namespace Forge
         );
     }
 
+    std::string FileDialogs::OpenFile(const char* filter)
+    {
+        return std::string();
+    }
+
+    std::string FileDialogs::SaveFile(const char* filter)
+    {
+        return std::string();
+    }
+
 }

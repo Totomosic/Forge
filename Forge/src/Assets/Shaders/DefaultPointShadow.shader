@@ -12,8 +12,13 @@ void main()
 layout(triangles) in;
 layout(triangle_strip, max_vertices=18) out;
 
-uniform mat4 frg_PointShadowMatrices[6];
+layout(std140, binding = 1) uniform ShadowFormation
+{
+    mat4 frg_PointShadowMatrices[6];
+    vec3 frg_ShadowLightPosition;
+};
 out vec4 f_FragPosition;
+
 void main()
 {
    for (int face = 0; face < 6; face++)
@@ -31,8 +36,23 @@ void main()
 
 #shader FRAGMENT
 in vec4 f_FragPosition;
-uniform vec3 frg_ShadowLightPosition;
-uniform float frg_FarPlane;
+
+layout(std140, binding = 1) uniform ShadowFormation
+{
+    mat4 frg_PointShadowMatrices[6];
+    vec3 frg_ShadowLightPosition;
+};
+
+layout(std140, binding = 0) uniform Camera
+{
+    mat4 frg_ViewMatrix;
+    mat4 frg_ProjectionMatrix;
+    mat4 frg_ProjViewMatrix;
+    float frg_FarPlane;
+    float frg_NearPlane;
+    vec3 frg_CameraPosition;
+};
+
 void main()
 {
    float lightDistance = length(f_FragPosition.xyz - frg_ShadowLightPosition);

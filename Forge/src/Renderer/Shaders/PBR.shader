@@ -1,8 +1,16 @@
 #include <PBRUtils.h>
 #include <Shadows.h>
 
-uniform LightSource frg_LightSources[MAX_LIGHT_COUNT];
-uniform int frg_UsedLightSources;
+layout(std140, binding = 3) uniform LightSources
+{
+    LightSource frg_LightSources[MAX_LIGHT_COUNT];
+    int frg_UsedLightSources;
+};
+
+#ifdef SHADOW_MAP
+uniform LightSourceShadowMaps frg_LightShadowMaps[MAX_LIGHT_COUNT];
+#endif
+
 ["Emission"]
 uniform float u_Emission;
 
@@ -22,11 +30,11 @@ vec4 CalculateLightingPBR(vec3 position, vec3 normal, vec3 cameraPosition, PBRMa
         if (frg_LightSources[i].UseShadows)
         {
             if (frg_LightSources[i].Type == LIGHT_TYPE_POINT)
-                shadow = CalculatePointShadow(position, frg_LightSources[i].PointShadowMap, frg_LightSources[i].ShadowFar, frg_LightSources[i].Position, cameraPosition);
+                shadow = CalculatePointShadow(position, frg_LightShadowMaps[i].PointShadowMap, frg_LightSources[i].ShadowFar, frg_LightSources[i].Position, cameraPosition);
             else
             {
                 vec4 lightSpacePosition = frg_LightSources[i].LightSpaceTransform * vec4(position, 1.0);
-                shadow = CalculateShadow(lightSpacePosition, frg_LightSources[i].ShadowMap, normal, frg_LightSources[i].Direction);
+                shadow = CalculateShadow(lightSpacePosition, frg_LightShadowMaps[i].ShadowMap, normal, frg_LightSources[i].Direction);
             }
         }
 #endif

@@ -18,6 +18,7 @@ SHADER_FILES = [
     ["PostProcessing/BloomCombine.shader", "PostProcessing/BloomCombine.h"],
     ["PostProcessing/Blur.shader", "PostProcessing/Blur.h"],
     ["PostProcessing/HDR.shader", "PostProcessing/HDR.h"],
+    ["PostProcessing/Dither.shader", "PostProcessing/Dither.h"],
 ]
 
 SHADER_LIBRARY_FILES = [

@@ -4,7 +4,16 @@ layout (location = 4) in ivec4 v_JointIds;
 layout (location = 5) in vec4 v_JointWeights;
 
 uniform mat4 frg_ModelMatrix;
-uniform mat4 frg_ProjViewMatrix;
+
+layout(std140, binding = 0) uniform Camera
+{
+    mat4 frg_ViewMatrix;
+    mat4 frg_ProjectionMatrix;
+    mat4 frg_ProjViewMatrix;
+    float frg_FarPlane;
+    float frg_NearPlane;
+    vec3 frg_CameraPosition;
+};
 
 uniform mat4 frg_JointTransforms[JOINT_COUNT];
 

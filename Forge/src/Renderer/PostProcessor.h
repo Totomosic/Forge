@@ -14,6 +14,7 @@ namespace Forge
 	{
 	private:
 		std::function<void()> m_RenderFunction{};
+		Ref<Texture2D> m_DepthTexture;
 		bool m_Enabled = true;
 
 	public:
@@ -21,6 +22,7 @@ namespace Forge
 
 		inline bool IsEnabled() const { return m_Enabled; }
 		inline void SetEnabled(bool enabled) { m_Enabled = enabled; }
+		inline void SetDepthTexture(const Ref<Texture2D>& depthTexture) { m_DepthTexture = depthTexture; }
 		inline void SetRenderFunction(const std::function<void()>& fn) { m_RenderFunction = fn; }
 		
 		virtual const char* GetName() const = 0;
@@ -30,6 +32,7 @@ namespace Forge
 		virtual void Execute(const Ref<Framebuffer>& target, RendererContext& context) = 0;
 
 	protected:
+		inline const Ref<Texture2D>& GetDepthTexture() const { return m_DepthTexture; }
 		inline void Render() { m_RenderFunction(); };
 		void TestFramebuffer(const Ref<Framebuffer>& framebuffer, uint32_t width, uint32_t height);
 		void BindTexture(const Ref<Shader>& shader, const Ref<Texture>& texture, const std::string& uniformName, RendererContext& context);
@@ -67,6 +70,24 @@ namespace Forge
 		HDRPostProcessingStage();
 
 		inline const char* GetName() const { return "HDR"; }
+		inline virtual UniformContext& GetUniforms() { return m_Uniforms; }
+		virtual Ref<Framebuffer> GetInputFramebuffer() const override;
+		virtual void Init(uint32_t width, uint32_t height, bool requiresDepth) override;
+		virtual void Execute(const Ref<Framebuffer>& target, RendererContext& context) override;
+	};
+
+	class FORGE_API DitherPostProcessingStage : public PostProcessingStage
+	{
+	private:
+		Ref<Framebuffer> m_Framebuffer;
+		Ref<Shader> m_Shader;
+		Ref<Texture2D> m_BayerMatrix;
+		UniformContext m_Uniforms;
+
+	public:
+		DitherPostProcessingStage();
+
+		inline const char* GetName() const { return "Dither"; }
 		inline virtual UniformContext& GetUniforms() { return m_Uniforms; }
 		virtual Ref<Framebuffer> GetInputFramebuffer() const override;
 		virtual void Init(uint32_t width, uint32_t height, bool requiresDepth) override;

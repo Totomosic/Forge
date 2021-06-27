@@ -6,48 +6,69 @@ namespace Forge
 {
 
 	RendererContext::RendererContext()
-		: m_ViewMatrix(), m_ProjectionMatrix(), m_ProjViewMatrix(), m_CameraFarPlane(0.0f), m_CameraNearPlane(0.0f), m_CameraPosition(), m_LightSources(), m_ClippingPlanes(),
-		m_NextTextureSlot(FirstTextureSlot), m_CullingEnabled(false), m_RenderSettings(), m_RequirementsMap(), m_BoundSlots{ false, false }
+		: m_NextTextureSlot(FirstTextureSlot), m_CullingEnabled(false), m_RenderSettings(), m_RequirementsMap(), m_BoundSlots{ false, false }
 	{
+		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(UniformCameraData), CameraDataBindingPoint);
+		m_ShadowFormationUniformBuffer = UniformBuffer::Create(sizeof(UniformShadowFormationData), ShadowFormationDataBindingPoint);
+		m_ClippingPlaneUniformBuffer = UniformBuffer::Create(sizeof(UniformClippingPlaneData), ClippingPlaneDataBindingPoint);
+		m_LightingUniformBuffer = UniformBuffer::Create(sizeof(UniformLightingData), LightingDataBindingPoint);
 	}
 
 	void RendererContext::SetCamera(const CameraData& camera)
 	{
-		m_ProjectionMatrix = camera.Frustum.ProjectionMatrix;
-		m_ViewMatrix = camera.ViewMatrix;
-		m_ProjViewMatrix = m_ProjectionMatrix * m_ViewMatrix;
-
-		m_CameraNearPlane = camera.Frustum.NearPlane;
-		m_CameraFarPlane = camera.Frustum.FarPlane;
+		UniformCameraData data;
+		data.ProjectionMatrix = camera.Frustum.ProjectionMatrix;
+		data.ViewMatrix = camera.ViewMatrix;
+		data.ProjViewMatrix = data.ProjectionMatrix * data.ViewMatrix;
+		data.CameraNearPlane = camera.Frustum.NearPlane;
+		data.CameraFarPlane = camera.Frustum.FarPlane;
+		data.CameraPosition = glm::inverse(camera.ViewMatrix)[3];
+		m_CameraUniformBuffer->SetData(&data, sizeof(UniformCameraData));
 	}
 
 	void RendererContext::SetLightSources(const std::vector<LightSource>& lights)
 	{
-		m_LightSources = lights;
-		for (LightSource& light : m_LightSources)
+		UniformLightingData data;
+		data.UsedLightCount = std::min(int(lights.size()), MAX_LIGHT_COUNT);
+		m_LightSourceShadowBindings.resize(data.UsedLightCount);
+		for (int i = 0; i < data.UsedLightCount; i++)
 		{
 			GLenum textureTarget = GL_TEXTURE_CUBE_MAP;
-			if (light.Type != LightType::Point)
+			if (lights[i].Type != LightType::Point)
 				textureTarget = GL_TEXTURE_2D;
-			if (light.ShadowFramebuffer)
+			data.LightSources[i].Type = int(lights[i].Type);
+			data.LightSources[i].Position = lights[i].Position;
+			data.LightSources[i].Direction = lights[i].Direction;
+			data.LightSources[i].Ambient = lights[i].Ambient;
+			data.LightSources[i].Color = { lights[i].Color.r, lights[i].Color.g, lights[i].Color.b, lights[i].Color.a };
+			data.LightSources[i].Attenuation = lights[i].Attenuation;
+			data.LightSources[i].Intensity = lights[i].Intensity;
+			data.LightSources[i].UseShadows = lights[i].ShadowFramebuffer != nullptr;
+			if (data.LightSources[i].UseShadows)
 			{
-				light.ShadowBindLocation = BindTexture(light.ShadowFramebuffer->GetDepthAttachment(), textureTarget);
+				data.LightSources[i].ShadowNear = lights[i].ShadowFrustum.NearPlane;
+				data.LightSources[i].ShadowFar = lights[i].ShadowFrustum.FarPlane;
+				data.LightSources[i].LightSpaceTransform = lights[i].LightSpaceTransform;
+
+				m_LightSourceShadowBindings[i].Location = BindTexture(lights[i].ShadowFramebuffer->GetDepthAttachment(), textureTarget);
+				m_LightSourceShadowBindings[i].Type = textureTarget;
 			}
 			else
 			{
-				light.ShadowBindLocation = BindTexture(nullptr, textureTarget);
+				m_LightSourceShadowBindings[i].Location = BindTexture(nullptr, textureTarget);
+				m_LightSourceShadowBindings[i].Type = textureTarget;
 			}
 		}
-	}
-
-	void RendererContext::AddLightSource(const LightSource& light)
-	{
-		m_LightSources.push_back(light);
+		m_LightingUniformBuffer->SetData(&data, sizeof(UniformLightingData));
 	}
 
 	void RendererContext::SetClippingPlanes(const std::vector<glm::vec4>& planes)
 	{
-		m_ClippingPlanes = planes;
+		UniformClippingPlaneData data;
+		data.UsedClippingPlanes = std::min(int(planes.size()), MAX_CLIPPING_PLANES);
+		if (data.UsedClippingPlanes > 0)
+			std::memcpy(&data.ClippingPlanes, planes.data(), data.UsedClippingPlanes * sizeof(glm::vec4));
+		m_ClippingPlaneUniformBuffer->SetData(&data, sizeof(UniformClippingPlaneData));
 	}
 
 	void RendererContext::SetTime(float time)
@@ -57,13 +78,14 @@ namespace Forge
 
 	void RendererContext::SetShadowPointMatrices(const glm::vec3& lightPosition, const glm::mat4 matrices[6])
 	{
-		m_CurrentShadowLightPosition = lightPosition;
-		std::memcpy(m_ShadowPointMatrices, matrices, sizeof(glm::mat4) * 6);
+		UniformShadowFormationData data;
+		data.LightPosition = lightPosition;
+		std::memcpy(&data.PointShadowMatrices, matrices, sizeof(glm::mat4) * 6);
+		m_ShadowFormationUniformBuffer->SetData(&data, sizeof(UniformShadowFormationData));
 	}
 
 	void RendererContext::NewScene()
 	{
-		m_LightSources.clear();
 		m_CurrentShader = nullptr;
 	}
 
@@ -80,19 +102,10 @@ namespace Forge
 		if (it != m_RequirementsMap.end())
 			return it->second;
 		ShaderRequirements requirements;
-		requirements.ProjectionMatrix = shader->UniformExists(ProjectionMatrixUniformName);
-		requirements.ViewMatrix = shader->UniformExists(ViewMatrixUniformName);
-		requirements.ProjViewMatrix = shader->UniformExists(ProjViewMatrixUniformName);
 		requirements.ModelMatrix = shader->UniformExists(ModelMatrixUniformName);
-		requirements.CameraFarPlane = shader->UniformExists(CameraFarPlaneUniformName);
-		requirements.CameraNearPlane = shader->UniformExists(CameraNearPlaneUniformName);
-		requirements.CameraPosition = shader->UniformExists(CameraPositionUniformName);
-		requirements.LightSources = shader->UniformExists(LightSourceArrayUniformName) && shader->UniformExists(UsedLightSourcesUniformName);
+		requirements.LightSourceShadowMaps = shader->UniformExists(LightSourceShadowMapArrayUniformName);
 		requirements.Animation = shader->UniformExists(JointTransformsUniformName);
-		requirements.ClippingPlanes = shader->UniformExists(ClippingPlanesArrayUniformName) && shader->UniformExists(UsedClippingPlanesUniformName);
 		requirements.Time = shader->UniformExists(TimeUniformName);
-		requirements.ShadowFormationLightPosition = shader->UniformExists(ShadowFormationLightPositionUniformName);
-		requirements.PointShadowMatrices = shader->UniformExists(PointShadowMatricesArrayUniformName0);
 		m_RequirementsMap[shader.get()] = requirements;
 		return requirements;
 	}
@@ -127,80 +140,25 @@ namespace Forge
 		{
 			shader->Bind();
 			m_CurrentShader = shader;
-			if (requirements.ViewMatrix)
-				shader->SetUniform(ViewMatrixUniformName, m_ViewMatrix);
-			if (requirements.ProjectionMatrix)
-				shader->SetUniform(ProjectionMatrixUniformName, m_ProjectionMatrix);
-			if (requirements.ProjViewMatrix)
-				shader->SetUniform(ProjViewMatrixUniformName, m_ProjViewMatrix);
-			if (requirements.CameraFarPlane)
-				shader->SetUniform(CameraFarPlaneUniformName, m_CameraFarPlane);
-			if (requirements.CameraNearPlane)
-				shader->SetUniform(CameraNearPlaneUniformName, m_CameraNearPlane);
-			if (requirements.CameraPosition)
-				shader->SetUniform(CameraPositionUniformName, m_CameraPosition);
-			if (requirements.LightSources)
+			if (requirements.LightSourceShadowMaps)
 			{
-				shader->SetUniform(UsedLightSourcesUniformName, int(m_LightSources.size()));
-				for (size_t i = 0; i < m_LightSources.size(); i++)
+				for (size_t i = 0; i < m_LightSourceShadowBindings.size(); i++)
 				{
-					glm::vec4 color = { m_LightSources[i].Color.r, m_LightSources[i].Color.g, m_LightSources[i].Color.b, m_LightSources[i].Color.a };
-					std::string uniformBase = std::string(LightSourceArrayBase) + "[" + std::to_string(i) + "]";
-					shader->SetUniform(uniformBase + ".Type", int(m_LightSources[i].Type));
-					shader->SetUniform(uniformBase + ".Position", m_LightSources[i].Position);
-					shader->SetUniform(uniformBase + ".Direction", m_LightSources[i].Direction);
-					shader->SetUniform(uniformBase + ".Attenuation", m_LightSources[i].Attenuation);
-					shader->SetUniform(uniformBase + ".Color", color);
-					shader->SetUniform(uniformBase + ".Ambient", m_LightSources[i].Ambient);
-					shader->SetUniform(uniformBase + ".Intensity", m_LightSources[i].Intensity);
-					shader->SetUniform(uniformBase + ".UseShadows", m_LightSources[i].ShadowFramebuffer != nullptr);
-					if (m_LightSources[i].Type == LightType::Point)
+					std::string uniformBase = std::string(LightSourceShadowMapArrayBase) + '[' + std::to_string(i) + ']';
+					if (m_LightSourceShadowBindings[i].Type == GL_TEXTURE_CUBE_MAP)
 					{
-						BindTexture(nullptr, GL_TEXTURE_2D);
-						shader->SetUniform(uniformBase + ".PointShadowMap", m_LightSources[i].ShadowBindLocation);
-						shader->SetUniform(uniformBase + ".ShadowMap", NullTexture2DSlot);
+						shader->SetUniform(uniformBase + ".PointShadowMap", m_LightSourceShadowBindings[i].Location);
+						shader->SetUniform(uniformBase + ".ShadowMap", BindTexture(nullptr, GL_TEXTURE_2D));
 					}
 					else
 					{
-						BindTexture(nullptr, GL_TEXTURE_CUBE_MAP);
-						shader->SetUniform(uniformBase + ".ShadowMap", m_LightSources[i].ShadowBindLocation);
-						shader->SetUniform(uniformBase + ".PointShadowMap", NullTextureCubeSlot);
+						shader->SetUniform(uniformBase + ".ShadowMap", m_LightSourceShadowBindings[i].Location);
+						shader->SetUniform(uniformBase + ".PointShadowMap", BindTexture(nullptr, GL_TEXTURE_CUBE_MAP));
 					}
-					if (m_LightSources[i].ShadowFramebuffer)
-					{
-						shader->SetUniform(uniformBase + ".ShadowNear", m_LightSources[i].ShadowFrustum.NearPlane);
-						shader->SetUniform(uniformBase + ".ShadowFar", m_LightSources[i].ShadowFrustum.FarPlane);
-						if (m_LightSources[i].Type != LightType::Point)
-						{
-							shader->SetUniform(uniformBase + ".LightSpaceTransform", m_LightSources[i].LightSpaceTransform);
-						}
-					}
-				}
-			}
-			if (requirements.ClippingPlanes)
-			{
-				shader->SetUniform(UsedClippingPlanesUniformName, int(m_ClippingPlanes.size()));
-				for (size_t i = 0; i < m_ClippingPlanes.size(); i++)
-				{
-					std::string uniformBase = std::string(ClippingPlanesArrayBase) + "[" + std::to_string(i) + "]";
-					shader->SetUniform(uniformBase, m_ClippingPlanes[i]);
 				}
 			}
 			if (requirements.Time)
 				shader->SetUniform(TimeUniformName, m_Time);
-			if (requirements.PointShadowMatrices)
-			{
-				shader->SetUniform(PointShadowMatricesArrayUniformName0, m_ShadowPointMatrices[0]);
-				shader->SetUniform(PointShadowMatricesArrayUniformName1, m_ShadowPointMatrices[1]);
-				shader->SetUniform(PointShadowMatricesArrayUniformName2, m_ShadowPointMatrices[2]);
-				shader->SetUniform(PointShadowMatricesArrayUniformName3, m_ShadowPointMatrices[3]);
-				shader->SetUniform(PointShadowMatricesArrayUniformName4, m_ShadowPointMatrices[4]);
-				shader->SetUniform(PointShadowMatricesArrayUniformName5, m_ShadowPointMatrices[5]);
-			}
-			if (requirements.ShadowFormationLightPosition)
-			{
-				shader->SetUniform(ShadowFormationLightPositionUniformName, m_CurrentShadowLightPosition);
-			}
 		}
 	}
 

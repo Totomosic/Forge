@@ -30,8 +30,7 @@ namespace Forge
 
     void VertexBuffer::SetData(const void* data, size_t sizeBytes)
     {
-        Bind();
-        glBufferData(GL_ARRAY_BUFFER, sizeBytes, data, GL_STATIC_DRAW);
+        glNamedBufferSubData(m_Handle.Id, 0, sizeBytes, data);
     }
 
     Ref<VertexBuffer> VertexBuffer::Create(size_t sizeBytes, const BufferLayout& layout)
@@ -49,8 +48,7 @@ namespace Forge
         if (sizeBytes > 0)
         {
             glCreateBuffers(1, &m_Handle.Id);
-            glBindBuffer(GL_ARRAY_BUFFER, m_Handle.Id);
-            glBufferData(GL_ARRAY_BUFFER, sizeBytes, data, GL_STATIC_DRAW);
+            glNamedBufferData(m_Handle.Id, sizeBytes, data, GL_STATIC_DRAW);
         }
 
     }
@@ -95,9 +93,7 @@ namespace Forge
         if (sizeBytes > 0)
         {
             glCreateBuffers(1, &m_Handle.Id);
-            // Use GL_ARRAY_BUFFER to upload data
-            glBindBuffer(GL_ARRAY_BUFFER, m_Handle.Id);
-            glBufferData(GL_ARRAY_BUFFER, sizeBytes, data, GL_STATIC_DRAW);
+            glNamedBufferData(m_Handle.Id, sizeBytes, data, GL_STATIC_DRAW);
         }
     }
 

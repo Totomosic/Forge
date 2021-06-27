@@ -36,6 +36,7 @@ namespace Forge
 
 	FORGE_API enum class InternalTextureFormat
 	{
+		RED = GL_RED,
 		RGBA = GL_RGBA,
 		RGBA16F = GL_RGBA16F,
 		RED_INTEGER = GL_R32I,
@@ -110,7 +111,7 @@ namespace Forge
 	public:
 		static Ref<Texture2D> Create(uint32_t width, uint32_t height, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
 		static Ref<Texture2D> Create(const std::string& filename);
-		static Ref<Texture2D> Create(uint32_t width, uint32_t height, const uint8_t* pixels);
+		static Ref<Texture2D> Create(uint32_t width, uint32_t height, const uint8_t* pixels, TextureFormat format = TextureFormat::RGBA, InternalTextureFormat internalFormat = InternalTextureFormat::RGBA);
 
 	private:
 		void Init(const void* data);

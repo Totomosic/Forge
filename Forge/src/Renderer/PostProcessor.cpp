@@ -12,6 +12,7 @@ namespace Forge
         m_ScreenRectangle = GraphicsCache::SquareMesh();
         AddStage(CreateScope<BloomPostProcessingStage>());
         AddStage(CreateScope<HDRPostProcessingStage>());
+        AddStage(CreateScope<DitherPostProcessingStage>());
     }
 
     void PostProcessor::SetDestination(const Ref<Framebuffer>& renderTarget)
@@ -19,8 +20,14 @@ namespace Forge
         m_DestinationRenderTarget = renderTarget;
         if (IsEnabled())
         {
-            FORGE_ASSERT(GetFirstStage()->GetInputFramebuffer()->SupportsDepth(), "Invalid framebuffer");
-            GetFirstStage()->GetInputFramebuffer()->Bind();
+            Ref<Framebuffer> renderTarget = GetFirstStage()->GetInputFramebuffer();
+            FORGE_ASSERT(renderTarget->SupportsDepth(), "Invalid framebuffer");
+            renderTarget->Bind();
+
+            for (const auto& stage : m_Stages)
+            {
+                stage->SetDepthTexture(std::reinterpret_pointer_cast<Texture2D>(renderTarget->GetDepthAttachment()));
+            }
         }
         else
         {
@@ -257,6 +264,62 @@ namespace Forge
     {
         m_Shader->Bind();
         BindTexture(m_Shader, m_Framebuffer->GetColorAttachment(0), "frg_Texture", context);
+        m_Uniforms.Apply(PostProcessingRenderPass, m_Shader, context);
+
+        target->Bind();
+        Render();
+    }
+
+    DitherPostProcessingStage::DitherPostProcessingStage()
+        : m_Framebuffer(), m_Shader(), m_Uniforms()
+    {
+        {
+#include "Assets/Shaders/PostProcessing/Dither.h"
+            m_Shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
+        }
+        m_Uniforms.AddFromDescriptors(PostProcessingRenderPass, m_Shader->GetUniformDescriptors());
+
+        const uint8_t bayerPattern[] = {
+            0,  32,  8, 40,  2, 34, 10, 42,  /* 8x8 Bayer ordered dithering  */
+            48, 16, 56, 24, 50, 18, 58, 26,  /* pattern.  Each input pixel   */
+            12, 44,  4, 36, 14, 46,  6, 38,  /* is scaled to the 0..63 range */
+            60, 28, 52, 20, 62, 30, 54, 22,  /* before looking in this table */
+            3,  35, 11, 43,  1, 33,  9, 41,  /* to determine the action.     */
+            51, 19, 59, 27, 49, 17, 57, 25,
+            15, 47,  7, 39, 13, 45,  5, 37,
+            63, 31, 55, 23, 61, 29, 53, 21,
+        };
+        m_BayerMatrix = Texture2D::Create(8, 8, bayerPattern, TextureFormat::RED, InternalTextureFormat::RED);
+    }
+
+    Ref<Framebuffer> DitherPostProcessingStage::GetInputFramebuffer() const
+    {
+        return m_Framebuffer;
+    }
+
+    void DitherPostProcessingStage::Init(uint32_t width, uint32_t height, bool requiresDepth)
+    {
+        if (!m_Framebuffer || m_Framebuffer->SupportsDepth() != requiresDepth)
+        {
+            FramebufferProps props;
+            props.Width = width;
+            props.Height = height;
+            props.Attachments = { FramebufferTextureFormat::RGBA16F };
+            if (requiresDepth)
+                props.Attachments.push_back(FramebufferTextureFormat::Depth);
+            m_Framebuffer = Framebuffer::Create(props);
+        }
+        else
+        {
+            TestFramebuffer(m_Framebuffer, width, height);
+        }
+    }
+
+    void DitherPostProcessingStage::Execute(const Ref<Framebuffer>& target, RendererContext& context)
+    {
+        m_Shader->Bind();
+        BindTexture(m_Shader, m_Framebuffer->GetColorAttachment(0), "frg_Texture", context);
+        BindTexture(m_Shader, m_BayerMatrix, "frg_BayerMatrix", context);
         m_Uniforms.Apply(PostProcessingRenderPass, m_Shader, context);
 
         target->Bind();

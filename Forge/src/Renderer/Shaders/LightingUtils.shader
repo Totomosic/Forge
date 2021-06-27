@@ -12,8 +12,6 @@ struct LightSource
     vec3 Attenuation;
     float Intensity;
     bool UseShadows;
-    samplerCube PointShadowMap;
-    sampler2D ShadowMap;
     float ShadowNear;
     float ShadowFar;
     mat4 LightSpaceTransform;

@@ -4,59 +4,83 @@
 #include "Lighting.h"
 #include "Texture.h"
 #include "MaterialUniforms.h"
+#include "UniformBuffer.h"
+#include "ShaderLibrary.h"
 
 namespace Forge
 {
 
-	constexpr const char ProjectionMatrixUniformName[] = "frg_ProjectionMatrix";
-	constexpr const char ViewMatrixUniformName[] = "frg_ViewMatrix";
-	constexpr const char ProjViewMatrixUniformName[] = "frg_ProjViewMatrix";
-	constexpr const char ModelMatrixUniformName[] = "frg_ModelMatrix";
-	constexpr const char CameraFarPlaneUniformName[] = "frg_FarPlane";
-	constexpr const char CameraNearPlaneUniformName[] = "frg_NearPlane";
-	constexpr const char CameraPositionUniformName[] = "frg_CameraPosition";
+	constexpr uint32_t CameraDataBindingPoint = 0;
+	constexpr uint32_t ShadowFormationDataBindingPoint = 1;
+	constexpr uint32_t ClippingPlaneDataBindingPoint = 2;
+	constexpr uint32_t LightingDataBindingPoint = 3;
 
-	constexpr const char LightSourceArrayBase[] = "frg_LightSources";
-	constexpr const char LightSourceArrayUniformName[] = "frg_LightSources[0].Position";
-	constexpr const char UsedLightSourcesUniformName[] = "frg_UsedLightSources";
+	struct FORGE_API UniformCameraData
+	{
+	public:
+		alignas(16) glm::mat4 ProjectionMatrix;
+		alignas(16) glm::mat4 ViewMatrix;
+		alignas(16) glm::mat4 ProjViewMatrix;
+		alignas( 4) float CameraFarPlane;
+		alignas( 4) float CameraNearPlane;
+		alignas(16) glm::vec3 CameraPosition;
+	};
+
+	struct FORGE_API UniformShadowFormationData
+	{
+	public:
+		alignas(16) glm::mat4 PointShadowMatrices[6];
+		alignas(16) glm::vec3 LightPosition;
+	};
+
+	struct FORGE_API UniformClippingPlaneData
+	{
+	public:
+		alignas(16) glm::vec4 ClippingPlanes[MAX_CLIPPING_PLANES];
+		alignas( 4) int UsedClippingPlanes;
+	};
+
+	struct FORGE_API UniformLightSourceData
+	{
+	public:
+		alignas( 4) int Type;
+		alignas(16) glm::vec3 Position;
+		alignas(16) glm::vec3 Direction;
+		alignas( 4) float Ambient;
+		alignas(16) glm::vec4 Color;
+		alignas(16) glm::vec3 Attenuation;
+		alignas( 4) float Intensity;
+		alignas( 4) bool UseShadows;
+		alignas( 4) float ShadowNear;
+		alignas( 4) float ShadowFar;
+		alignas(16) glm::mat4 LightSpaceTransform;
+	};
+
+	struct FORGE_API UniformLightingData
+	{
+	public:
+		alignas(16) UniformLightSourceData LightSources[MAX_LIGHT_COUNT];
+		alignas( 4) int UsedLightCount;
+	};
+
+	constexpr const char ModelMatrixUniformName[] = "frg_ModelMatrix";
+
+	constexpr const char LightSourceShadowMapArrayBase[] = "frg_LightShadowMaps";
+	constexpr const char LightSourceShadowMapArrayUniformName[] = "frg_LightShadowMaps[0].ShadowMap";
 
 	constexpr const char JointTransformsBase[] = "frg_JointTransforms";
 	constexpr const char JointTransformsUniformName[] = "frg_JointTransforms[0]";
 
-	constexpr const char ClippingPlanesArrayBase[] = "frg_ClippingPlanes";
-	constexpr const char ClippingPlanesArrayUniformName[] = "frg_ClippingPlanes[0]";
-	constexpr const char UsedClippingPlanesUniformName[] = "frg_UsedClippingPlanes";
-
-	constexpr const char PointShadowMatricesArrayBase[] = "frg_PointShadowMatrices";
-	constexpr const char PointShadowMatricesArrayUniformName0[] = "frg_PointShadowMatrices[0]";
-	constexpr const char PointShadowMatricesArrayUniformName1[] = "frg_PointShadowMatrices[1]";
-	constexpr const char PointShadowMatricesArrayUniformName2[] = "frg_PointShadowMatrices[2]";
-	constexpr const char PointShadowMatricesArrayUniformName3[] = "frg_PointShadowMatrices[3]";
-	constexpr const char PointShadowMatricesArrayUniformName4[] = "frg_PointShadowMatrices[4]";
-	constexpr const char PointShadowMatricesArrayUniformName5[] = "frg_PointShadowMatrices[5]";
-	constexpr const char ShadowFormationLightPositionUniformName[] = "frg_ShadowLightPosition";
-
 	constexpr const char TimeUniformName[] = "frg_Time";
-
 	constexpr const char EntityIdUniformName[] = "frg_EntityID";
 
 	struct FORGE_API ShaderRequirements
 	{
 	public:
-		bool ProjectionMatrix;
-		bool ViewMatrix;
-		bool ProjViewMatrix;
 		bool ModelMatrix;
-		bool CameraFarPlane;
-		bool CameraNearPlane;
-		bool CameraPosition;
 
-		bool LightSources;
+		bool LightSourceShadowMaps;
 		bool Animation;
-		bool ClippingPlanes;
-
-		bool ShadowFormationLightPosition;
-		bool PointShadowMatrices;
 
 		bool Time;
 	};
@@ -68,22 +92,24 @@ namespace Forge
 		static constexpr int NullTexture2DSlot = 0;
 		static constexpr int NullTextureCubeSlot = 1;
 
-	private:
-		glm::mat4 m_ProjectionMatrix;
-		glm::mat4 m_ViewMatrix;
-		glm::mat4 m_ProjViewMatrix;
-		float m_CameraFarPlane;
-		float m_CameraNearPlane;
-		glm::vec3 m_CameraPosition;
-		float m_Time;
-		glm::mat4 m_ShadowPointMatrices[6];
-		glm::vec3 m_CurrentShadowLightPosition;
-		glm::mat4 m_ShadowLightSpaceTransform;
+		struct FORGE_API LightShadowBinding
+		{
+		public:
+			int Location;
+			GLenum Type;
+		};
 
-		std::vector<LightSource> m_LightSources;
-		std::vector<glm::vec4> m_ClippingPlanes;
+	private:
+		Ref<UniformBuffer> m_CameraUniformBuffer;
+		Ref<UniformBuffer> m_ShadowFormationUniformBuffer;
+		Ref<UniformBuffer> m_ClippingPlaneUniformBuffer;
+		Ref<UniformBuffer> m_LightingUniformBuffer;
+
 		bool m_BoundSlots[FirstTextureSlot];
 		int m_NextTextureSlot;
+
+		float m_Time;
+		std::vector<LightShadowBinding> m_LightSourceShadowBindings;
 
 		bool m_CullingEnabled;
 		RenderSettings m_RenderSettings;
@@ -94,11 +120,9 @@ namespace Forge
 	public:
 		RendererContext();
 
-		inline void SetCameraPosition(const glm::vec3& position) { m_CameraPosition = position; }
 		void ApplyRenderSettings(const RenderSettings& settings);
 		void SetCamera(const CameraData& camera);
 		void SetLightSources(const std::vector<LightSource>& lights);
-		void AddLightSource(const LightSource& light);
 		void SetClippingPlanes(const std::vector<glm::vec4>& planes);
 		void SetTime(float time);
 		void SetShadowPointMatrices(const glm::vec3& lightPosition, const glm::mat4 matrices[6]);

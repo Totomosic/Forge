@@ -19,14 +19,12 @@ namespace Forge
 
 	void Texture::Bind(int slot) const
 	{
-		glActiveTexture(GL_TEXTURE0 + slot);
-		glBindTexture(m_Target, GetId());
+		glBindTextureUnit(slot, GetId());
 	}
 
 	void Texture::Unbind(int slot) const
 	{
-		glActiveTexture(GL_TEXTURE0 + slot);
-		glBindTexture(m_Target, 0);
+		glBindTextureUnit(slot, 0);
 	}
 
 	void Texture::GenerateMipmaps()
@@ -95,9 +93,9 @@ namespace Forge
 		return nullptr;
 	}
 
-	Ref<Texture2D> Texture2D::Create(uint32_t width, uint32_t height, const uint8_t* pixels)
+	Ref<Texture2D> Texture2D::Create(uint32_t width, uint32_t height, const uint8_t* pixels, TextureFormat format, InternalTextureFormat internalFormat)
 	{
-		Ref<Texture2D> texture = CreateRef<Texture2D>(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA);
+		Ref<Texture2D> texture = CreateRef<Texture2D>(width, height, format, internalFormat);
 		texture->Init((const void*)pixels);
 		return texture;
 	}

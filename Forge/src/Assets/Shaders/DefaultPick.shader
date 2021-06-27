@@ -2,7 +2,16 @@
 layout (location = 0) in vec3 v_Position;
 
 uniform mat4 frg_ModelMatrix;
-uniform mat4 frg_ProjViewMatrix;
+
+layout(std140, binding = 0) uniform Camera
+{
+    mat4 frg_ViewMatrix;
+    mat4 frg_ProjectionMatrix;
+    mat4 frg_ProjViewMatrix;
+    float frg_FarPlane;
+    float frg_NearPlane;
+    vec3 frg_CameraPosition;
+};
 
 void main()
 {

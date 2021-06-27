@@ -5,9 +5,22 @@ layout (location = 1) in vec3 v_Normal;
 layout (location = 2) in vec2 v_TexCoord;
 
 uniform mat4 frg_ModelMatrix;
-uniform mat4 frg_ProjViewMatrix;
-uniform vec4 frg_ClippingPlanes[MAX_CLIPPING_PLANES];
-uniform int frg_UsedClippingPlanes;
+
+layout(std140, binding = 0) uniform Camera
+{
+    mat4 frg_ViewMatrix;
+    mat4 frg_ProjectionMatrix;
+    mat4 frg_ProjViewMatrix;
+    float frg_FarPlane;
+    float frg_NearPlane;
+    vec3 frg_CameraPosition;
+};
+
+layout(std140, binding = 2) uniform ClippingPlanes
+{
+    vec4 frg_ClippingPlanes[MAX_CLIPPING_PLANES];
+    int frg_UsedClippingPlanes;
+};
 
 out vec3 f_Position;
 out vec3 f_Normal;
@@ -36,7 +49,16 @@ uniform sampler2D u_Roughness;
 uniform sampler2D u_Metallic;
 ["AO"]
 uniform sampler2D u_AO;
-uniform vec3 frg_CameraPosition;
+
+layout(std140, binding = 0) uniform Camera
+{
+    mat4 frg_ViewMatrix;
+    mat4 frg_ProjectionMatrix;
+    mat4 frg_ProjViewMatrix;
+    float frg_FarPlane;
+    float frg_NearPlane;
+    vec3 frg_CameraPosition;
+};
 
 in vec3 f_Position;
 in vec3 f_Normal;

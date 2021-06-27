@@ -177,7 +177,6 @@ namespace Forge
 		m_Context.SetCamera(data.Camera);
 		m_Context.SetLightSources(data.LightSources);
 		m_Context.SetClippingPlanes(data.Camera.ClippingPlanes);
-		m_Context.SetCameraPosition(glm::inverse(data.Camera.ViewMatrix)[3]);
 
 		RenderCommand::EnableClippingPlanes(data.Camera.ClippingPlanes.size());
 		RenderCommand::SetViewport(data.Camera.Viewport);
