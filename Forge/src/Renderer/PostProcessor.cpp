@@ -55,13 +55,13 @@ namespace Forge
     {
         if (IsEnabled())
         {
+            context.NewDrawCall();
             RenderSettings settings;
             context.ApplyRenderSettings(settings);
             ResetStages();
             PostProcessingStage* current = GetNextStage();
             while (current != nullptr)
             {
-                context.Reset();
                 PostProcessingStage* next = GetNextStage();
                 if (next != nullptr)
                 {
@@ -78,14 +78,15 @@ namespace Forge
 
     void PostProcessor::AddStage(Scope<PostProcessingStage>&& stage)
     {
-        stage->SetRenderFunction(std::bind(&PostProcessor::StageRenderFunction, this));
+        stage->SetRenderFunction(std::bind(&PostProcessor::StageRenderFunction, this, std::placeholders::_1));
         m_Stages.push_back(std::move(stage));
     }
 
-    void PostProcessor::StageRenderFunction()
+    void PostProcessor::StageRenderFunction(RendererContext& context)
     {
         RenderCommand::Clear();
         RenderCommand::DrawIndexed(m_ScreenRectangle->GetDrawMode(), m_ScreenRectangle->GetVertices());
+        context.NewDrawCall();
     }
 
     void PostProcessor::ResetStages()
@@ -199,7 +200,7 @@ namespace Forge
         m_Uniforms.Apply(PostProcessingRenderPass, m_BloomShader, context);
 
         m_BloomFramebuffer->Bind();
-        Render();
+        Render(context);
 
         bool horizontal = true;
         m_BlurShader->Bind();
@@ -207,12 +208,11 @@ namespace Forge
 
         for (int i = 0; i < 10; i++)
         {
-            context.Reset();
             m_Uniforms.SetUniform("u_Horizontal", horizontal);
             m_Uniforms.Apply(PostProcessingRenderPass, m_BlurShader, context);
             m_Framebuffers[horizontal]->Bind();
 
-            Render();
+            Render(context);
             BindTexture(m_BlurShader, m_Framebuffers[horizontal]->GetColorAttachment(0), "frg_Texture", context);
             horizontal = !horizontal;
         }
@@ -223,7 +223,7 @@ namespace Forge
         m_Uniforms.Apply(PostProcessingRenderPass, m_BloomCombineShader, context);
 
         target->Bind();
-        Render();
+        Render(context);
     }
 
     HDRPostProcessingStage::HDRPostProcessingStage()
@@ -267,7 +267,7 @@ namespace Forge
         m_Uniforms.Apply(PostProcessingRenderPass, m_Shader, context);
 
         target->Bind();
-        Render();
+        Render(context);
     }
 
     DitherPostProcessingStage::DitherPostProcessingStage()
@@ -323,7 +323,7 @@ namespace Forge
         m_Uniforms.Apply(PostProcessingRenderPass, m_Shader, context);
 
         target->Bind();
-        Render();
+        Render(context);
     }
 
 }

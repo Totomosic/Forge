@@ -6,7 +6,7 @@ namespace Forge
 {
 
 	RendererContext::RendererContext()
-		: m_NextTextureSlot(FirstTextureSlot), m_CullingEnabled(false), m_RenderSettings(), m_RequirementsMap(), m_BoundSlots{ false, false }
+		: m_NextTextureSlot(FirstTextureSlot), m_NextSceneTextureSlot(FirstTextureSlot), m_CullingEnabled(false), m_RenderSettings(), m_RequirementsMap(), m_BoundSlots{ false, false }
 	{
 		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(UniformCameraData), CameraDataBindingPoint);
 		m_ShadowFormationUniformBuffer = UniformBuffer::Create(sizeof(UniformShadowFormationData), ShadowFormationDataBindingPoint);
@@ -50,12 +50,12 @@ namespace Forge
 				data.LightSources[i].ShadowFar = lights[i].ShadowFrustum.FarPlane;
 				data.LightSources[i].LightSpaceTransform = lights[i].LightSpaceTransform;
 
-				m_LightSourceShadowBindings[i].Location = BindTexture(lights[i].ShadowFramebuffer->GetDepthAttachment(), textureTarget);
+				m_LightSourceShadowBindings[i].Location = BindTexture(lights[i].ShadowFramebuffer->GetDepthAttachment(), textureTarget, true);
 				m_LightSourceShadowBindings[i].Type = textureTarget;
 			}
 			else
 			{
-				m_LightSourceShadowBindings[i].Location = BindTexture(nullptr, textureTarget);
+				m_LightSourceShadowBindings[i].Location = BindTexture(nullptr, textureTarget, true);
 				m_LightSourceShadowBindings[i].Type = textureTarget;
 			}
 		}
@@ -89,10 +89,16 @@ namespace Forge
 		m_CurrentShader = nullptr;
 	}
 
+	void RendererContext::NewDrawCall()
+	{
+		m_NextTextureSlot = m_NextSceneTextureSlot;
+	}
+
 	void RendererContext::Reset()
 	{
 		m_CurrentShader = nullptr;
 		m_NextTextureSlot = FirstTextureSlot;
+		m_NextSceneTextureSlot = FirstTextureSlot;
 		m_BoundSlots[0] = m_BoundSlots[1] = false;
 	}
 
@@ -162,7 +168,7 @@ namespace Forge
 		}
 	}
 
-	int RendererContext::BindTexture(const Ref<Texture>& texture, GLenum textureTarget)
+	int RendererContext::BindTexture(const Ref<Texture>& texture, GLenum textureTarget, bool sceneWideTexture)
 	{
 		FORGE_ASSERT(m_NextTextureSlot < 32, "Too many textures bound");
 		if (texture)
@@ -178,6 +184,8 @@ namespace Forge
 			}
 			return slot;
 		}
+		if (sceneWideTexture)
+			m_NextSceneTextureSlot++;
 		return m_NextTextureSlot++;
 	}
 

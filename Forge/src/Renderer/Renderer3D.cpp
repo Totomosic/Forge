@@ -229,6 +229,7 @@ namespace Forge
 			mesh->Apply(material->GetShader(m_CurrentRenderPass), requirements);
 
 			RenderCommand::DrawIndexed(mesh->GetDrawMode(), mesh->GetVertices());
+			m_Context.NewDrawCall();
 			m_Stats.DrawCount++;
 		}
 	}

@@ -107,6 +107,7 @@ namespace Forge
 
 		bool m_BoundSlots[FirstTextureSlot];
 		int m_NextTextureSlot;
+		int m_NextSceneTextureSlot;
 
 		float m_Time;
 		std::vector<LightShadowBinding> m_LightSourceShadowBindings;
@@ -127,11 +128,12 @@ namespace Forge
 		void SetTime(float time);
 		void SetShadowPointMatrices(const glm::vec3& lightPosition, const glm::mat4 matrices[6]);
 		void NewScene();
+		void NewDrawCall();
 		void Reset();
 
 		ShaderRequirements GetShaderRequirements(const Ref<Shader>& shader);
 		void BindShader(const Ref<Shader>& shader, const ShaderRequirements& requirements);
-		int BindTexture(const Ref<Texture>& texture, GLenum textureTarget);
+		int BindTexture(const Ref<Texture>& texture, GLenum textureTarget, bool sceneWideTexture = false);
 	};
 
 }

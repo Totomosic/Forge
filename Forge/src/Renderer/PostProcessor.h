@@ -13,7 +13,7 @@ namespace Forge
 	class FORGE_API PostProcessingStage
 	{
 	private:
-		std::function<void()> m_RenderFunction{};
+		std::function<void(RendererContext&)> m_RenderFunction{};
 		Ref<Texture2D> m_DepthTexture;
 		bool m_Enabled = true;
 
@@ -23,7 +23,7 @@ namespace Forge
 		inline bool IsEnabled() const { return m_Enabled; }
 		inline void SetEnabled(bool enabled) { m_Enabled = enabled; }
 		inline void SetDepthTexture(const Ref<Texture2D>& depthTexture) { m_DepthTexture = depthTexture; }
-		inline void SetRenderFunction(const std::function<void()>& fn) { m_RenderFunction = fn; }
+		inline void SetRenderFunction(const std::function<void(RendererContext&)>& fn) { m_RenderFunction = fn; }
 		
 		virtual const char* GetName() const = 0;
 		virtual UniformContext& GetUniforms() = 0;
@@ -33,7 +33,7 @@ namespace Forge
 
 	protected:
 		inline const Ref<Texture2D>& GetDepthTexture() const { return m_DepthTexture; }
-		inline void Render() { m_RenderFunction(); };
+		inline void Render(RendererContext& context) { m_RenderFunction(context); };
 		void TestFramebuffer(const Ref<Framebuffer>& framebuffer, uint32_t width, uint32_t height);
 		void BindTexture(const Ref<Shader>& shader, const Ref<Texture>& texture, const std::string& uniformName, RendererContext& context);
 	};
@@ -118,7 +118,7 @@ namespace Forge
 
 	private:
 		void AddStage(Scope<PostProcessingStage>&& stage);
-		void StageRenderFunction();
+		void StageRenderFunction(RendererContext& context);
 
 		void ResetStages();
 		PostProcessingStage* GetNextStage();
