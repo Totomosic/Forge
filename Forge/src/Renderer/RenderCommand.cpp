@@ -86,7 +86,7 @@ namespace Forge
 
 	void RenderCommand::DrawIndexed(GLuint drawMode, const Ref<VertexArray>& vertexArray)
 	{
-		uint32_t count = vertexArray->GetIndexBuffer()->GetCount();
+		uint32_t count = vertexArray->GetIndexCount();
 		vertexArray->Bind();
 		glDrawElements(drawMode, count, vertexArray->GetIndexBuffer()->GetGlDataType(), nullptr);
 	}

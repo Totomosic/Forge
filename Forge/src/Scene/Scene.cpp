@@ -7,6 +7,7 @@
 #include "ModelRenderer.h"
 #include "AnimatorComponent.h"
 #include "Components.h"
+#include "SpriteRenderer.h"
 
 namespace Forge
 {
@@ -258,6 +259,21 @@ namespace Forge
                     m_Renderer->RenderModel(model.Model, transform.GetMatrix(), options);
                 }
             }
+
+            m_Renderer2D.BeginScene();
+            for (auto entity : m_Registry.view<TransformComponent, SpriteRendererComponent, EnabledFlag>())
+            {
+                if (CheckLayerMask(entity, cameraComponent.LayerMask))
+                {
+                    auto [transform, sprite] = m_Registry.get<TransformComponent, SpriteRendererComponent>(entity);
+                    m_Renderer2D.DrawQuad(transform.GetPosition(), transform.GetScale(), sprite.Texture, sprite.Color);
+                }
+            }
+            m_Renderer2D.EndScene();
+            const Ref<Model>* renderables = m_Renderer2D.GetRenderables();
+            for (uint32_t i = 0; i < m_Renderer2D.GetRenderableCount(); i++)
+                m_Renderer->RenderModel(renderables[i], glm::mat4(1.0f));
+
             m_Renderer->EndScene();
         }
     }

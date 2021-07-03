@@ -14,6 +14,9 @@ SHADER_FILES = [
     ["PBRColor.shader", "PBRColor.h"],
     ["PBRTexture.shader", "PBRTexture.h"],
 
+    ["BatchColor.shader", "BatchColor.h"],
+    ["BatchTexture.shader", "BatchTexture.h"],
+
     ["PostProcessing/Bloom.shader", "PostProcessing/Bloom.h"],
     ["PostProcessing/BloomCombine.shader", "PostProcessing/BloomCombine.h"],
     ["PostProcessing/Blur.shader", "PostProcessing/Blur.h"],

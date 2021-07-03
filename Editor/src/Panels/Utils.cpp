@@ -189,46 +189,6 @@ namespace Editor
 		ImGui::PopID();
 	}
 
-	void DrawTextureControl(const std::string& name, Ref<Texture>& texture, float resetValue, float columnWidth)
-	{
-		ImGui::PushID(name.c_str());
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, columnWidth);
-		ImGui::Text(name.c_str());
-		ImGui::NextColumn();
-
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 2 });
-		char buffer[255]{};
-		if (texture)
-		{
-			std::string name = GraphicsCache::GetAssetLocation(texture).Path;
-			std::memcpy(buffer, name.c_str(), name.size() + 1);
-		}
-		ImGui::InputText("##Value", buffer, sizeof(buffer));
-		if (ImGui::BeginDragDropTarget())
-		{
-			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PATH");
-			if (payload)
-			{
-				std::string filename = (char*)payload->Data;
-				texture = GraphicsCache::LoadTexture2D(filename);
-			}
-			const ImGuiPayload* assetLocationPayload = ImGui::AcceptDragDropPayload("TEXTURE_ASSET_LOCATION_POINTER");
-			if (assetLocationPayload)
-			{
-				const AssetLocation* location = *(const AssetLocation**)assetLocationPayload->Data;
-				Ref<Texture2D> tex = GraphicsCache::GetAsset<Texture2D>(*location);
-				texture = tex;
-			}
-			ImGui::EndDragDropTarget();
-		}
-
-		ImGui::PopStyleVar();
-
-		ImGui::Columns(1);
-		ImGui::PopID();
-	}
-
 	void DrawTreeNode(const std::string& name, const TreeNodeOptions& options)
 	{
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;

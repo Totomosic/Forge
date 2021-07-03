@@ -115,6 +115,12 @@ namespace Editor
 					entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::GridMesh(2, 2), GraphicsCache::PbrColorMaterial(COLOR_WHITE)));
 					m_SelectedEntity = entity;
 				}
+				if (ImGui::MenuItem("Create Sprite"))
+				{
+					Entity entity = m_Scene->CreateEntity();
+					entity.AddComponent<SpriteRendererComponent>(COLOR_WHITE);
+					m_SelectedEntity = entity;
+				}
 				ImGui::EndPopup();
 			}
 
@@ -396,6 +402,12 @@ namespace Editor
 		DrawComponent<CameraComponent>("Camera", entity, true, [](CameraComponent& camera)
 		{
 			DrawColorControl("Clear Color", camera.ClearColor);
+		});
+
+		DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, true, [](SpriteRendererComponent& sprite)
+		{
+			DrawColorControl("Color", sprite.Color);
+			DrawTextureControl<Texture2D>("Texture", sprite.Texture);
 		});
 	}
 

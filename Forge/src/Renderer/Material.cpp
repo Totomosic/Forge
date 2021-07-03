@@ -23,6 +23,7 @@ namespace Forge
 		m_Uniforms.AddFromDescriptors(RenderPass::WithShadow, GetShader(RenderPass::WithShadow)->GetUniformDescriptors());
 		m_Uniforms.AddFromDescriptors(RenderPass::WithoutShadow, GetShader(RenderPass::WithoutShadow)->GetUniformDescriptors());
 		m_Uniforms.AddFromDescriptors(RenderPass::Pick, GetShader(RenderPass::Pick)->GetUniformDescriptors());
+		m_Uniforms.Init();
 	}
 
 	void Material::Apply(RenderPass pass, RendererContext& context) const

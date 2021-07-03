@@ -2,6 +2,7 @@
 #include "ForgePch.h"
 #include "Core/Timestep.h"
 #include "Renderer/Renderer3D.h"
+#include "Renderer/Renderer2D.h"
 
 #include <entt/entt.hpp>
 #include <map>
@@ -35,6 +36,7 @@ namespace Forge
 		float m_Time;
 
 		Renderer3D* m_Renderer;
+		Renderer2D m_Renderer2D;
 		Ref<Framebuffer> m_DefaultFramebuffer;
 		Ref<Framebuffer> m_PickFramebuffer;
 

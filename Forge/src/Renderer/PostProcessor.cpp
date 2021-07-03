@@ -151,6 +151,7 @@ namespace Forge
         m_Uniforms.AddFromDescriptors(PostProcessingRenderPass, m_BloomShader->GetUniformDescriptors());
         m_Uniforms.AddFromDescriptors(PostProcessingRenderPass, m_BlurShader->GetUniformDescriptors());
         m_Uniforms.AddFromDescriptors(PostProcessingRenderPass, m_BloomCombineShader->GetUniformDescriptors());
+        m_Uniforms.Init();
         m_Uniforms.SetUniform("u_Threshold", 1.0f);
     }
 
@@ -234,6 +235,7 @@ namespace Forge
             m_Shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
         }
         m_Uniforms.AddFromDescriptors(PostProcessingRenderPass, m_Shader->GetUniformDescriptors());
+        m_Uniforms.Init();
         m_Uniforms.SetUniform("u_Exposure", 1.0f);
     }
 
@@ -278,6 +280,7 @@ namespace Forge
             m_Shader = Shader::CreateFromSource(vertexShaderSource, fragmentShaderSource);
         }
         m_Uniforms.AddFromDescriptors(PostProcessingRenderPass, m_Shader->GetUniformDescriptors());
+        m_Uniforms.Init();
 
         const uint8_t bayerPattern[] = {
             0,  32,  8, 40,  2, 34, 10, 42,  /* 8x8 Bayer ordered dithering  */

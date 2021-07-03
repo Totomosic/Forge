@@ -170,7 +170,7 @@ namespace Forge
 
 	int RendererContext::BindTexture(const Ref<Texture>& texture, GLenum textureTarget, bool sceneWideTexture)
 	{
-		FORGE_ASSERT(m_NextTextureSlot < 32, "Too many textures bound");
+		FORGE_ASSERT(m_NextTextureSlot < MaxTextureSlots, "Too many textures bound");
 		if (texture)
 			texture->Bind(m_NextTextureSlot);
 		else

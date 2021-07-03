@@ -28,10 +28,15 @@ namespace Forge
 		std::vector<Ref<VertexBuffer>> m_VertexBuffers;
 		Ref<IndexBuffer> m_IndexBuffer;
 
+		uint32_t m_MaxIndices = (uint32_t)-1;
+
 	public:
 		VertexArray();
 
+		inline uint32_t GetIndexCount() const { return std::min(m_MaxIndices, m_IndexBuffer->GetCount()); }
+		inline const Ref<VertexBuffer>& GetVertexBuffer(int index) const { return m_VertexBuffers[index]; }
 		inline const Ref<IndexBuffer>& GetIndexBuffer() const { return m_IndexBuffer; }
+		inline void SetMaxIndices(uint32_t count) { m_MaxIndices = count; }
 
 		void Bind() const;
 		void Unbind() const;

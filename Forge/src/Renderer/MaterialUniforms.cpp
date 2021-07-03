@@ -43,33 +43,31 @@ namespace Forge
 		{
 			if (!descriptor.Automatic)
 			{
-				if (m_UniformSpecificationIndices.find(descriptor.VariableName) != m_UniformSpecificationIndices.end())
+				AddDescriptor(pass, descriptor);
+				if (descriptor.Count > 1)
 				{
-					UniformSpecification& specification = m_UniformSpecifications[m_UniformSpecificationIndices[descriptor.VariableName]];
-					FORGE_ASSERT(specification.Type == descriptor.Type, "Avoid uniform names with the same name but different type");
-					specification.RenderPasses.set(size_t(pass), true);
-				}
-				else
-				{
-					UniformSpecification specification;
-					specification.Name = descriptor.Name;
-					specification.VariableName = descriptor.VariableName;
-					specification.Type = descriptor.Type;
-					specification.Offset = m_Size;
-					specification.RenderPasses.set(size_t(pass), true);
-
-					m_UniformSpecificationIndices[specification.VariableName] = (int)m_UniformSpecifications.size();
-					m_UniformSpecifications.push_back(specification);
-
-					if (specification.Type == ShaderDataType::Sampler1D || specification.Type == ShaderDataType::Sampler2D || specification.Type == ShaderDataType::Sampler3D || specification.Type == ShaderDataType::SamplerCube)
+					size_t bracketIndex = descriptor.VariableName.find_first_of('[');
+					if (bracketIndex != std::string::npos)
 					{
-						m_TextureSize++;
+						std::string baseVarname = descriptor.VariableName.substr(0, bracketIndex);
+						for (int i = 1; i < descriptor.Count; i++)
+						{
+							UniformDescriptor newDescriptor;
+							newDescriptor.Automatic = false;
+							newDescriptor.Type = descriptor.Type;
+							newDescriptor.Count = 0;
+							newDescriptor.VariableName = baseVarname + '[' + std::to_string(i) + ']';
+							newDescriptor.Name = descriptor.Name;
+							AddDescriptor(pass, newDescriptor);
+						}
 					}
-
-					m_Size += GetTypeSize(descriptor.Type);
 				}
 			}
 		}
+	}
+
+	void UniformContext::Init()
+	{
 		m_Buffer = std::make_unique<std::byte[]>(m_Size);
 		std::memset(m_Buffer.get(), 0, m_Size);
 		if (m_TextureSize > 0)
@@ -142,6 +140,35 @@ namespace Forge
 					break;
 				}
 			}
+		}
+	}
+
+	void UniformContext::AddDescriptor(RenderPass pass, const UniformDescriptor& descriptor)
+	{
+		if (m_UniformSpecificationIndices.find(descriptor.VariableName) != m_UniformSpecificationIndices.end())
+		{
+			UniformSpecification& specification = m_UniformSpecifications[m_UniformSpecificationIndices[descriptor.VariableName]];
+			FORGE_ASSERT(specification.Type == descriptor.Type, "Avoid uniform names with the same name but different type");
+			specification.RenderPasses.set(size_t(pass), true);
+		}
+		else
+		{
+			UniformSpecification specification;
+			specification.Name = descriptor.Name;
+			specification.VariableName = descriptor.VariableName;
+			specification.Type = descriptor.Type;
+			specification.Offset = m_Size;
+			specification.RenderPasses.set(size_t(pass), true);
+
+			m_UniformSpecificationIndices[specification.VariableName] = (int)m_UniformSpecifications.size();
+			m_UniformSpecifications.push_back(specification);
+
+			if (specification.Type == ShaderDataType::Sampler1D || specification.Type == ShaderDataType::Sampler2D || specification.Type == ShaderDataType::Sampler3D || specification.Type == ShaderDataType::SamplerCube)
+			{
+				m_TextureSize++;
+			}
+
+			m_Size += GetTypeSize(descriptor.Type);
 		}
 	}
 

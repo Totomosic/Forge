@@ -88,6 +88,7 @@ namespace Forge
 	class FORGE_API RendererContext
 	{
 	private:
+		static constexpr int MaxTextureSlots = 32;
 		static constexpr int FirstTextureSlot = 2;
 		static constexpr int NullTexture2DSlot = 0;
 		static constexpr int NullTextureCubeSlot = 1;
@@ -120,6 +121,8 @@ namespace Forge
 
 	public:
 		RendererContext();
+
+		inline int GetAvailableTextureSlots() const { return MaxTextureSlots - m_NextTextureSlot; }
 
 		void ApplyRenderSettings(const RenderSettings& settings);
 		void SetCamera(const CameraData& camera);

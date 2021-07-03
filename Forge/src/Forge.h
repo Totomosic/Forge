@@ -23,6 +23,7 @@
 #include "Scene/ModelRenderer.h"
 #include "Scene/Components.h"
 #include "Scene/AnimatorComponent.h"
+#include "Scene/SpriteRenderer.h"
 
 #include "Scene/SceneSerializer.h"
 
