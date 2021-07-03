@@ -56,6 +56,12 @@ namespace Forge
 		void RemoveLayer(Entity entity, uint8_t layer);
 		void AddToAllLayers(Entity entity);
 		void Clear();
+		
+		template<typename T>
+		Entity GetComponentOwner(const T& component)
+		{
+			return Entity(entt::to_entity(m_Registry, component), this);
+		}
 
 		inline entt::registry& GetRegistry() { return m_Registry; }
 

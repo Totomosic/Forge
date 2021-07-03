@@ -57,7 +57,8 @@ namespace Editor
 			m_Scene->GetRegistry().each([&](entt::entity entity)
 			{
 				Entity e(entity, m_Scene);
-				DrawEntityNode(e);
+				if (!e.GetTransform().HasParent())
+					DrawEntityNode(e);
 			});
 
 			if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowHovered())
@@ -124,6 +125,20 @@ namespace Editor
 				ImGui::EndPopup();
 			}
 
+			ImVec2 size = ImGui::GetContentRegionAvail();
+			ImGui::Dummy(size);
+
+			if (ImGui::BeginDragDropTarget())
+			{
+				const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY");
+				if (payload)
+				{
+					Entity entity = *(Entity*)payload->Data;
+					entity.GetTransform().SetParent(nullptr);
+				}
+				ImGui::EndDragDropTarget();
+			}
+
 			ImGui::End();
 
 			ImGui::Begin("Properties");
@@ -164,8 +179,32 @@ namespace Editor
 			ImGui::EndPopup();
 		}
 
+		if (ImGui::BeginDragDropSource())
+		{
+			ImGui::SetDragDropPayload("ENTITY", &entity, sizeof(Entity));
+			ImGui::Text(tag.c_str());
+			ImGui::EndDragDropSource();
+		}
+		if (ImGui::BeginDragDropTarget())
+		{
+			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY");
+			if (payload)
+			{
+				Entity child = *(Entity*)payload->Data;
+				if (entity != child)
+					child.GetTransform().SetParent(&entity.GetTransform());
+			}
+			ImGui::EndDragDropTarget();
+		}
+
 		if (opened)
 		{
+			TransformComponent& transform = entity.GetTransform();
+			for (const TransformComponent* child : transform.GetChildren())
+			{
+				Entity childEntity = m_Scene->GetComponentOwner(*child);
+				DrawEntityNode(childEntity);
+			}
 			ImGui::TreePop();
 		}
 
@@ -231,20 +270,20 @@ namespace Editor
 
 		DrawComponent<TransformComponent>("Transform", entity, false, [](TransformComponent& transform)
 		{
-			glm::vec3 position = transform.GetPosition();
-			glm::vec3 rotation = glm::degrees(glm::eulerAngles(transform.GetRotation()));
-			glm::vec3 scale = transform.GetScale();
+			glm::vec3 position = transform.GetLocalPosition();
+			glm::vec3 rotation = glm::degrees(glm::eulerAngles(transform.GetLocalRotation()));
+			glm::vec3 scale = transform.GetLocalScale();
 
 			DrawVec3Control("Position", position);
 			DrawVec3Control("Rotation", rotation);
 			DrawVec3Control("Scale", scale, 1.0f);
 
-			if (position != transform.GetPosition())
-				transform.SetPosition(position);
-			if (rotation != glm::degrees(glm::eulerAngles(transform.GetRotation())))
-				transform.SetRotation(glm::quat(glm::radians(rotation)));
-			if (scale != transform.GetScale())
-				transform.SetScale(scale);
+			if (position != transform.GetLocalPosition())
+				transform.SetLocalPosition(position);
+			if (rotation != glm::degrees(glm::eulerAngles(transform.GetLocalRotation())))
+				transform.SetLocalRotation(glm::quat(glm::radians(rotation)));
+			if (scale != transform.GetLocalScale())
+				transform.SetLocalScale(scale);
 		});
 
 		DrawComponent<PointLightComponent>("Point light", entity, true, [](PointLightComponent& light)

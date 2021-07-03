@@ -28,34 +28,134 @@ namespace Forge
 
 		bool m_Flip = false;
 
+		mutable const TransformComponent* m_Parent;
+		mutable std::vector<const TransformComponent*> m_Children;
+
 	public:
 		inline TransformComponent(const glm::vec3& position = { 0, 0, 0 }, const glm::quat& rotation = { 1.0f, 0.0f, 0.0f, 0.0f }, const glm::vec3& scale = { 1.0f, 1.0f, 1.0f })
-			: m_Position(position), m_Rotation(rotation), m_Scale(scale), m_Dirty(true), m_CacheTransform(), m_CacheInvTransform()
+			: m_Position(position), m_Rotation(rotation), m_Scale(scale), m_Dirty(true), m_CacheTransform(), m_CacheInvTransform(), m_Parent(nullptr), m_Children()
 		{}
 
-		inline const glm::vec3& GetPosition() const { return m_Position; }
-		inline const glm::quat& GetRotation() const { return m_Rotation; }
-		inline const glm::vec3& GetScale() const { return m_Scale; }
+		TransformComponent(const TransformComponent& other) = delete;
+		TransformComponent& operator=(const TransformComponent& other) = delete;
 
-		inline const glm::mat4& GetMatrix() const { RecalculateMatrices(); return m_CacheTransform; }
-		inline const glm::mat4& GetInverseMatrix() const { RecalculateMatrices(); return m_CacheInvTransform; }
+		inline TransformComponent(TransformComponent&& other)
+			: m_Position(other.m_Position), m_Rotation(other.m_Rotation), m_Scale(other.m_Scale), m_Dirty(other.m_Dirty),
+			m_CacheTransform(std::move(other.m_CacheTransform)), m_CacheInvTransform(std::move(other.m_CacheInvTransform)), m_Parent(nullptr), m_Children(std::move(other.m_Children))
+		{
+			if (&other != this)
+			{
+				SetParent(other.m_Parent);
+				other.SetParent(nullptr);
+				other.m_Children = {};
+				for (const TransformComponent* child : m_Children)
+					child->m_Parent = this;
+			}
+			else
+			{
+				m_Parent = other.m_Parent;
+			}
+		}
 
-		inline void SetPosition(const glm::vec3& position)
+		inline TransformComponent& operator=(TransformComponent&& other)
+		{
+			if (&other != this)
+			{
+				m_Position = other.m_Position;
+				m_Rotation = other.m_Rotation;
+				m_Scale = other.m_Scale;
+				m_Dirty = other.m_Dirty;
+				m_CacheTransform = std::move(other.m_CacheTransform);
+				m_CacheInvTransform = std::move(other.m_CacheInvTransform);
+				m_Children = std::move(other.m_Children);
+				other.m_Children = {};
+				SetParent(other.m_Parent);
+				other.SetParent(nullptr);
+				for (const TransformComponent* child : m_Children)
+					child->m_Parent = this;
+			}
+			return *this;
+		}
+
+		inline ~TransformComponent()
+		{
+			for (const TransformComponent* child : m_Children)
+			{
+				child->m_Parent = nullptr;
+				child->SetDirty();
+			}
+			m_Children.clear();
+			SetParent(nullptr);
+		}
+
+		inline bool HasParent() const { return m_Parent != nullptr; }
+		inline const TransformComponent* GetParent() const { return m_Parent; }
+		inline const std::vector<const TransformComponent*> GetChildren() const { return m_Children; }
+
+		inline void SetParent(const TransformComponent* parent)
+		{
+			if (parent != m_Parent && parent != this)
+			{
+				if (m_Parent)
+				{
+					auto it = std::find(m_Parent->m_Children.begin(), m_Parent->m_Children.end(), this);
+					if (it != m_Parent->m_Children.end())
+						m_Parent->m_Children.erase(it);
+				}
+				m_Parent = parent;
+				if (m_Parent)
+				{
+					m_Parent->m_Children.push_back(this);
+				}
+				SetDirty();
+			}
+		}
+
+		inline const glm::vec3& GetLocalPosition() const { return m_Position; }
+		inline const glm::quat& GetLocalRotation() const { return m_Rotation; }
+		inline const glm::vec3& GetLocalScale() const { return m_Scale; }
+
+		inline const glm::mat4& GetLocalMatrix() const { RecalculateMatrices(); return m_CacheTransform; }
+		inline const glm::mat4& GetLocalInverseMatrix() const { RecalculateMatrices(); return m_CacheInvTransform; }
+
+		inline glm::mat4 GetMatrix() const { RecalculateMatrices(); return m_Parent ? m_Parent->GetMatrix() * m_CacheTransform : m_CacheTransform; }
+		inline glm::mat4 GetInverseMatrix() const { RecalculateMatrices(); return m_Parent ? m_CacheInvTransform * m_Parent->GetInverseMatrix() : m_CacheInvTransform; }
+
+		inline glm::vec3 GetPosition() const { return GetParentMatrix() * glm::vec4{ GetLocalPosition(), 1.0f }; }
+		inline glm::quat GetRotation() const { return m_Parent ? m_Parent->GetRotation() * GetLocalRotation() : GetLocalRotation(); }
+		inline glm::vec3 GetScale() const { return m_Parent ? m_Parent->GetScale() * GetLocalScale() : GetLocalScale(); }
+
+		inline void SetLocalPosition(const glm::vec3& position)
 		{
 			m_Position = position;
-			m_Dirty = true;
+			SetDirty();
 		}
 
-		inline void SetRotation(const glm::quat& rotation)
+		inline void SetLocalRotation(const glm::quat& rotation)
 		{
 			m_Rotation = rotation;
-			m_Dirty = true;
+			SetDirty();
 		}
 
-		inline void SetScale(const glm::vec3& scale)
+		inline void SetLocalScale(const glm::vec3& scale)
 		{
 			m_Scale = scale;
-			m_Dirty = true;
+			SetDirty();
+		}
+
+		inline glm::vec3 GetLocalForward() const
+		{
+			return GetLocalRotation() * glm::vec3{ 0, 0, -1.0f };
+		}
+
+		inline glm::vec3 GetLocalRight() const
+		{
+			return GetLocalRotation() * glm::vec3{ 1.0f, 0, 0 };
+		}
+
+		inline glm::vec3 GetLocalUp() const
+		{
+			return GetLocalRotation() * glm::vec3{ 0, 1.0f, 0 };
 		}
 
 		inline glm::vec3 GetForward() const
@@ -75,44 +175,53 @@ namespace Forge
 
 		inline void Translate(const glm::vec3& translation)
 		{
-			SetPosition(GetPosition() + translation);
+			SetLocalPosition(GetLocalPosition() + translation);
 		}
 
 		inline void Rotate(const glm::quat& rotation)
 		{
-			SetRotation(GetRotation() * rotation);
+			SetLocalRotation(GetLocalRotation() * rotation);
 		}
 
 		inline void Rotate(float angle, glm::vec3 axis, Space space = Space::Local)
 		{
 			if (space == Space::World)
-				axis = glm::inverse(GetRotation()) * axis;
+				axis = glm::inverse(GetLocalRotation()) * axis;
 			Rotate(glm::angleAxis(angle, axis));
 		}
 
 		inline void Scale(const glm::vec3& scale)
 		{
-			SetScale(GetScale() * scale);
-		}
-
-		inline void SetFromTransform(const TransformComponent& transform)
-		{
-			m_Position = transform.m_Position;
-			m_Rotation = transform.m_Rotation;
-			m_Scale = transform.m_Scale;
-
-			m_Dirty = transform.m_Dirty;
-			m_CacheTransform = transform.m_CacheTransform;
-			m_CacheInvTransform = transform.m_CacheInvTransform;
+			SetLocalScale(GetLocalScale() * scale);
 		}
 
 		inline void FlipX()
 		{
 			m_Flip = true;
-			m_Dirty = true;
+			SetDirty();
+		}
+
+		inline TransformComponent Clone() const
+		{
+			TransformComponent result;
+			result.m_Position = m_Position;
+			result.m_Rotation = m_Rotation;
+			result.m_Scale = m_Scale;
+			result.m_Dirty = m_Dirty;
+			result.m_CacheTransform = m_CacheTransform;
+			result.m_CacheInvTransform = m_CacheInvTransform;
+			result.SetParent(m_Parent);
+			return result;
 		}
 
 	private:
+		inline glm::mat4 GetParentMatrix() const
+		{
+			if (m_Parent)
+				return m_Parent->GetMatrix();
+			return glm::mat4(1.0f);
+		}
+
 		inline void RecalculateMatrices() const
 		{
 			if (m_Dirty)
@@ -133,11 +242,18 @@ namespace Forge
 			}
 			return matrix;
 		}
+
+		inline void SetDirty() const
+		{
+			m_Dirty = true;
+			for (const TransformComponent* child : m_Children)
+				child->SetDirty();
+		}
 	};
 
 	inline TransformComponent CloneComponent(const TransformComponent& component)
 	{
-		return component;
+		return component.Clone();
 	}
 
 }

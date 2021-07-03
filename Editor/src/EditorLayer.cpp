@@ -81,19 +81,19 @@ namespace Editor
 			TransformComponent& transform = m_Camera.GetTransform();
 			if (Input::IsKeyDown(KeyCode::A))
 			{
-				transform.Translate(transform.GetRight() * -speed * ts.Seconds());
+				transform.Translate(transform.GetLocalRight() * -speed * ts.Seconds());
 			}
 			if (Input::IsKeyDown(KeyCode::D))
 			{
-				transform.Translate(transform.GetRight() * speed * ts.Seconds());
+				transform.Translate(transform.GetLocalRight() * speed * ts.Seconds());
 			}
 			if (Input::IsKeyDown(KeyCode::W))
 			{
-				transform.Translate(transform.GetForward() * speed * ts.Seconds());
+				transform.Translate(transform.GetLocalForward() * speed * ts.Seconds());
 			}
 			if (Input::IsKeyDown(KeyCode::S))
 			{
-				transform.Translate(transform.GetForward() * -speed * ts.Seconds());
+				transform.Translate(transform.GetLocalForward() * -speed * ts.Seconds());
 			}
 			if (Input::IsMouseButtonDown(MouseButton::Left) && !ImGuizmo::IsOver())
 			{
@@ -246,16 +246,18 @@ namespace Editor
 				glm::vec3 position;
 				glm::quat rotation;
 				glm::vec3 scale;
-				Math::DecomposeTransform(transformMatrix, position, rotation, scale);
+				glm::mat4 invParentTransform = glm::mat4(1.0f);
+				if (transform.HasParent())
+					invParentTransform = transform.GetParent()->GetInverseMatrix();
+				Math::DecomposeTransform(invParentTransform * transformMatrix, position, rotation, scale);
 
-				transform.SetPosition(position);
-				transform.SetScale(scale);
-				transform.SetRotation(rotation);
+				transform.SetLocalPosition(position);
+				transform.SetLocalRotation(rotation);
+				transform.SetLocalScale(scale);
 			}
 		}
 
 		ImGui::End();
-
 		ImGui::End();
 	}
 
@@ -268,7 +270,7 @@ namespace Editor
 		m_Camera.GetComponent<CameraComponent>().LayerMask &= ~FORGE_LAYERS(UI_LAYER);
 		m_Camera.GetComponent<CameraComponent>().Viewport = m_SceneTexture->GetFramebuffer()->GetViewport();
 
-		m_Camera.GetTransform().SetPosition({ 0, 5, 5 });
+		m_Camera.GetTransform().SetLocalPosition({ 0, 5, 5 });
 		m_Camera.GetTransform().Rotate(-PI / 4.0f, { 1, 0, 0 });
 
 		Entity groundPlane = m_Scene->CreateEntity("Ground");
@@ -277,12 +279,12 @@ namespace Editor
 				GraphicsCache::GridMesh(400, 400),
 				GraphicsCache::PbrColorMaterial(COLOR_WHITE)
 			)
-			);
-		groundPlane.GetTransform().SetPosition({ 0, 0, 0 });
-		groundPlane.GetTransform().SetScale({ 15, 1, 15 });
+		);
+		groundPlane.GetTransform().SetLocalPosition({ 0, 0, 0 });
+		groundPlane.GetTransform().SetLocalScale({ 15, 1, 15 });
 
 		Entity sun = m_Scene->CreateEntity("Sun");
-		sun.GetTransform().SetPosition({ 0, 0, 0 });
+		sun.GetTransform().SetLocalPosition({ 0, 0, 0 });
 		sun.GetTransform().Rotate(-PI / 2.0f, { 1, 0, 0 });
 		DirectionalLightComponent& lightSource = sun.AddComponent<DirectionalLightComponent>();
 		lightSource.CreateShadowPass(DefaultShadowMapDimension, DefaultShadowMapDimension);

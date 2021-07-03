@@ -419,9 +419,9 @@ namespace Forge
 			emitter << YAML::BeginMap;
 
 			TransformComponent& transform = entity.GetComponent<TransformComponent>();
-			emitter << YAML::Key << "Position" << YAML::Value << transform.GetPosition();
-			emitter << YAML::Key << "Rotation" << YAML::Value << transform.GetRotation();
-			emitter << YAML::Key << "Scale" << YAML::Value << transform.GetScale();
+			emitter << YAML::Key << "Position" << YAML::Value << transform.GetLocalPosition();
+			emitter << YAML::Key << "Rotation" << YAML::Value << transform.GetLocalRotation();
+			emitter << YAML::Key << "Scale" << YAML::Value << transform.GetLocalScale();
 
 			emitter << YAML::EndMap;
 		}
@@ -545,9 +545,9 @@ namespace Forge
 		if (transformComponent)
 		{
 			TransformComponent& transform = entity.GetTransform();
-			transform.SetPosition(transformComponent["Position"].as<glm::vec3>());
-			transform.SetRotation(transformComponent["Rotation"].as<glm::quat>());
-			transform.SetScale(transformComponent["Scale"].as<glm::vec3>());
+			transform.SetLocalPosition(transformComponent["Position"].as<glm::vec3>());
+			transform.SetLocalRotation(transformComponent["Rotation"].as<glm::quat>());
+			transform.SetLocalScale(transformComponent["Scale"].as<glm::vec3>());
 		}
 		YAML::Node cameraComponent = node["CameraComponent"];
 		if (cameraComponent)
