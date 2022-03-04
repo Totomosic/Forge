@@ -1,5 +1,4 @@
 #shader VERTEX
-#version 450 core
 #include "Clipping.h"
 
 in layout(location = 0) vec3 in_Position;
@@ -68,8 +67,6 @@ void main()
 }
 
 #shader GEOMETRY
-#version 450 core
-
 layout(triangles) in;
 layout(triangle_strip, max_vertices=3) out;
 
@@ -122,7 +119,6 @@ void main()
 }
 
 #shader FRAGMENT
-#version 450 core
 #include <Lighting.h>
 
 out layout(location = 0) vec4 out_FragColor;
@@ -197,6 +193,6 @@ void main()
 	material.Diffuse = 1.0;
 	material.Specular = 8.0;
 	material.ShineDamper = 10.0;
-	out_FragColor = color * calculateLighting(InData.Position, normalize(InData.Normal), frg_CameraPosition, material);;
+	out_FragColor = color * CalculateLighting(InData.Position, normalize(InData.Normal), frg_CameraPosition, material);
 	out_FragColor.a = clamp(waterDepth / 0.5, 0.1, 1.0);
 }

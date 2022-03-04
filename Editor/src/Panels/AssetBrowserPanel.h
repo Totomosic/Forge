@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <vector>
+#include "Forge.h"
 
 namespace Editor
 {
@@ -16,8 +17,11 @@ namespace Editor
 
 		std::string m_DragDropPayload;
 
+		Forge::Ref<Forge::Texture2D> m_DirectoryIcon;
+		Forge::Ref<Forge::Texture2D> m_FileIcon;
+
 	public:
-		AssetBrowserPanel() = default;
+		AssetBrowserPanel();
 
 		inline bool IsBrowsingRootDirectory() const { return m_CurrentDirectory == m_RootDirectory; }
 

@@ -41,19 +41,16 @@ namespace Forge
 
 		inline TransformComponent(TransformComponent&& other)
 			: m_Position(other.m_Position), m_Rotation(other.m_Rotation), m_Scale(other.m_Scale), m_Dirty(other.m_Dirty),
-			m_CacheTransform(std::move(other.m_CacheTransform)), m_CacheInvTransform(std::move(other.m_CacheInvTransform)), m_Parent(nullptr), m_Children(std::move(other.m_Children))
+			m_CacheTransform(std::move(other.m_CacheTransform)), m_CacheInvTransform(std::move(other.m_CacheInvTransform)), m_Parent(other.m_Parent), m_Children(std::move(other.m_Children))
 		{
 			if (&other != this)
 			{
+				m_Parent = nullptr;
 				SetParent(other.m_Parent);
 				other.SetParent(nullptr);
 				other.m_Children = {};
 				for (const TransformComponent* child : m_Children)
 					child->m_Parent = this;
-			}
-			else
-			{
-				m_Parent = other.m_Parent;
 			}
 		}
 
@@ -212,6 +209,17 @@ namespace Forge
 			result.m_CacheInvTransform = m_CacheInvTransform;
 			result.SetParent(m_Parent);
 			return result;
+		}
+
+		inline void SetFromTransform(const TransformComponent& other)
+		{
+			m_Position = other.m_Position;
+			m_Rotation = other.m_Rotation;
+			m_Scale = other.m_Scale;
+			m_Dirty = other.m_Dirty;
+			m_CacheTransform = other.m_CacheTransform;
+			m_CacheInvTransform = other.m_CacheInvTransform;
+			SetParent(other.m_Parent);
 		}
 
 	private:

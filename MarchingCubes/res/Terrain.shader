@@ -1,5 +1,4 @@
 #shader VERTEX
-#version 450 core
 #include "Clipping.h"
 
 in layout(location = 0) vec3 in_Position;
@@ -23,7 +22,6 @@ void main()
 }
 
 #shader FRAGMENT
-#version 450 core
 #include <Lighting.h>
 
 out layout(location = 0) vec4 out_FragColor;
@@ -53,5 +51,5 @@ void main()
 	material.Diffuse = 1.0;
 	material.Specular = 0.0;
 	material.ShineDamper = 1.0;
-	out_FragColor = baseColor * calculateLighting(f_Position, normalize(f_Normal), frg_CameraPosition, material);
+	out_FragColor = baseColor * CalculateLighting(f_Position, normalize(f_Normal), frg_CameraPosition, material);
 }

@@ -1,5 +1,4 @@
 #shader VERTEX
-#version 430 core
 #include "Clipping.h"
 
 in layout(location = 0) vec3 in_Position;
@@ -25,8 +24,6 @@ void main()
 }
 
 #shader FRAGMENT
-#version 430 core
-
 out layout(location = 0) vec4 out_FragColor;
 
 uniform samplerCube u_Texture;

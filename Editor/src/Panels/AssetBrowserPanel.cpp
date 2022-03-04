@@ -2,9 +2,15 @@
 #include "Logging.h"
 
 #include <imgui.h>
+using namespace Forge;
 
 namespace Editor
 {
+	AssetBrowserPanel::AssetBrowserPanel()
+	{
+		m_DirectoryIcon = GraphicsCache::LoadTexture2D("resources/Icons/DirectoryIcon.png");
+		m_FileIcon = GraphicsCache::LoadTexture2D("resources/Icons/FileIcon.png");
+	}
 
 	void AssetBrowserPanel::SetRootDirectory(const std::filesystem::path& directory)
 	{
@@ -47,22 +53,35 @@ namespace Editor
 			}
 		}
 
+		float padding = 10;
+		float thumbnailSize = 80;
+		float cellSize = thumbnailSize + padding;
+		float panelWidth = ImGui::GetContentRegionAvail().x;
+		int columns = std::max(int(panelWidth / cellSize), 1);
+
+		ImGui::Columns(columns, 0, false);
+
 		for (const std::filesystem::path& directory : m_Directories)
 		{
 			std::filesystem::path name = directory.filename();
 			std::string nameString = name.string();
-			if (ImGui::Button(nameString.c_str()))
+			ImGui::PushID(nameString.c_str());
+			if (ImGui::ImageButton((void*)m_DirectoryIcon->GetId(), { thumbnailSize, thumbnailSize }))
 			{
 				m_CurrentDirectory /= name;
 				Refresh();
 			}
+			ImGui::Text(nameString.c_str());
+			ImGui::PopID();
+			ImGui::NextColumn();
 		}
 
 		for (const std::filesystem::path& file : m_Files)
 		{
 			std::filesystem::path name = file.filename();
 			std::string nameString = name.string();
-			ImGui::Button(nameString.c_str());
+			ImGui::PushID(nameString.c_str());
+			ImGui::ImageButton((void*)m_FileIcon->GetId(), { thumbnailSize, thumbnailSize });
 			if (ImGui::BeginDragDropSource())
 			{
 				m_DragDropPayload = file.string();
@@ -70,8 +89,12 @@ namespace Editor
 				ImGui::Text(nameString.c_str());
 				ImGui::EndDragDropSource();
 			}
+			ImGui::Text(nameString.c_str());
+			ImGui::PopID();
+			ImGui::NextColumn();
 		}
 
+		ImGui::Columns(1);
 		ImGui::End();
 	}
 

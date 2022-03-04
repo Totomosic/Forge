@@ -1,6 +1,4 @@
 #shader VERTEX
-#version 430 core
-
 in layout(location = 0) vec3 v_Position;
 in layout(location = 2) vec2 v_TexCoord;
 
@@ -16,8 +14,6 @@ void main()
 }
 
 #shader FRAGMENT
-#version 430 core
-
 out layout(location = 0) vec4 out_FragColor;
 
 uniform sampler2D u_ShadowMap;

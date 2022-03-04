@@ -1,34 +1,9 @@
-#include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 
 #include "Forge.h"
 
 using namespace Forge;
-
-void AddJointEntity(Scene& scene, std::vector<Entity>& jointEntities, const Joint* joint, const glm::mat4& parentTransform, const std::vector<glm::mat4>& jointTransforms)
-{
-	glm::mat4 transform = parentTransform * jointTransforms[joint->Id];
-	glm::vec4 position = (transform)[3];
-	Entity entity = scene.CreateEntity();
-	entity.AddComponent<ModelRendererComponent>(Model::Create(GraphicsCache::CubeMesh(), GraphicsCache::DefaultColorMaterial(COLOR_WHITE)));
-	entity.GetTransform().SetPosition(glm::vec3(position));
-
-	jointEntities[joint->Id] = entity;
-
-	for (const auto& child : joint->Children)
-		AddJointEntity(scene, jointEntities, child.get(), transform, jointTransforms);
-}
-
-void UpdateJointEntities(std::vector<Entity>& jointEntities, const Joint* joint, const glm::mat4& parentTransform, const std::vector<glm::mat4>& jointTransforms)
-{
-	glm::mat4 transform = parentTransform * jointTransforms[joint->Id];
-	glm::vec4 position = (transform)[3];
-	// jointEntities[joint->Id].GetTransform().SetPosition(glm::vec3(position));
-
-	for (const auto& child : joint->Children)
-		UpdateJointEntities(jointEntities, child.get(), transform, jointTransforms);
-}
 
 int main()
 {
@@ -39,36 +14,42 @@ int main()
 
 	Scene& scene = app.CreateScene();
 	Entity camera = scene.CreateCamera(Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 1000.0f));
-	camera.GetComponent<TransformComponent>().SetPosition({ 0, 0, 10 });
+	camera.GetComponent<TransformComponent>().SetLocalPosition({ 0, 0, 10 });
+	camera.GetComponent<CameraComponent>().Viewport = app.GetWindow().GetFramebuffer()->GetViewport();
+	camera.GetComponent<CameraComponent>().ClearColor = COLOR_BLACK;
 
-	GltfReader reader("res/Dragon/scene.gltf");
-	Ref<Texture2D> texture = Texture2D::Create("res/Dragon/textures/material_0_diffuse.png");
+	Entity cube = scene.CreateEntity();
+	cube.AddComponent<ModelRendererComponent>(
+		Model::Create(
+			GraphicsCache::SphereMesh(),
+			GraphicsCache::PbrColorMaterial(COLOR_WHITE)
+		)
+	);
 
-	std::vector<Entity> jointEntities;
-	Ref<AnimatedMesh> animatedMesh;
-	Entity animatedEntity;
-
-	for (const Ref<Mesh>& mesh : reader.GetMeshes())
-	{
-		Ref<Material> material;
-		if (mesh->IsAnimated())
-			material = GraphicsCache::AnimatedLitTextureMaterial(((const Ref<AnimatedMesh>&)mesh)->GetJointCount(), texture);
-		else
-			material = GraphicsCache::LitTextureMaterial(texture);
-		Ref<Model> model = Model::Create(mesh, material);
-		Entity entity = scene.CreateEntity();
-		entity.AddComponent<ModelRendererComponent>(model);
-		if (mesh->IsAnimated())
-		{
-			entity.AddComponent<AnimatorComponent>().SetCurrentAnimation(reader.GetAnimation("idle"));
-			animatedEntity = entity;
-			animatedMesh = std::static_pointer_cast<AnimatedMesh>(mesh);
-		}
-	}
+	Entity ground = scene.CreateEntity();
+	ground.AddComponent<ModelRendererComponent>(
+		Model::Create(
+			GraphicsCache::GridMesh(2, 2),
+			GraphicsCache::PbrColorMaterial(COLOR_GREEN)
+		)
+	);
+	ground.GetTransform().SetLocalScale({ 10, 1, 10 });
+	ground.GetTransform().SetLocalPosition({ 0, -0.5f, 0 });
 
 	Entity sun = scene.CreateEntity();
-	sun.GetTransform().SetPosition({ 0, 100, 0 });
-	sun.AddComponent<LightSourceComponent>();
+	DirectionalLightComponent& light = sun.AddComponent<DirectionalLightComponent>();
+	light.CreateShadowPass(4096, 4096);
+	TransformComponent& sunTransform = sun.GetTransform();
+	sunTransform.Rotate(-PI / 4.0f, glm::vec3{ 1, 0, 0 });
+	sunTransform.SetLocalPosition({ 0, 10, 10 });
+
+	app.GetWindow().Events.Resize.AddEventListener([&camera, &app](const WindowResize& evt)
+	{
+		CameraComponent& c = camera.GetComponent<CameraComponent>();
+		c.Frustum = Frustum::Perspective(PI / 3.0f, app.GetWindow().GetAspectRatio(), 0.1f, 1000.0f);
+		c.Viewport = app.GetWindow().GetFramebuffer()->GetViewport();
+		return true;
+	});
 
 	while (!app.ShouldExit())
 	{
@@ -92,13 +73,6 @@ int main()
 			transform.Rotate(-delta.x * sensitivity, glm::vec3{ 0, 1, 0 }, Space::World);
 			transform.Rotate(delta.y * sensitivity, glm::vec3{ 1, 0, 0 }, Space::Local);
 		}
-
-		if (animatedEntity)
-		{
-			// animatedEntity.GetComponent<AnimatorComponent>().OnUpdate(ts);
-		}
-
-		// UpdateJointEntities(jointEntities, &animatedMesh->GetRootJoint(), glm::mat4(1.0f), animatedEntity.GetComponent<AnimatorComponent>().CalculateCurrentPose());
 
 		app.OnUpdate();
 	}

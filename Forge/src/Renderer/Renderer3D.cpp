@@ -144,7 +144,7 @@ namespace Forge
 	void Renderer3D::SetupScene(const SceneData& data)
 	{
 		FORGE_ASSERT(data.RenderTarget != nullptr, "Invalid framebuffer");
-		if (data.RenderTarget != m_CurrentFramebuffer)
+		if (data.RenderTarget != m_CurrentFramebuffer || data.UsePostProcessing)
 		{
 			if (data.UsePostProcessing)
 			{
