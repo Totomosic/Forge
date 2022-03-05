@@ -8,14 +8,14 @@ namespace Forge
     {
         switch (format)
         {
-        case FramebufferTextureFormat::RGBA8:
-            return Texture2D::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA);
-        case FramebufferTextureFormat::RED_INTEGER:
-            return Texture2D::Create(width, height, TextureFormat::RED_INTEGER, InternalTextureFormat::RED_INTEGER);
-        case FramebufferTextureFormat::RGBA16F:
-            return Texture2D::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA16F);
-        case FramebufferTextureFormat::DEPTH32:
-            return Texture2D::Create(width, height, TextureFormat::DEPTH, InternalTextureFormat::DEPTH);
+            case FramebufferTextureFormat::RGBA8:
+                return Texture2D::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA);
+            case FramebufferTextureFormat::RED_INTEGER:
+                return Texture2D::Create(width, height, TextureFormat::RED_INTEGER, InternalTextureFormat::RED_INTEGER);
+            case FramebufferTextureFormat::RGBA16F:
+                return Texture2D::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA16F);
+            case FramebufferTextureFormat::DEPTH32:
+                return Texture2D::Create(width, height, TextureFormat::DEPTH, InternalTextureFormat::DEPTH);
         }
         FORGE_ASSERT(false, "Invalid texture format");
         return nullptr;
@@ -25,21 +25,21 @@ namespace Forge
     {
         switch (format)
         {
-        case FramebufferTextureFormat::RGBA8:
-            return TextureCube::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA);
-        case FramebufferTextureFormat::RED_INTEGER:
-            return TextureCube::Create(width, height, TextureFormat::RED_INTEGER, InternalTextureFormat::RED_INTEGER);
-        case FramebufferTextureFormat::RGBA16F:
-            return TextureCube::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA16F);
-        case FramebufferTextureFormat::DEPTH32:
-            return TextureCube::Create(width, height, TextureFormat::DEPTH, InternalTextureFormat::DEPTH);
+            case FramebufferTextureFormat::RGBA8:
+                return TextureCube::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA);
+            case FramebufferTextureFormat::RED_INTEGER:
+                return TextureCube::Create(
+                  width, height, TextureFormat::RED_INTEGER, InternalTextureFormat::RED_INTEGER);
+            case FramebufferTextureFormat::RGBA16F:
+                return TextureCube::Create(width, height, TextureFormat::RGBA, InternalTextureFormat::RGBA16F);
+            case FramebufferTextureFormat::DEPTH32:
+                return TextureCube::Create(width, height, TextureFormat::DEPTH, InternalTextureFormat::DEPTH);
         }
         FORGE_ASSERT(false, "Invalid texture format");
         return nullptr;
     }
 
-    Framebuffer::Framebuffer(const FramebufferProps& props)
-        : m_Handle(), m_Props(props)
+    Framebuffer::Framebuffer(const FramebufferProps& props) : m_Handle(), m_Props(props)
     {
         FORGE_ASSERT(props.Width > 0 && props.Height > 0, "Invalid framebuffer dimensions");
         for (const FramebufferTextureSpecification& format : props.Attachments)
@@ -75,7 +75,11 @@ namespace Forge
     {
         FORGE_ASSERT(index >= 0 && index < m_ColorAttachmentSpecifications.size(), "Invalid attachment index");
         FramebufferTextureSpecification& specification = m_ColorAttachmentSpecifications[index];
-        glClearTexImage(m_ColorAttachments[index]->GetId(), 0, FramebufferTextureFormatToOpenGL(specification.TextureFormat), GL_INT, &value);
+        glClearTexImage(m_ColorAttachments[index]->GetId(),
+          0,
+          FramebufferTextureFormatToOpenGL(specification.TextureFormat),
+          GL_INT,
+          &value);
     }
 
     int Framebuffer::ReadPixel(int index, int x, int y)
@@ -85,6 +89,18 @@ namespace Forge
         glReadBuffer(GL_COLOR_ATTACHMENT0 + index);
         int pixelData;
         glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
+        return pixelData;
+    }
+
+    float Framebuffer::ReadDepthPixel(int x, int y)
+    {
+        FORGE_ASSERT(m_DepthAttachment != nullptr &&
+                       m_DepthAttachmentSpecification.TextureType == FramebufferTextureType::Texture2D &&
+                       m_DepthAttachmentSpecification.TextureFormat != FramebufferTextureFormat::None,
+          "Invalid depth attachment");
+        Bind();
+        float pixelData;
+        glReadPixels(x, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &pixelData);
         return pixelData;
     }
 
@@ -153,12 +169,14 @@ namespace Forge
             {
                 switch (m_ColorAttachmentSpecifications[i].TextureType)
                 {
-                case FramebufferTextureType::Texture2D:
-                    m_ColorAttachments[i] = CreateTexture2D(m_ColorAttachmentSpecifications[i].TextureFormat, GetWidth(), GetHeight());
-                    break;
-                case FramebufferTextureType::TextureCube:
-                    m_ColorAttachments[i] = CreateTextureCube(m_ColorAttachmentSpecifications[i].TextureFormat, GetWidth(), GetHeight());
-                    break;
+                    case FramebufferTextureType::Texture2D:
+                        m_ColorAttachments[i] =
+                          CreateTexture2D(m_ColorAttachmentSpecifications[i].TextureFormat, GetWidth(), GetHeight());
+                        break;
+                    case FramebufferTextureType::TextureCube:
+                        m_ColorAttachments[i] =
+                          CreateTextureCube(m_ColorAttachmentSpecifications[i].TextureFormat, GetWidth(), GetHeight());
+                        break;
                 }
                 m_ColorAttachments[i]->Bind();
                 AttachColorTexture(m_ColorAttachments[i], i);
@@ -169,12 +187,14 @@ namespace Forge
         {
             switch (m_DepthAttachmentSpecification.TextureType)
             {
-            case FramebufferTextureType::Texture2D:
-                m_DepthAttachment = CreateTexture2D(m_DepthAttachmentSpecification.TextureFormat, GetWidth(), GetHeight());
-                break;
-            case FramebufferTextureType::TextureCube:
-                m_DepthAttachment = CreateTextureCube(m_DepthAttachmentSpecification.TextureFormat, GetWidth(), GetHeight());
-                break;
+                case FramebufferTextureType::Texture2D:
+                    m_DepthAttachment =
+                      CreateTexture2D(m_DepthAttachmentSpecification.TextureFormat, GetWidth(), GetHeight());
+                    break;
+                case FramebufferTextureType::TextureCube:
+                    m_DepthAttachment =
+                      CreateTextureCube(m_DepthAttachmentSpecification.TextureFormat, GetWidth(), GetHeight());
+                    break;
             }
             m_DepthAttachment->Bind();
             AttachDepthTexture(m_DepthAttachment);
@@ -183,7 +203,8 @@ namespace Forge
         if (m_ColorAttachments.size() > 1)
         {
             FORGE_ASSERT(m_ColorAttachments.size() <= 4, "Too many color attachments");
-            GLenum buffers[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+            GLenum buffers[4] = {
+              GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
             glDrawBuffers(m_ColorAttachments.size(), buffers);
         }
         else if (m_ColorAttachments.empty())

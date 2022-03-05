@@ -8,6 +8,9 @@
 #include "AnimatorComponent.h"
 #include "Components.h"
 #include "SpriteRenderer.h"
+#include "Colliders.h"
+
+#include "Assets/GraphicsCache.h"
 
 namespace Forge
 {
@@ -20,7 +23,13 @@ namespace Forge
     }
 
     Scene::Scene(const Ref<Framebuffer>& defaultFramebuffer, Renderer3D* renderer)
-        : m_Registry(), m_PrimaryCamera(entt::null), m_Time(0.0f), m_Renderer(renderer), m_DefaultFramebuffer(defaultFramebuffer), m_PickFramebuffer(nullptr)
+        : m_Registry(),
+          m_PrimaryCamera(entt::null),
+          m_Time(0.0f),
+          m_Renderer(renderer),
+          m_DefaultFramebuffer(defaultFramebuffer),
+          m_PickFramebuffer(nullptr),
+          m_DebugDrawColliders(false)
     {
     }
 
@@ -99,14 +108,15 @@ namespace Forge
     Entity Scene::CreateCamera(const Frustum& frustum)
     {
         Entity camera = CreateEntity("Camera");
-        camera.AddComponent<CameraComponent>(frustum).Viewport = { 0, 0, m_DefaultFramebuffer->GetWidth(), m_DefaultFramebuffer->GetHeight() };
+        camera.AddComponent<CameraComponent>(frustum).Viewport = {
+          0, 0, m_DefaultFramebuffer->GetWidth(), m_DefaultFramebuffer->GetHeight()};
         return camera;
     }
 
-    Entity Scene::PickEntity(const glm::vec2& viewportCoord, const Entity& camera)
+    PickResult Scene::PickEntity(const glm::vec2& viewportCoord, const Entity& camera, PickOptions options)
     {
         CameraData data;
-        auto [transform, cameraComponent, enabled] = m_Registry.get<TransformComponent, CameraComponent, EnabledFlag>(camera);
+        auto [transform, cameraComponent] = m_Registry.get<TransformComponent, CameraComponent>(camera);
         data.Frustum = cameraComponent.Frustum;
         data.ViewMatrix = transform.GetInverseMatrix();
         data.Viewport = cameraComponent.Viewport;
@@ -119,21 +129,22 @@ namespace Forge
             FramebufferProps props;
             props.Width = data.Viewport.Width;
             props.Height = data.Viewport.Height;
-            props.Attachments = { FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
+            props.Attachments = {FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth};
             m_PickFramebuffer = Framebuffer::Create(props);
         }
-        else if (m_PickFramebuffer->GetWidth() != data.Viewport.Width || m_PickFramebuffer->GetHeight() != data.Viewport.Height)
+        else if (m_PickFramebuffer->GetWidth() != data.Viewport.Width ||
+                 m_PickFramebuffer->GetHeight() != data.Viewport.Height)
         {
             m_PickFramebuffer->SetSize(data.Viewport.Width, data.Viewport.Height);
         }
 
         m_PickFramebuffer->Bind();
-        RenderCommand::Clear();
+        RenderCommand::ClearDepth();
         m_PickFramebuffer->ClearAttachment(0, -1);
         m_Renderer->BeginPickScene(m_PickFramebuffer, data);
         for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent, EnabledFlag>())
         {
-            if (CheckLayerMask(entity, cameraComponent.LayerMask))
+            if (CheckLayerMask(entity, cameraComponent.LayerMask & options.LayerMask))
             {
                 auto [transform, model] = m_Registry.get<TransformComponent, ModelRendererComponent>(entity);
                 RenderOptions options;
@@ -144,42 +155,65 @@ namespace Forge
         m_Renderer->EndScene();
 
         int pixel = m_PickFramebuffer->ReadPixel(0, viewportCoord.x, viewportCoord.y);
-        return Entity((entt::entity)pixel, this);
+
+        PickResult result;
+        result.Entity = Entity((entt::entity)pixel, this);
+
+        if (options.IncludeCoordinate && result.Entity)
+        {
+            float depth = m_PickFramebuffer->ReadDepthPixel(viewportCoord.x, viewportCoord.y);
+            glm::vec4 position = {viewportCoord.x / data.Viewport.Width * 2.0f - 1.0f,
+              viewportCoord.y / data.Viewport.Height * 2.0f - 1.0f,
+              depth * 2.0f - 1.0f,
+              1.0f};
+            glm::vec4 eyePos = glm::inverse(data.Frustum.ProjectionMatrix) * position;
+            glm::vec4 worldPos = transform.GetMatrix() * eyePos;
+            worldPos.x /= worldPos.w;
+            worldPos.y /= worldPos.w;
+            worldPos.z /= worldPos.w;
+            result.Coordinate = {worldPos.x, worldPos.y, worldPos.z};
+        }
+
+        return result;
     }
 
     void Scene::OnUpdate(Timestep ts)
     {
         static std::vector<LightSource> s_LightSources;
-        static std::vector<uint64_t> s_LightSourceShadowLayerMasks;
+        static std::vector<LayerMask> s_LightSourceShadowLayerMasks;
 
         m_Time += ts.Seconds();
 
         auto cameraView = m_Registry.view<TransformComponent, CameraComponent, EnabledFlag>();
-        std::vector<entt::entity> cameras = { cameraView.begin(), cameraView.end() };
-        std::sort(cameras.begin(), cameras.end(), [this](entt::entity a, entt::entity b)
-        {
-            CameraComponent& ccA = m_Registry.get<CameraComponent>(a);
-            CameraComponent& ccB = m_Registry.get<CameraComponent>(b);
-            if (ccA.RenderTarget == nullptr && ccB.RenderTarget != nullptr)
-                return false;
-            if (ccB.RenderTarget == nullptr && ccA.RenderTarget != nullptr)
-                return true;
-            if (ccA.Mode == CameraMode::Overlay && ccB.Mode != CameraMode::Overlay)
-                return false;
-            if (ccB.Mode == CameraMode::Overlay && ccA.Mode != CameraMode::Overlay)
-                return true;
-            return ccA.Priority < ccB.Priority;
-        });
+        std::vector<entt::entity> cameras = {cameraView.begin(), cameraView.end()};
+        std::sort(cameras.begin(),
+          cameras.end(),
+          [this](entt::entity a, entt::entity b)
+          {
+              CameraComponent& ccA = m_Registry.get<CameraComponent>(a);
+              CameraComponent& ccB = m_Registry.get<CameraComponent>(b);
+              if (ccA.RenderTarget == nullptr && ccB.RenderTarget != nullptr)
+                  return false;
+              if (ccB.RenderTarget == nullptr && ccA.RenderTarget != nullptr)
+                  return true;
+              if (ccA.Mode == CameraMode::Overlay && ccB.Mode != CameraMode::Overlay)
+                  return false;
+              if (ccB.Mode == CameraMode::Overlay && ccA.Mode != CameraMode::Overlay)
+                  return true;
+              return ccA.Priority < ccB.Priority;
+          });
         for (entt::entity camera : cameras)
         {
             CameraData data;
-            auto [transform, cameraComponent, enabled] = m_Registry.get<TransformComponent, CameraComponent, EnabledFlag>(camera);
+            auto [transform, cameraComponent, enabled] =
+              m_Registry.get<TransformComponent, CameraComponent, EnabledFlag>(camera);
             data.Frustum = cameraComponent.Frustum;
             data.ViewMatrix = transform.GetInverseMatrix();
             data.Viewport = cameraComponent.Viewport;
             data.ClippingPlanes = cameraComponent.ClippingPlanes;
             data.ClearColor = cameraComponent.ClearColor;
             data.Mode = cameraComponent.Mode;
+            data.UsePostProcessing = cameraComponent.UsePostProcessing;
 
             for (auto entity : m_Registry.view<AnimatorComponent, EnabledFlag>())
             {
@@ -214,7 +248,7 @@ namespace Forge
                     source.Direction = transform.GetForward();
                     source.Ambient = light.Ambient;
                     source.Color = light.Color;
-                    source.Attenuation = { 1, 0.0f, 1.0f / (light.Radius * light.Radius) };
+                    source.Attenuation = {1, 0.0f, 1.0f / (light.Radius * light.Radius)};
                     source.Intensity = light.Intensity;
                     source.Type = light.Type;
                     source.ShadowFramebuffer = light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr;
@@ -233,7 +267,7 @@ namespace Forge
                     source.Direction = transform.GetForward();
                     source.Ambient = light.Ambient;
                     source.Color = light.Color;
-                    source.Attenuation = { 1, 0, 0 };
+                    source.Attenuation = {1, 0, 0};
                     source.Intensity = light.Intensity;
                     source.Type = light.Type;
                     source.ShadowFramebuffer = light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr;
@@ -243,7 +277,8 @@ namespace Forge
                 }
             }
 
-            Ref<Framebuffer> framebuffer = cameraComponent.RenderTarget ? cameraComponent.RenderTarget : m_DefaultFramebuffer;
+            Ref<Framebuffer> framebuffer =
+              cameraComponent.RenderTarget ? cameraComponent.RenderTarget : m_DefaultFramebuffer;
 
             m_Renderer->SetTime(m_Time);
             m_Renderer->BeginScene(framebuffer, data, s_LightSources);
@@ -257,6 +292,15 @@ namespace Forge
                     for (int i = 0; i < s_LightSourceShadowLayerMasks.size(); i++)
                         options.ShadowMask.set(i, CheckLayerMask(entity, s_LightSourceShadowLayerMasks[i]));
                     m_Renderer->RenderModel(model.Model, transform.GetMatrix(), options);
+                    if (m_DebugDrawColliders && m_Registry.has<AabbColliderComponent>(entity))
+                    {
+                        AabbColliderComponent& collider = m_Registry.get<AabbColliderComponent>(entity);
+                        Ref<Material> material = GraphicsCache::DefaultColorMaterial(COLOR_GREEN);
+                        material->GetSettings().Mode = PolygonMode::Line;
+                        Ref<Model> model = Model::Create(GraphicsCache::CubeMesh(), material);
+                        model->GetSubModels()[0].Transform = glm::scale(glm::mat4(1.0f), collider.Dimensions);
+                        m_Renderer->RenderModel(model, transform.GetMatrix() * collider.Transform, options);
+                    }
                 }
             }
 
@@ -282,7 +326,7 @@ namespace Forge
     {
         if (m_PrimaryCamera == entt::null || !m_Registry.has<CameraComponent>(m_PrimaryCamera))
         {
-            auto view = m_Registry.view<TransformComponent, CameraComponent>();
+            auto view = m_Registry.view<TransformComponent, CameraComponent, EnabledFlag>();
             for (auto entity : view)
             {
                 m_PrimaryCamera = entity;
@@ -291,14 +335,15 @@ namespace Forge
         }
     }
 
-    bool Scene::CheckLayerMask(entt::entity entity, uint64_t layerMask) const
+    bool Scene::CheckLayerMask(entt::entity entity, LayerMask layerMask) const
     {
         return layerMask & m_Registry.get<LayerId>(entity).Mask;
     }
 
     glm::mat4 Scene::GenerateProjViewMatrixForLight(const LightSource& light) const
     {
-        return glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 500.0f) * glm::lookAt(light.Position, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
+        return glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 500.0f) *
+               glm::lookAt(light.Position, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f});
     }
 
 }

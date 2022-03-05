@@ -10,7 +10,12 @@ namespace Forge
 {
 
     Application::Application(const WindowProps& props)
-        : m_Window(props), m_Scenes(), m_Renderer(), m_PrevFrameTime(std::chrono::high_resolution_clock::now()), m_ImGuiLayer(nullptr), m_LayerStack()
+        : m_Window(props),
+          m_Scenes(),
+          m_Renderer(),
+          m_PrevFrameTime(std::chrono::high_resolution_clock::now()),
+          m_ImGuiLayer(nullptr),
+          m_LayerStack()
     {
         RenderCommand::Init();
         Input::SetWindow(&m_Window);
@@ -34,7 +39,7 @@ namespace Forge
         return ref;
     }
 
-    void Application::OnUpdate()
+    RendererStats Application::OnUpdate()
     {
         std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
         Timestep ts = float(std::chrono::duration_cast<std::chrono::microseconds>(now - m_PrevFrameTime).count()) / 1e6;
@@ -62,9 +67,11 @@ namespace Forge
             m_Renderer.EndScene();
             m_ImGuiLayer->End();
         }
+        RendererStats stats = m_Renderer.GetStats();
         m_Renderer.Flush();
         m_Window.Update();
         m_PrevFrameTime = now;
+        return stats;
     }
 
 }

@@ -24,19 +24,22 @@
 #include "Scene/Components.h"
 #include "Scene/AnimatorComponent.h"
 #include "Scene/SpriteRenderer.h"
+#include "Scene/Colliders.h"
+#include "Scene/Collision.h"
 
 #include "Scene/SceneSerializer.h"
 
 #include "Utils/Readers/GltfReader.h"
 #include "Utils/Readers/ObjReader.h"
+#include "Utils/Random.h"
 
 namespace Forge
 {
 
-	class FORGE_API ForgeInstance
-	{
-	public:
-		static void Init();
-	};
+    class FORGE_API ForgeInstance
+    {
+    public:
+        static void Init();
+    };
 
 }
