@@ -6,6 +6,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
+#include "Math/Math.h"
+
 namespace Forge
 {
 
@@ -55,15 +57,19 @@ namespace Forge
               m_Dirty(other.m_Dirty),
               m_CacheTransform(std::move(other.m_CacheTransform)),
               m_CacheInvTransform(std::move(other.m_CacheInvTransform)),
-              m_Parent(other.m_Parent),
-              m_Children(std::move(other.m_Children))
+              m_Parent(nullptr),
+              m_Children()
         {
             if (&other != this)
             {
+                m_Parent = other.m_Parent;
+                m_Children = std::move(other.m_Children);
+                FilterChildren(m_Children);
                 m_Parent = nullptr;
-                SetParent(other.m_Parent);
+                const TransformComponent* parent = other.m_Parent;
                 other.SetParent(nullptr);
                 other.m_Children = {};
+                SetParent(parent);
                 for (const TransformComponent* child : m_Children)
                     child->m_Parent = this;
             }
@@ -80,9 +86,12 @@ namespace Forge
                 m_CacheTransform = std::move(other.m_CacheTransform);
                 m_CacheInvTransform = std::move(other.m_CacheInvTransform);
                 m_Children = std::move(other.m_Children);
-                other.m_Children = {};
-                SetParent(other.m_Parent);
+                FilterChildren(m_Children);
+
+                const TransformComponent* parent = other.m_Parent;
                 other.SetParent(nullptr);
+                other.m_Children = {};
+                SetParent(parent);
                 for (const TransformComponent* child : m_Children)
                     child->m_Parent = this;
             }
@@ -97,7 +106,7 @@ namespace Forge
                 child->SetDirty();
             }
             m_Children.clear();
-            SetParent(nullptr);
+            m_Parent = nullptr;
         }
 
         inline bool HasParent() const
@@ -258,6 +267,26 @@ namespace Forge
             SetLocalRotation(glm::quat_cast(rotation));
         }
 
+        inline void MakeRelativeTo(const TransformComponent& other)
+        {
+            FORGE_DEBUG_ONLY(glm::vec3 otherScale = other.GetScale(); if (otherScale.x != otherScale.y ||
+                                                                          otherScale.y != otherScale.z) {
+                FORGE_WARN("Parent transform does not have uniform scale, MakeRelativeTo() may not work properly");
+            })
+
+            glm::mat4 matrix = other.GetInverseMatrix() * GetMatrix();
+            glm::vec3 scale;
+            glm::quat rotation;
+            glm::vec3 translation;
+            if (Math::DecomposeTransform(matrix, translation, rotation, scale))
+            {
+                m_Position = translation;
+                m_Rotation = glm::normalize(rotation);
+                m_Scale = scale;
+                SetDirty();
+            }
+        }
+
         inline void FlipX()
         {
             m_Flip = true;
@@ -323,6 +352,14 @@ namespace Forge
             m_Dirty = true;
             for (const TransformComponent* child : m_Children)
                 child->SetDirty();
+        }
+
+        inline void FilterChildren(std::vector<const TransformComponent*>& children) const
+        {
+            children.erase(
+              std::remove_if(
+                children.begin(), children.end(), [this](const TransformComponent* child) { return child == this; }),
+              children.end());
         }
     };
 

@@ -49,10 +49,38 @@ namespace Forge
             }
         }
 
+        inline Entity GetParent()
+        {
+            ParentComponent* parent = TryGetComponent<ParentComponent>();
+            if (parent)
+            {
+                return Entity(parent->Parent, GetScene());
+            }
+            return GetScene()->NullEntity();
+        }
+
+        inline Entity GetRootElement()
+        {
+            Entity current = *this;
+            Entity parent = current.GetParent();
+            while (parent)
+            {
+                current = parent;
+                parent = current.GetParent();
+            }
+            return current;
+        }
+
         template<typename T>
         bool HasComponent() const
         {
             return m_Scene->m_Registry.has<T>(m_Handle);
+        }
+
+        template<typename T>
+        T* TryGetComponent()
+        {
+            return m_Scene->m_Registry.try_get<T>(m_Handle);
         }
 
         template<typename T>
@@ -80,6 +108,16 @@ namespace Forge
         {
             FORGE_ASSERT(HasComponent<T>(), "Component does not exist");
             m_Scene->m_Registry.remove<T>(m_Handle);
+        }
+
+        inline entt::registry& GetRegistry() const
+        {
+            return m_Scene->GetRegistry();
+        }
+
+        inline Scene* GetScene() const
+        {
+            return m_Scene;
         }
 
         inline TransformComponent& GetTransform()

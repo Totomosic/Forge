@@ -26,6 +26,7 @@
 #include "Scene/SpriteRenderer.h"
 #include "Scene/Colliders.h"
 #include "Scene/Collision.h"
+#include "Scene/EntityUtils.h"
 
 #include "Scene/SceneSerializer.h"
 

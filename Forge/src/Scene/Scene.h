@@ -67,12 +67,18 @@ namespace Forge
         Entity CreateEntity(uint8_t layer = DEFAULT_LAYER);
         Entity CreateEntity(const std::string& name, uint8_t layer = DEFAULT_LAYER);
         Entity CloneEntity(Entity entity);
-        void DestroyEntity(const Entity& entity);
+        // Be careful when destroying children entities, it is valid to destroy entities
+        // while iterating over them so long as only the entities from the view are being
+        // destroyed (and therefore, not their children)
+        // https://github.com/skypjack/entt/issues/98
+        void DestroyEntity(entt::entity entity, bool destroyChildren = true);
         void SetLayer(Entity entity, uint8_t layer);
         void AddLayer(Entity entity, uint8_t layer);
         void RemoveLayer(Entity entity, uint8_t layer);
         void AddToAllLayers(Entity entity);
         void Clear();
+
+        Entity NullEntity();
 
         inline bool GetDebugRenderColliders() const
         {

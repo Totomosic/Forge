@@ -31,6 +31,21 @@ namespace Forge
         TagComponent(const std::string& name) : Tag(name) {}
     };
 
+    struct FORGE_API ParentComponent
+    {
+    public:
+        entt::entity Parent;
+        entt::entity PreviousChild;
+        entt::entity NextChild;
+    };
+
+    struct FORGE_API ChildrenComponent
+    {
+    public:
+        size_t ChildCount;
+        entt::entity FirstChild;
+    };
+
     constexpr uint32_t DEFAULT_SHADOW_WIDTH = 1024;
     constexpr uint32_t DEFAULT_SHADOW_HEIGHT = 1024;
 

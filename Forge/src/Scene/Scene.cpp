@@ -1,6 +1,7 @@
 #include "ForgePch.h"
 #include "Scene.h"
 
+#include "EntityUtils.h"
 #include "Entity.h"
 #include "Transform.h"
 #include "CameraComponent.h"
@@ -68,8 +69,13 @@ namespace Forge
         return result;
     }
 
-    void Scene::DestroyEntity(const Entity& entity)
+    void Scene::DestroyEntity(entt::entity entity, bool destroyChildren)
     {
+        if (destroyChildren)
+        {
+            Entities::DestroyChilden(entity, m_Registry);
+        }
+        Entities::SetParent(entity, entt::null, m_Registry);
         m_Registry.destroy(entity);
     }
 
@@ -90,7 +96,7 @@ namespace Forge
 
     void Scene::AddToAllLayers(Entity entity)
     {
-        entity.GetComponent<LayerId>().Mask = -1;
+        entity.GetComponent<LayerId>().Mask = FULL_LAYER_MASK;
     }
 
     void Scene::SetPrimaryCamera(const Entity& entity)
@@ -103,6 +109,11 @@ namespace Forge
     {
         m_Registry.clear();
         m_PrimaryCamera = entt::null;
+    }
+
+    Entity Scene::NullEntity()
+    {
+        return Entity(entt::null, this);
     }
 
     Entity Scene::CreateCamera(const Frustum& frustum)
@@ -324,7 +335,7 @@ namespace Forge
 
     void Scene::FindPrimaryCamera()
     {
-        if (m_PrimaryCamera == entt::null || !m_Registry.has<CameraComponent>(m_PrimaryCamera))
+        if (m_Registry.valid(m_PrimaryCamera) || !m_Registry.has<CameraComponent>(m_PrimaryCamera))
         {
             auto view = m_Registry.view<TransformComponent, CameraComponent, EnabledFlag>();
             for (auto entity : view)
