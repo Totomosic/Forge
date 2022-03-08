@@ -42,7 +42,7 @@ namespace Forge
             return float(std::chrono::duration_cast<std::chrono::microseconds>(
                      std::chrono::high_resolution_clock::now() - m_PrevFrameTime)
                            .count()) /
-                   1e6;
+                   1e6f;
         }
 
         void EnableImGui();

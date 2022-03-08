@@ -77,6 +77,11 @@ namespace Forge
             return GetScene()->NullEntity();
         }
 
+        inline void SetParent(Entity parent, bool updateTransform)
+        {
+            Entities::SetParent(*this, parent, updateTransform, GetRegistry());
+        }
+
         inline Entity GetRootElement()
         {
             Entity current = *this;
@@ -137,6 +142,11 @@ namespace Forge
                     return ent;
             }
             return m_Scene->NullEntity();
+        }
+
+        inline Entity FindChildByTag(const std::string& tag)
+        {
+            return FindChild([&tag](Entity child) { return child.GetTag() == tag; });
         }
 
         inline entt::registry& GetRegistry() const

@@ -1,5 +1,6 @@
 #pragma once
 #include "Components.h"
+#include "Transform.h"
 
 namespace Forge
 {
@@ -146,7 +147,7 @@ namespace Forge
             }
         };
 
-        inline void SetParent(entt::entity child, entt::entity parent, entt::registry& registry)
+        inline void SetParent(entt::entity child, entt::entity parent, bool updateTransform, entt::registry& registry)
         {
             ParentComponent* currentParent = registry.try_get<ParentComponent>(child);
             if (currentParent)
@@ -156,6 +157,15 @@ namespace Forge
             if (registry.valid(parent))
             {
                 Detail::AddChild(child, parent, registry);
+            }
+            if (updateTransform)
+            {
+                TransformComponent* parentTransform = nullptr;
+                if (registry.valid(parent))
+                {
+                    parentTransform = &registry.get<TransformComponent>(parent);
+                }
+                registry.get<TransformComponent>(child).SetParent(parentTransform);
             }
         }
 

@@ -106,7 +106,7 @@ namespace Forge
                 child->SetDirty();
             }
             m_Children.clear();
-            m_Parent = nullptr;
+            SetParent(nullptr);
         }
 
         inline bool HasParent() const

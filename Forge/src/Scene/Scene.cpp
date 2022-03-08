@@ -75,7 +75,7 @@ namespace Forge
         {
             Entities::DestroyChilden(entity, m_Registry);
         }
-        Entities::SetParent(entity, entt::null, m_Registry);
+        Entities::SetParent(entity, entt::null, false, m_Registry);
         m_Registry.destroy(entity);
     }
 
