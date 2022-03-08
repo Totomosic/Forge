@@ -36,6 +36,9 @@ namespace Forge
 
     class FORGE_API Scene
     {
+    public:
+        using System = std::function<void(entt::registry&, Timestep)>;
+
     private:
         static constexpr uint8_t DEFAULT_LAYER = 0;
 
@@ -47,6 +50,8 @@ namespace Forge
         Renderer2D m_Renderer2D;
         Ref<Framebuffer> m_DefaultFramebuffer;
         Ref<Framebuffer> m_PickFramebuffer;
+
+        std::vector<System> m_Systems;
 
         bool m_DebugDrawColliders;
 
@@ -104,6 +109,12 @@ namespace Forge
         Entity CreateCamera(const Frustum& frustum);
 
         PickResult PickEntity(const glm::vec2& viewportCoord, const Entity& camera, PickOptions options = {});
+
+        template<typename T>
+        void AddSystem(const T& system)
+        {
+            m_Systems.push_back(system);
+        }
 
         void OnUpdate(Timestep ts);
 

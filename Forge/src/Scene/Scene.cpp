@@ -190,6 +190,9 @@ namespace Forge
 
     void Scene::OnUpdate(Timestep ts)
     {
+        for (const auto& system : m_Systems)
+            system(m_Registry, ts);
+
         static std::vector<LightSource> s_LightSources;
         static std::vector<LayerMask> s_LightSourceShadowLayerMasks;
 

@@ -3,6 +3,7 @@
 #include "Scene.h"
 #include "Transform.h"
 #include "Components.h"
+#include "EntityUtils.h"
 
 #include <glm/glm.hpp>
 #include <entt/entt.hpp>
@@ -47,6 +48,23 @@ namespace Forge
                 else
                     RemoveComponent<EnabledFlag>();
             }
+        }
+
+        inline std::string GetTag() const
+        {
+            TagComponent* tag = m_Scene->m_Registry.try_get<TagComponent>(m_Handle);
+            if (tag)
+                return tag->Tag;
+            return "";
+        }
+
+        inline void SetTag(const std::string& tag)
+        {
+            TagComponent* t = m_Scene->m_Registry.try_get<TagComponent>(m_Handle);
+            if (t)
+                t->Tag = tag;
+            else
+                AddComponent<TagComponent>(TagComponent {tag});
         }
 
         inline Entity GetParent()
@@ -108,6 +126,17 @@ namespace Forge
         {
             FORGE_ASSERT(HasComponent<T>(), "Component does not exist");
             m_Scene->m_Registry.remove<T>(m_Handle);
+        }
+
+        inline Entity FindChild(const std::function<bool(Entity)>& predicate)
+        {
+            for (entt::entity child : Entities::GetChildren(m_Handle, GetRegistry()))
+            {
+                Entity ent(child, m_Scene);
+                if (predicate(ent))
+                    return ent;
+            }
+            return m_Scene->NullEntity();
         }
 
         inline entt::registry& GetRegistry() const
