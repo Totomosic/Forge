@@ -1,6 +1,7 @@
 #pragma once
 #include "Components.h"
 #include "Transform.h"
+#include <entt/entt.hpp>
 
 namespace Forge
 {

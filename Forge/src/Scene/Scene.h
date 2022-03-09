@@ -3,6 +3,7 @@
 #include "Core/Timestep.h"
 #include "Renderer/Renderer3D.h"
 #include "Renderer/Renderer2D.h"
+#include "Entity.h"
 
 #include <entt/entt.hpp>
 #include <map>
@@ -24,14 +25,13 @@ namespace Forge
 
 #define FORGE_LAYERS(...) ::Forge::Detail::CreateLayerMask(__VA_ARGS__)
 
-    class Entity;
     struct PickResult;
 
     struct FORGE_API PickOptions
     {
     public:
         bool IncludeCoordinate = false;
-        LayerMask LayerMask = FULL_LAYER_MASK;
+        Forge::LayerMask LayerMask = FULL_LAYER_MASK;
     };
 
     class FORGE_API Scene
@@ -47,7 +47,7 @@ namespace Forge
         float m_Time;
 
         Renderer3D* m_Renderer;
-        Renderer2D m_Renderer2D;
+        std::unique_ptr<Renderer2D> m_Renderer2D;
         Ref<Framebuffer> m_DefaultFramebuffer;
         Ref<Framebuffer> m_PickFramebuffer;
 
@@ -117,8 +117,6 @@ namespace Forge
         }
 
         void OnUpdate(Timestep ts);
-
-        friend class Entity;
 
     private:
         void FindPrimaryCamera();

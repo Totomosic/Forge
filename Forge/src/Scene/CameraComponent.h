@@ -13,7 +13,7 @@ namespace Forge
     public:
         Forge::Frustum Frustum;
         Forge::Viewport Viewport;
-        LayerMask LayerMask = FULL_LAYER_MASK;
+        Forge::LayerMask LayerMask = FULL_LAYER_MASK;
         int Priority = 0;
         Ref<Framebuffer> RenderTarget = nullptr;
         std::vector<glm::vec4> ClippingPlanes = {};

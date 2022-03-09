@@ -1,6 +1,5 @@
 #pragma once
 #include "ForgePch.h"
-#include "Scene.h"
 #include "Transform.h"
 #include "Components.h"
 #include "EntityUtils.h"
@@ -15,15 +14,15 @@ namespace Forge
     {
     private:
         entt::entity m_Handle = entt::null;
-        Scene* m_Scene = nullptr;
+        entt::registry* m_Registry = nullptr;
 
     public:
         Entity() = default;
-        inline Entity(entt::entity handle, Scene* scene) : m_Handle(handle), m_Scene(scene) {}
+        inline Entity(entt::entity handle, entt::registry* registry) : m_Handle(handle), m_Registry(registry) {}
 
         inline operator bool() const
         {
-            return m_Handle != entt::null && m_Scene != nullptr;
+            return m_Handle != entt::null && m_Registry != nullptr;
         }
         inline operator entt::entity() const
         {
@@ -36,7 +35,7 @@ namespace Forge
 
         inline bool Enabled() const
         {
-            return m_Scene->m_Registry.has<EnabledFlag>(m_Handle);
+            return m_Registry->has<EnabledFlag>(m_Handle);
         }
 
         inline void SetEnabled(bool enabled)
@@ -52,7 +51,7 @@ namespace Forge
 
         inline std::string GetTag() const
         {
-            TagComponent* tag = m_Scene->m_Registry.try_get<TagComponent>(m_Handle);
+            TagComponent* tag = m_Registry->try_get<TagComponent>(m_Handle);
             if (tag)
                 return tag->Tag;
             return "";
@@ -60,7 +59,7 @@ namespace Forge
 
         inline void SetTag(const std::string& tag)
         {
-            TagComponent* t = m_Scene->m_Registry.try_get<TagComponent>(m_Handle);
+            TagComponent* t = m_Registry->try_get<TagComponent>(m_Handle);
             if (t)
                 t->Tag = tag;
             else
@@ -72,9 +71,9 @@ namespace Forge
             ParentComponent* parent = TryGetComponent<ParentComponent>();
             if (parent)
             {
-                return Entity(parent->Parent, GetScene());
+                return Entity(parent->Parent, m_Registry);
             }
-            return GetScene()->NullEntity();
+            return Entity(entt::null, m_Registry);
         }
 
         inline void SetParent(Entity parent, bool updateTransform)
@@ -97,51 +96,51 @@ namespace Forge
         template<typename T>
         bool HasComponent() const
         {
-            return m_Scene->m_Registry.has<T>(m_Handle);
+            return m_Registry->has<T>(m_Handle);
         }
 
         template<typename T>
         T* TryGetComponent()
         {
-            return m_Scene->m_Registry.try_get<T>(m_Handle);
+            return m_Registry->try_get<T>(m_Handle);
         }
 
         template<typename T>
         T& GetComponent()
         {
             FORGE_ASSERT(HasComponent<T>(), "Component does not exist");
-            return m_Scene->m_Registry.get<T>(m_Handle);
+            return m_Registry->get<T>(m_Handle);
         }
 
         template<typename T, typename... Args>
         std::tuple<T&, Args&...> GetComponents()
         {
-            return m_Scene->m_Registry.get<T, Args...>(m_Handle);
+            return m_Registry->get<T, Args...>(m_Handle);
         }
 
         template<typename T, typename... Args>
         T& AddComponent(Args&&... args)
         {
             FORGE_ASSERT(!HasComponent<T>(), "Component already exists");
-            return m_Scene->m_Registry.emplace<T>(m_Handle, std::forward<Args>(args)...);
+            return m_Registry->emplace<T>(m_Handle, std::forward<Args>(args)...);
         }
 
         template<typename T>
         void RemoveComponent()
         {
             FORGE_ASSERT(HasComponent<T>(), "Component does not exist");
-            m_Scene->m_Registry.remove<T>(m_Handle);
+            m_Registry->remove<T>(m_Handle);
         }
 
         inline Entity FindChild(const std::function<bool(Entity)>& predicate)
         {
             for (entt::entity child : Entities::GetChildren(m_Handle, GetRegistry()))
             {
-                Entity ent(child, m_Scene);
+                Entity ent(child, m_Registry);
                 if (predicate(ent))
                     return ent;
             }
-            return m_Scene->NullEntity();
+            return Entity(entt::null, m_Registry);
         }
 
         inline Entity FindChildByTag(const std::string& tag)
@@ -151,12 +150,7 @@ namespace Forge
 
         inline entt::registry& GetRegistry() const
         {
-            return m_Scene->GetRegistry();
-        }
-
-        inline Scene* GetScene() const
-        {
-            return m_Scene;
+            return *m_Registry;
         }
 
         inline TransformComponent& GetTransform()
@@ -166,7 +160,7 @@ namespace Forge
 
         inline bool operator==(const Entity& other) const
         {
-            return m_Handle == other.m_Handle && m_Scene == other.m_Scene;
+            return m_Handle == other.m_Handle && m_Registry == other.m_Registry;
         }
         inline bool operator!=(const Entity& other) const
         {

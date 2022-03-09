@@ -28,16 +28,19 @@ namespace Forge
           m_PrimaryCamera(entt::null),
           m_Time(0.0f),
           m_Renderer(renderer),
+          m_Renderer2D(nullptr),
           m_DefaultFramebuffer(defaultFramebuffer),
           m_PickFramebuffer(nullptr),
           m_DebugDrawColliders(false)
     {
+        if (m_Renderer)
+            m_Renderer2D = std::make_unique<Renderer2D>();
     }
 
     Entity Scene::GetPrimaryCamera()
     {
         FindPrimaryCamera();
-        return Entity(m_PrimaryCamera, this);
+        return Entity(m_PrimaryCamera, &m_Registry);
     }
 
     Entity Scene::CreateEntity(uint8_t layer)
@@ -47,7 +50,7 @@ namespace Forge
 
     Entity Scene::CreateEntity(const std::string& name, uint8_t layer)
     {
-        Entity entity(m_Registry.create(), this);
+        Entity entity(m_Registry.create(), &m_Registry);
         entity.AddComponent<TransformComponent>();
         entity.AddComponent<LayerId>(1ULL << layer);
         entity.AddComponent<TagComponent>(name);
@@ -57,7 +60,7 @@ namespace Forge
 
     Entity Scene::CloneEntity(Entity entity)
     {
-        Entity result(m_Registry.create(), this);
+        Entity result(m_Registry.create(), &m_Registry);
         Clone<TransformComponent>(result, entity);
         Clone<LayerId>(result, entity);
         Clone<TagComponent>(result, entity);
@@ -113,7 +116,7 @@ namespace Forge
 
     Entity Scene::NullEntity()
     {
-        return Entity(entt::null, this);
+        return Entity(entt::null, &m_Registry);
     }
 
     Entity Scene::CreateCamera(const Frustum& frustum)
@@ -126,6 +129,13 @@ namespace Forge
 
     PickResult Scene::PickEntity(const glm::vec2& viewportCoord, const Entity& camera, PickOptions options)
     {
+        if (!m_Renderer)
+        {
+            PickResult result;
+            result.Entity = NullEntity();
+            return result;
+        }
+
         CameraData data;
         auto [transform, cameraComponent] = m_Registry.get<TransformComponent, CameraComponent>(camera);
         data.Frustum = cameraComponent.Frustum;
@@ -168,7 +178,7 @@ namespace Forge
         int pixel = m_PickFramebuffer->ReadPixel(0, viewportCoord.x, viewportCoord.y);
 
         PickResult result;
-        result.Entity = Entity((entt::entity)pixel, this);
+        result.Entity = Entity((entt::entity)pixel, &m_Registry);
 
         if (options.IncludeCoordinate && result.Entity)
         {
@@ -198,141 +208,145 @@ namespace Forge
 
         m_Time += ts.Seconds();
 
-        auto cameraView = m_Registry.view<TransformComponent, CameraComponent, EnabledFlag>();
-        std::vector<entt::entity> cameras = {cameraView.begin(), cameraView.end()};
-        std::sort(cameras.begin(),
-          cameras.end(),
-          [this](entt::entity a, entt::entity b)
-          {
-              CameraComponent& ccA = m_Registry.get<CameraComponent>(a);
-              CameraComponent& ccB = m_Registry.get<CameraComponent>(b);
-              if (ccA.RenderTarget == nullptr && ccB.RenderTarget != nullptr)
-                  return false;
-              if (ccB.RenderTarget == nullptr && ccA.RenderTarget != nullptr)
-                  return true;
-              if (ccA.Mode == CameraMode::Overlay && ccB.Mode != CameraMode::Overlay)
-                  return false;
-              if (ccB.Mode == CameraMode::Overlay && ccA.Mode != CameraMode::Overlay)
-                  return true;
-              return ccA.Priority < ccB.Priority;
-          });
-        for (entt::entity camera : cameras)
+        if (m_Renderer)
         {
-            CameraData data;
-            auto [transform, cameraComponent, enabled] =
-              m_Registry.get<TransformComponent, CameraComponent, EnabledFlag>(camera);
-            data.Frustum = cameraComponent.Frustum;
-            data.ViewMatrix = transform.GetInverseMatrix();
-            data.Viewport = cameraComponent.Viewport;
-            data.ClippingPlanes = cameraComponent.ClippingPlanes;
-            data.ClearColor = cameraComponent.ClearColor;
-            data.Mode = cameraComponent.Mode;
-            data.UsePostProcessing = cameraComponent.UsePostProcessing;
-
-            for (auto entity : m_Registry.view<AnimatorComponent, EnabledFlag>())
+            auto cameraView = m_Registry.view<TransformComponent, CameraComponent, EnabledFlag>();
+            std::vector<entt::entity> cameras = {cameraView.begin(), cameraView.end()};
+            std::sort(cameras.begin(),
+              cameras.end(),
+              [this](entt::entity a, entt::entity b)
+              {
+                  CameraComponent& ccA = m_Registry.get<CameraComponent>(a);
+                  CameraComponent& ccB = m_Registry.get<CameraComponent>(b);
+                  if (ccA.RenderTarget == nullptr && ccB.RenderTarget != nullptr)
+                      return false;
+                  if (ccB.RenderTarget == nullptr && ccA.RenderTarget != nullptr)
+                      return true;
+                  if (ccA.Mode == CameraMode::Overlay && ccB.Mode != CameraMode::Overlay)
+                      return false;
+                  if (ccB.Mode == CameraMode::Overlay && ccA.Mode != CameraMode::Overlay)
+                      return true;
+                  return ccA.Priority < ccB.Priority;
+              });
+            for (entt::entity camera : cameras)
             {
-                auto& animation = m_Registry.get<AnimatorComponent>(entity);
-                animation.OnUpdate(ts);
-                if (m_Registry.has<ModelRendererComponent>(entity))
+                CameraData data;
+                auto [transform, cameraComponent, enabled] =
+                  m_Registry.get<TransformComponent, CameraComponent, EnabledFlag>(camera);
+                data.Frustum = cameraComponent.Frustum;
+                data.ViewMatrix = transform.GetInverseMatrix();
+                data.Viewport = cameraComponent.Viewport;
+                data.ClippingPlanes = cameraComponent.ClippingPlanes;
+                data.ClearColor = cameraComponent.ClearColor;
+                data.Mode = cameraComponent.Mode;
+                data.UsePostProcessing = cameraComponent.UsePostProcessing;
+
+                for (auto entity : m_Registry.view<AnimatorComponent, EnabledFlag>())
                 {
-                    auto& model = m_Registry.get<ModelRendererComponent>(entity);
-                    for (auto& model : model.Model->GetSubModels())
+                    auto& animation = m_Registry.get<AnimatorComponent>(entity);
+                    animation.OnUpdate(ts);
+                    if (m_Registry.has<ModelRendererComponent>(entity))
                     {
-                        if (model.Mesh->IsAnimated())
+                        auto& model = m_Registry.get<ModelRendererComponent>(entity);
+                        for (auto& model : model.Model->GetSubModels())
                         {
-                            const Ref<AnimatedMesh>& animatedMesh = (const Ref<AnimatedMesh>&)model.Mesh;
-                            if (animatedMesh->IsCompatible(animation.GetCurrentAnimation()))
+                            if (model.Mesh->IsAnimated())
                             {
-                                animation.Apply(animatedMesh);
+                                const Ref<AnimatedMesh>& animatedMesh = (const Ref<AnimatedMesh>&)model.Mesh;
+                                if (animatedMesh->IsCompatible(animation.GetCurrentAnimation()))
+                                {
+                                    animation.Apply(animatedMesh);
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            s_LightSources.clear();
-            s_LightSourceShadowLayerMasks.clear();
-            for (auto entity : m_Registry.view<TransformComponent, PointLightComponent, EnabledFlag>())
-            {
-                if (CheckLayerMask(entity, cameraComponent.LayerMask))
+                s_LightSources.clear();
+                s_LightSourceShadowLayerMasks.clear();
+                for (auto entity : m_Registry.view<TransformComponent, PointLightComponent, EnabledFlag>())
                 {
-                    auto [transform, light] = m_Registry.get<TransformComponent, PointLightComponent>(entity);
-                    LightSource source;
-                    source.Position = transform.GetPosition();
-                    source.Direction = transform.GetForward();
-                    source.Ambient = light.Ambient;
-                    source.Color = light.Color;
-                    source.Attenuation = {1, 0.0f, 1.0f / (light.Radius * light.Radius)};
-                    source.Intensity = light.Intensity;
-                    source.Type = light.Type;
-                    source.ShadowFramebuffer = light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr;
-                    source.ShadowFrustum = cameraComponent.Frustum;
-                    s_LightSources.push_back(source);
-                    s_LightSourceShadowLayerMasks.push_back(light.Shadows.LayerMask);
-                }
-            }
-            for (auto entity : m_Registry.view<TransformComponent, DirectionalLightComponent, EnabledFlag>())
-            {
-                if (CheckLayerMask(entity, cameraComponent.LayerMask))
-                {
-                    auto [transform, light] = m_Registry.get<TransformComponent, DirectionalLightComponent>(entity);
-                    LightSource source;
-                    source.Position = transform.GetPosition();
-                    source.Direction = transform.GetForward();
-                    source.Ambient = light.Ambient;
-                    source.Color = light.Color;
-                    source.Attenuation = {1, 0, 0};
-                    source.Intensity = light.Intensity;
-                    source.Type = light.Type;
-                    source.ShadowFramebuffer = light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr;
-                    source.ShadowFrustum = Frustum::Orthographic(-25, 25, -25, 25, -20, 20);
-                    s_LightSources.push_back(source);
-                    s_LightSourceShadowLayerMasks.push_back(light.Shadows.LayerMask);
-                }
-            }
-
-            Ref<Framebuffer> framebuffer =
-              cameraComponent.RenderTarget ? cameraComponent.RenderTarget : m_DefaultFramebuffer;
-
-            m_Renderer->SetTime(m_Time);
-            m_Renderer->BeginScene(framebuffer, data, s_LightSources);
-            for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent, EnabledFlag>())
-            {
-                if (CheckLayerMask(entity, cameraComponent.LayerMask))
-                {
-                    auto [transform, model] = m_Registry.get<TransformComponent, ModelRendererComponent>(entity);
-                    RenderOptions options;
-                    options.ShadowMask = 0;
-                    for (int i = 0; i < s_LightSourceShadowLayerMasks.size(); i++)
-                        options.ShadowMask.set(i, CheckLayerMask(entity, s_LightSourceShadowLayerMasks[i]));
-                    m_Renderer->RenderModel(model.Model, transform.GetMatrix(), options);
-                    if (m_DebugDrawColliders && m_Registry.has<AabbColliderComponent>(entity))
+                    if (CheckLayerMask(entity, cameraComponent.LayerMask))
                     {
-                        AabbColliderComponent& collider = m_Registry.get<AabbColliderComponent>(entity);
-                        Ref<Material> material = GraphicsCache::DefaultColorMaterial(COLOR_GREEN);
-                        material->GetSettings().Mode = PolygonMode::Line;
-                        Ref<Model> model = Model::Create(GraphicsCache::CubeMesh(), material);
-                        model->GetSubModels()[0].Transform = glm::scale(glm::mat4(1.0f), collider.Dimensions);
-                        m_Renderer->RenderModel(model, transform.GetMatrix() * collider.Transform, options);
+                        auto [transform, light] = m_Registry.get<TransformComponent, PointLightComponent>(entity);
+                        LightSource source;
+                        source.Position = transform.GetPosition();
+                        source.Direction = transform.GetForward();
+                        source.Ambient = light.Ambient;
+                        source.Color = light.Color;
+                        source.Attenuation = {1, 0.0f, 1.0f / (light.Radius * light.Radius)};
+                        source.Intensity = light.Intensity;
+                        source.Type = light.Type;
+                        source.ShadowFramebuffer = light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr;
+                        source.ShadowFrustum = cameraComponent.Frustum;
+                        s_LightSources.push_back(source);
+                        s_LightSourceShadowLayerMasks.push_back(light.Shadows.LayerMask);
                     }
                 }
-            }
-
-            m_Renderer2D.BeginScene();
-            for (auto entity : m_Registry.view<TransformComponent, SpriteRendererComponent, EnabledFlag>())
-            {
-                if (CheckLayerMask(entity, cameraComponent.LayerMask))
+                for (auto entity : m_Registry.view<TransformComponent, DirectionalLightComponent, EnabledFlag>())
                 {
-                    auto [transform, sprite] = m_Registry.get<TransformComponent, SpriteRendererComponent>(entity);
-                    m_Renderer2D.DrawQuad(transform.GetPosition(), transform.GetScale(), sprite.Texture, sprite.Color);
+                    if (CheckLayerMask(entity, cameraComponent.LayerMask))
+                    {
+                        auto [transform, light] = m_Registry.get<TransformComponent, DirectionalLightComponent>(entity);
+                        LightSource source;
+                        source.Position = transform.GetPosition();
+                        source.Direction = transform.GetForward();
+                        source.Ambient = light.Ambient;
+                        source.Color = light.Color;
+                        source.Attenuation = {1, 0, 0};
+                        source.Intensity = light.Intensity;
+                        source.Type = light.Type;
+                        source.ShadowFramebuffer = light.Shadows.Enabled ? light.Shadows.RenderTarget : nullptr;
+                        source.ShadowFrustum = Frustum::Orthographic(-25, 25, -25, 25, -20, 20);
+                        s_LightSources.push_back(source);
+                        s_LightSourceShadowLayerMasks.push_back(light.Shadows.LayerMask);
+                    }
                 }
-            }
-            m_Renderer2D.EndScene();
-            const Ref<Model>* renderables = m_Renderer2D.GetRenderables();
-            for (uint32_t i = 0; i < m_Renderer2D.GetRenderableCount(); i++)
-                m_Renderer->RenderModel(renderables[i], glm::mat4(1.0f));
 
-            m_Renderer->EndScene();
+                Ref<Framebuffer> framebuffer =
+                  cameraComponent.RenderTarget ? cameraComponent.RenderTarget : m_DefaultFramebuffer;
+
+                m_Renderer->SetTime(m_Time);
+                m_Renderer->BeginScene(framebuffer, data, s_LightSources);
+                for (auto entity : m_Registry.view<TransformComponent, ModelRendererComponent, EnabledFlag>())
+                {
+                    if (CheckLayerMask(entity, cameraComponent.LayerMask))
+                    {
+                        auto [transform, model] = m_Registry.get<TransformComponent, ModelRendererComponent>(entity);
+                        RenderOptions options;
+                        options.ShadowMask = 0;
+                        for (int i = 0; i < s_LightSourceShadowLayerMasks.size(); i++)
+                            options.ShadowMask.set(i, CheckLayerMask(entity, s_LightSourceShadowLayerMasks[i]));
+                        m_Renderer->RenderModel(model.Model, transform.GetMatrix(), options);
+                        if (m_DebugDrawColliders && m_Registry.has<AabbColliderComponent>(entity))
+                        {
+                            AabbColliderComponent& collider = m_Registry.get<AabbColliderComponent>(entity);
+                            Ref<Material> material = GraphicsCache::DefaultColorMaterial(COLOR_GREEN);
+                            material->GetSettings().Mode = PolygonMode::Line;
+                            Ref<Model> model = Model::Create(GraphicsCache::CubeMesh(), material);
+                            model->GetSubModels()[0].Transform = glm::scale(glm::mat4(1.0f), collider.Dimensions);
+                            m_Renderer->RenderModel(model, transform.GetMatrix() * collider.Transform, options);
+                        }
+                    }
+                }
+
+                m_Renderer2D->BeginScene();
+                for (auto entity : m_Registry.view<TransformComponent, SpriteRendererComponent, EnabledFlag>())
+                {
+                    if (CheckLayerMask(entity, cameraComponent.LayerMask))
+                    {
+                        auto [transform, sprite] = m_Registry.get<TransformComponent, SpriteRendererComponent>(entity);
+                        m_Renderer2D->DrawQuad(
+                          transform.GetPosition(), transform.GetScale(), sprite.Texture, sprite.Color);
+                    }
+                }
+                m_Renderer2D->EndScene();
+                const Ref<Model>* renderables = m_Renderer2D->GetRenderables();
+                for (uint32_t i = 0; i < m_Renderer2D->GetRenderableCount(); i++)
+                    m_Renderer->RenderModel(renderables[i], glm::mat4(1.0f));
+
+                m_Renderer->EndScene();
+            }
         }
     }
 

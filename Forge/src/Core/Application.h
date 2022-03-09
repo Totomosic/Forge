@@ -13,9 +13,9 @@ namespace Forge
     class FORGE_API Application
     {
     private:
-        Window m_Window;
+        std::unique_ptr<Window> m_Window;
+        std::unique_ptr<Renderer3D> m_Renderer;
         std::vector<Scope<Scene>> m_Scenes;
-        Renderer3D m_Renderer;
 
         std::chrono::time_point<std::chrono::high_resolution_clock> m_PrevFrameTime;
 
@@ -27,16 +27,19 @@ namespace Forge
 
         inline bool ShouldExit() const
         {
-            return m_Window.ShouldClose();
+            return m_Window != nullptr && m_Window->ShouldClose();
         }
-        inline Window& GetWindow()
+
+        inline Window* GetWindow() const
         {
-            return m_Window;
+            return m_Window.get();
         }
-        inline Renderer3D& GetRenderer()
+
+        inline Renderer3D* GetRenderer() const
         {
-            return m_Renderer;
+            return m_Renderer.get();
         }
+
         inline Timestep GetTimestep() const
         {
             return float(std::chrono::duration_cast<std::chrono::microseconds>(

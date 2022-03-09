@@ -1,6 +1,7 @@
 #pragma once
 #include "Constants.h"
 #include "Renderer/Lighting.h"
+#include <entt/entt.hpp>
 
 namespace Forge
 {
